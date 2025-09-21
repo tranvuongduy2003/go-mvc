@@ -131,25 +131,25 @@ func HTTPServerLifecycle(
 	lc fx.Lifecycle,
 	server *http.Server,
 	config *config.AppConfig,
-	zapLogger *zap.Logger,
+	logger *logger.Logger,
 ) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			zapLogger.Info("Starting HTTP server",
+			logger.Info("Starting HTTP server",
 				zap.String("addr", server.Addr),
 				zap.String("environment", config.App.Environment),
 			)
 
 			go func() {
 				if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					zapLogger.Fatal("Failed to start HTTP server", zap.Error(err))
+					logger.Fatal("Failed to start HTTP server", zap.Error(err))
 				}
 			}()
 
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			zapLogger.Info("Shutting down HTTP server...")
+			logger.Info("Shutting down HTTP server...")
 			return server.Shutdown(ctx)
 		},
 	})

@@ -67,27 +67,27 @@ func InfrastructureLifecycle(
 	lc fx.Lifecycle,
 	manager *database.Manager,
 	tracingService *tracing.TracingService,
-	zapLogger *zap.Logger,
+	logger *logger.Logger,
 ) {
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
-			zapLogger.Info("Infrastructure started successfully")
+			logger.Info("Infrastructure started successfully")
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			zapLogger.Info("Shutting down infrastructure...")
+			logger.Info("Shutting down infrastructure...")
 
 			// Shutdown tracing
 			if err := tracingService.Shutdown(ctx); err != nil {
-				zapLogger.Error("Failed to shutdown tracing", zap.Error(err))
+				logger.Error("Failed to shutdown tracing", zap.Error(err))
 			}
 
 			// Close database connections
 			if err := manager.Close(); err != nil {
-				zapLogger.Error("Failed to close database connections", zap.Error(err))
+				logger.Error("Failed to close database connections", zap.Error(err))
 			}
 
-			zapLogger.Info("Infrastructure shutdown complete")
+			logger.Info("Infrastructure shutdown complete")
 			return nil
 		},
 	})
