@@ -14,15 +14,19 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/persistence/postgres/models"
 	fxmodules "github.com/tranvuongduy2003/go-mvc/internal/fx_modules"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Database migration tool",
 	Long:  `A tool for managing database migrations including running migrations, rollbacks, and checking migration status.`,
+}
+
+// loggerProvider provides a development logger
+func loggerProvider() *zap.Logger {
+	logger, _ := zap.NewDevelopment()
+	return logger
 }
 
 func main() {
@@ -53,7 +57,11 @@ func upCommand() *cobra.Command {
 
 			app := fx.New(
 				fxmodules.InfrastructureModule,
-				fx.Invoke(func(db *gorm.DB, config *config.AppConfig, logger *zap.Logger) {
+				fx.Provide(func() *zap.Logger {
+					logger, _ := zap.NewDevelopment()
+					return logger
+				}),
+				fx.Invoke(func(db *gorm.DB, logger *zap.Logger) {
 					if err := runMigrationsUp(db, steps); err != nil {
 						logger.Error("Migration failed", zap.Error(err))
 						log.Fatalf("Migration failed: %v", err)
@@ -136,6 +144,10 @@ func statusCommand() *cobra.Command {
 
 			app := fx.New(
 				fxmodules.InfrastructureModule,
+				fx.Provide(func() *zap.Logger {
+					logger, _ := zap.NewDevelopment()
+					return logger
+				}),
 				fx.Invoke(func(db *gorm.DB, logger *zap.Logger) {
 					if err := showMigrationStatus(db); err != nil {
 						logger.Error("Failed to get migration status", zap.Error(err))
@@ -258,13 +270,7 @@ func runMigrationsUp(db *gorm.DB, steps int) error {
 	fmt.Println("Auto-migrating database schema...")
 
 	// Auto-migrate all models
-	if err := db.AutoMigrate(
-		&models.User{},
-		&models.Role{},
-		&models.Permission{},
-		&models.UserRole{},
-		&models.RolePermission{},
-	); err != nil {
+	if err := db.AutoMigrate(); err != nil {
 		return fmt.Errorf("failed to auto-migrate: %w", err)
 	}
 

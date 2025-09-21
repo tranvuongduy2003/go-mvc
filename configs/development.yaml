@@ -36,7 +36,7 @@ database:
     port: 5432
     username: "postgres"
     password: "postgres"
-    database: "enterprise_app_dev"
+    database: "go_mvc_dev"
     ssl_mode: "disable"
     max_open_conns: 25
     max_idle_conns: 25
@@ -79,7 +79,7 @@ logger:
 jwt:
   secret: "development-secret-key-change-in-production"
   access_expiry: "15m"
-  refresh_expiry: "7d"
+  refresh_expiry: "168h"
   issuer: "go-mvc"
   audience: "go-mvc-users"
 

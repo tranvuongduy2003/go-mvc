@@ -3,9 +3,9 @@ package main
 import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
-	"go.uber.org/zap"
 
 	fxmodules "github.com/tranvuongduy2003/go-mvc/internal/fx_modules"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 )
 
 func main() {
@@ -16,25 +16,25 @@ func main() {
 		// Repository layer
 		fxmodules.RepositoryModule,
 
-		// Domain layer
-		fxmodules.DomainModule,
+		// Domain layer - temporarily disabled
+		// fxmodules.DomainModule,
 
-		// Application layer
-		fxmodules.ApplicationModule,
+		// Application layer - temporarily disabled
+		// fxmodules.ApplicationModule,
 
-		// Handler layer
-		fxmodules.HandlerModule,
+		// HTTP handlers - temporarily disabled
+		// fxmodules.HandlerModule,
 
-		// HTTP Server
-		fxmodules.ServerModule,
+		// Server
+		// fxmodules.ServerModule,
 
 		// Lifecycle hooks
 		fx.Invoke(fxmodules.InfrastructureLifecycle),
-		fx.Invoke(fxmodules.HTTPServerLifecycle),
+		// fx.Invoke(fxmodules.HTTPServerLifecycle),
 
 		// Logger configuration
-		fx.WithLogger(func(logger *zap.Logger) fxevent.Logger {
-			return &fxevent.ZapLogger{Logger: logger}
+		fx.WithLogger(func(customLogger *logger.Logger) fxevent.Logger {
+			return &fxevent.ZapLogger{Logger: customLogger.Logger}
 		}),
 	).Run()
 }

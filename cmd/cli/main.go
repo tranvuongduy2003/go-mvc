@@ -6,13 +6,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/rbac"
 	fxmodules "github.com/tranvuongduy2003/go-mvc/internal/fx_modules"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 )
@@ -35,14 +33,6 @@ func init() {
 	rootCmd.AddCommand(migrateCommand())
 	rootCmd.AddCommand(seedCommand())
 	rootCmd.AddCommand(resetDBCommand())
-
-	// User management commands
-	rootCmd.AddCommand(createUserCommand())
-	rootCmd.AddCommand(listUsersCommand())
-
-	// RBAC commands
-	rootCmd.AddCommand(createRoleCommand())
-	rootCmd.AddCommand(listRolesCommand())
 
 	// System commands
 	rootCmd.AddCommand(healthCheckCommand())
@@ -116,18 +106,6 @@ func seedCommand() *cobra.Command {
 				fxmodules.InfrastructureModule,
 				fxmodules.RepositoryModule,
 				fxmodules.DomainModule,
-				fx.Invoke(func(rbacService rbac.RBACService, logger *zap.Logger) {
-					ctx := context.Background()
-					systemUserID := uuid.New() // Generate system user ID for seeding
-
-					if err := rbacService.InitializeDefaultRolesAndPermissions(ctx, systemUserID); err != nil {
-						logger.Error("Seeding failed", zap.Error(err))
-						log.Fatalf("Seeding failed: %v", err)
-					}
-
-					logger.Info("Database seeding completed successfully")
-					fmt.Println("✅ Database seeded successfully!")
-				}),
 				fx.NopLogger,
 			)
 
@@ -176,180 +154,6 @@ func resetDBCommand() *cobra.Command {
 
 	cmd.Flags().Bool("confirm", false, "Confirm the database reset operation")
 	return cmd
-}
-
-// User Management Commands
-func createUserCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "create-user",
-		Short: "Create a new user",
-		Long:  `Create a new user with specified email and password.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			email, _ := cmd.Flags().GetString("email")
-			password, _ := cmd.Flags().GetString("password")
-			role, _ := cmd.Flags().GetString("role")
-
-			if email == "" || password == "" {
-				fmt.Println("❌ Email and password are required")
-				fmt.Println("Usage: go-mvc-cli create-user --email user@example.com --password mypassword [--role admin]")
-				return
-			}
-
-			fmt.Printf("Creating user: %s\n", email)
-
-			app := fx.New(
-				fxmodules.InfrastructureModule,
-				fxmodules.RepositoryModule,
-				fxmodules.DomainModule,
-				fxmodules.ApplicationModule,
-				fx.Invoke(func(logger *zap.Logger) {
-					// TODO: Implement user creation logic here
-					logger.Info("User created successfully",
-						zap.String("email", email),
-						zap.String("role", role))
-					fmt.Printf("✅ User %s created successfully!\n", email)
-				}),
-				fx.NopLogger,
-			)
-
-			if err := app.Start(context.Background()); err != nil {
-				log.Fatalf("Failed to create user: %v", err)
-			}
-			app.Stop(context.Background())
-		},
-	}
-
-	cmd.Flags().StringP("email", "e", "", "User email (required)")
-	cmd.Flags().StringP("password", "p", "", "User password (required)")
-	cmd.Flags().StringP("role", "r", "user", "User role (default: user)")
-	cmd.MarkFlagRequired("email")
-	cmd.MarkFlagRequired("password")
-
-	return cmd
-}
-
-func listUsersCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list-users",
-		Short: "List all users",
-		Long:  `Display a list of all users in the system with their roles.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			limit, _ := cmd.Flags().GetInt("limit")
-
-			fmt.Printf("Listing users (limit: %d):\n", limit)
-
-			app := fx.New(
-				fxmodules.InfrastructureModule,
-				fxmodules.RepositoryModule,
-				fxmodules.DomainModule,
-				fxmodules.ApplicationModule,
-				fx.Invoke(func(logger *zap.Logger) {
-					// TODO: Implement user listing logic here
-					logger.Info("Listed users successfully")
-					fmt.Println("✅ Users listed successfully!")
-				}),
-				fx.NopLogger,
-			)
-
-			if err := app.Start(context.Background()); err != nil {
-				log.Fatalf("Failed to list users: %v", err)
-			}
-			app.Stop(context.Background())
-		},
-	}
-
-	cmd.Flags().IntP("limit", "l", 10, "Limit number of users to display")
-	return cmd
-}
-
-// RBAC Commands
-func createRoleCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "create-role",
-		Short: "Create a new role",
-		Long:  `Create a new role with specified name and permissions.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			name, _ := cmd.Flags().GetString("name")
-			description, _ := cmd.Flags().GetString("description")
-
-			if name == "" {
-				fmt.Println("❌ Role name is required")
-				return
-			}
-
-			fmt.Printf("Creating role: %s\n", name)
-
-			app := fx.New(
-				fxmodules.InfrastructureModule,
-				fxmodules.RepositoryModule,
-				fxmodules.DomainModule,
-				fx.Invoke(func(rbacService rbac.RBACService, logger *zap.Logger) {
-					ctx := context.Background()
-					systemUserID := uuid.New() // Generate system user ID for role creation
-
-					_, err := rbacService.CreateRole(ctx, name, description, systemUserID)
-					if err != nil {
-						logger.Error("Role creation failed", zap.Error(err))
-						log.Fatalf("Role creation failed: %v", err)
-					}
-
-					logger.Info("Role created successfully", zap.String("name", name))
-					fmt.Printf("✅ Role %s created successfully!\n", name)
-				}),
-				fx.NopLogger,
-			)
-
-			if err := app.Start(context.Background()); err != nil {
-				log.Fatalf("Failed to create role: %v", err)
-			}
-			app.Stop(context.Background())
-		},
-	}
-
-	cmd.Flags().StringP("name", "n", "", "Role name (required)")
-	cmd.Flags().StringP("description", "", "", "Role description")
-	cmd.MarkFlagRequired("name")
-
-	return cmd
-}
-
-func listRolesCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "list-roles",
-		Short: "List all roles",
-		Long:  `Display a list of all roles in the system with their permissions.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Listing roles:")
-
-			app := fx.New(
-				fxmodules.InfrastructureModule,
-				fxmodules.RepositoryModule,
-				fxmodules.DomainModule,
-				fx.Invoke(func(rbacService rbac.RBACService, logger *zap.Logger) {
-					ctx := context.Background()
-
-					roles, err := rbacService.ListRoles(ctx, 0, 100) // Get first 100 roles
-					if err != nil {
-						logger.Error("Failed to list roles", zap.Error(err))
-						log.Fatalf("Failed to list roles: %v", err)
-					}
-
-					for _, role := range roles {
-						fmt.Printf("- %s: %s\n", role.Name, role.Description)
-					}
-
-					logger.Info("Roles listed successfully")
-					fmt.Printf("✅ Listed %d roles successfully!\n", len(roles))
-				}),
-				fx.NopLogger,
-			)
-
-			if err := app.Start(context.Background()); err != nil {
-				log.Fatalf("Failed to list roles: %v", err)
-			}
-			app.Stop(context.Background())
-		},
-	}
 }
 
 // System Commands

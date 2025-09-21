@@ -3,9 +3,6 @@ package fxmodules
 import (
 	"go.uber.org/fx"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
-	"github.com/tranvuongduy2003/go-mvc/internal/application/validators"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/tracing"
@@ -16,19 +13,15 @@ import (
 var ApplicationModule = fx.Module("application",
 	fx.Provide(
 		NewJWTService,
-		NewUserApplicationService,
-		NewUserValidator,
 	),
 )
 
 // ApplicationParams holds parameters for application service providers
 type ApplicationParams struct {
 	fx.In
-	UserService *user.Service
-	Repository  user.Repository
-	JWTService  *jwt.Service
-	Logger      *logger.Logger
-	Tracing     *tracing.TracingService
+	JWTService *jwt.Service
+	Logger     *logger.Logger
+	Tracing    *tracing.TracingService
 }
 
 // JWTParams holds parameters for JWT service
@@ -46,20 +39,4 @@ type ValidatorParams struct {
 // NewJWTService provides JWT service
 func NewJWTService(params JWTParams) *jwt.Service {
 	return jwt.NewService(params.Config.JWT)
-}
-
-// NewUserApplicationService provides user application service
-func NewUserApplicationService(params ApplicationParams) *services.UserApplicationService {
-	return services.NewUserApplicationService(
-		params.UserService,
-		params.Repository,
-		params.JWTService,
-		params.Logger,
-		params.Tracing,
-	)
-}
-
-// NewUserValidator provides user validator
-func NewUserValidator(params ValidatorParams) *validators.UserValidator {
-	return validators.NewUserValidator(params.Logger)
 }

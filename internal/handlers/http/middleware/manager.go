@@ -7,16 +7,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/rbac"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 
 // MiddlewareManager manages all application middleware
 type MiddlewareManager struct {
-	logger         *zap.Logger
-	rateLimiter    *RateLimiter
-	authMiddleware *AuthMiddleware
-	config         MiddlewareConfig
+	logger      *zap.Logger
+	rateLimiter *RateLimiter
+	config      MiddlewareConfig
 }
 
 // MiddlewareConfig represents middleware configuration
@@ -180,7 +178,6 @@ func NewMiddlewareManager(
 	logger *zap.Logger,
 	config MiddlewareConfig,
 	jwtService jwt.JWTService,
-	rbacService rbac.RBACService,
 ) *MiddlewareManager {
 	var rateLimiter *RateLimiter
 	if config.RateLimit.Enabled {
@@ -188,13 +185,10 @@ func NewMiddlewareManager(
 		rateLimiter.CleanupOldLimiters()
 	}
 
-	authMiddleware := NewAuthMiddleware(jwtService, rbacService, logger)
-
 	return &MiddlewareManager{
-		logger:         logger,
-		rateLimiter:    rateLimiter,
-		authMiddleware: authMiddleware,
-		config:         config,
+		logger:      logger,
+		rateLimiter: rateLimiter,
+		config:      config,
 	}
 }
 
@@ -376,44 +370,4 @@ func (mm *MiddlewareManager) SetupProductionMiddleware(r *gin.Engine, allowedOri
 	// 404 and 405 handlers
 	r.NoRoute(NoRouteMiddleware())
 	r.NoMethod(NoMethodMiddleware())
-}
-
-// AuthRequired returns the authentication required middleware
-func (mm *MiddlewareManager) AuthRequired() gin.HandlerFunc {
-	return mm.authMiddleware.AuthRequired()
-}
-
-// OptionalAuth returns the optional authentication middleware
-func (mm *MiddlewareManager) OptionalAuth() gin.HandlerFunc {
-	return mm.authMiddleware.OptionalAuth()
-}
-
-// RequireRole returns middleware that requires specific role
-func (mm *MiddlewareManager) RequireRole(roleName string) gin.HandlerFunc {
-	return mm.authMiddleware.RequireRole(roleName)
-}
-
-// RequireAnyRole returns middleware that requires any of the specified roles
-func (mm *MiddlewareManager) RequireAnyRole(roleNames ...string) gin.HandlerFunc {
-	return mm.authMiddleware.RequireAnyRole(roleNames...)
-}
-
-// RequirePermission returns middleware that requires specific permission
-func (mm *MiddlewareManager) RequirePermission(resource, action string) gin.HandlerFunc {
-	return mm.authMiddleware.RequirePermission(resource, action)
-}
-
-// AdminOnly returns middleware that requires admin role
-func (mm *MiddlewareManager) AdminOnly() gin.HandlerFunc {
-	return mm.authMiddleware.AdminOnly()
-}
-
-// ModeratorOrAdmin returns middleware that requires moderator or admin role
-func (mm *MiddlewareManager) ModeratorOrAdmin() gin.HandlerFunc {
-	return mm.authMiddleware.ModeratorOrAdmin()
-}
-
-// OwnerOrAdmin returns middleware that allows resource owner or admin
-func (mm *MiddlewareManager) OwnerOrAdmin(resourceIDParam string) gin.HandlerFunc {
-	return mm.authMiddleware.OwnerOrAdmin(resourceIDParam)
 }

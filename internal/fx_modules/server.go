@@ -9,7 +9,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/rbac"
 	"github.com/tranvuongduy2003/go-mvc/internal/handlers"
 	"github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
@@ -74,7 +73,6 @@ func NewMiddlewareManager(
 	config *config.AppConfig,
 	logger *zap.Logger,
 	jwtService jwt.JWTService,
-	rbacService rbac.RBACService,
 ) *middleware.MiddlewareManager {
 	middlewareConfig := middleware.DefaultMiddlewareConfig()
 
@@ -91,7 +89,7 @@ func NewMiddlewareManager(
 		middlewareConfig.RateLimit.Burst = 2000
 	}
 
-	return middleware.NewMiddlewareManager(logger, middlewareConfig, jwtService, rbacService)
+	return middleware.NewMiddlewareManager(logger, middlewareConfig, jwtService)
 }
 
 // SetupMiddleware configures all middleware
@@ -111,24 +109,13 @@ func SetupMiddleware(params MiddlewareParams) {
 func RegisterRoutes(params RouteParams) {
 	v1 := params.Router.Group("/api/v1")
 	{
-		// User routes
-		users := v1.Group("/users")
-		{
-			users.POST("", params.UserHandler.CreateUser)
-			users.GET("/:id", params.UserHandler.GetUser)
-			users.PUT("/:id", params.UserHandler.UpdateUser)
-			users.DELETE("/:id", params.UserHandler.DeleteUser)
-			users.GET("", params.UserHandler.ListUsers)
-		}
-
-		// Auth routes
-		auth := v1.Group("/auth")
-		{
-			auth.POST("/login", params.AuthHandler.Login)
-			auth.POST("/register", params.AuthHandler.Register)
-			auth.POST("/refresh", params.AuthHandler.RefreshToken)
-			auth.POST("/logout", params.AuthHandler.Logout)
-		}
+		// Test route
+		v1.GET("/test", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Test API endpoint",
+				"data":    "Hello from Go MVC!",
+			})
+		})
 	}
 }
 
