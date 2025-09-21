@@ -11,7 +11,10 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/application/dto"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/validators"
+	"github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/tracing"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // UserHandler handles user-related HTTP requests
@@ -19,6 +22,7 @@ type UserHandler struct {
 	userService   *services.UserApplicationService
 	userValidator *validators.UserValidator
 	logger        *logger.Logger
+	tracing       *tracing.TracingService
 }
 
 // NewUserHandler creates a new user handler
@@ -26,21 +30,29 @@ func NewUserHandler(
 	userService *services.UserApplicationService,
 	userValidator *validators.UserValidator,
 	logger *logger.Logger,
+	tracing *tracing.TracingService,
 ) *UserHandler {
 	return &UserHandler{
 		userService:   userService,
 		userValidator: userValidator,
 		logger:        logger,
+		tracing:       tracing,
 	}
 }
 
 // CreateUser handles POST /users
 func (h *UserHandler) CreateUser(c *gin.Context) {
+	ctx := middleware.TraceContext(c)
+	ctx, span := h.tracing.StartHTTPSpan(ctx, c.Request.Method, c.FullPath())
+	defer span.End()
+
 	h.logger.Infof("Creating user")
 
 	var req dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Errorf("Failed to bind request: %v", err)
+		h.tracing.RecordError(span, err)
+		span.SetAttributes(attribute.String("error.type", "validation_error"))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid request format",
 			"details": err.Error(),
@@ -48,9 +60,16 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// Add request attributes to span
+	span.SetAttributes(
+		attribute.String("user.email", req.Email),
+		attribute.String("user.username", req.Username),
+	)
+
 	// Validate request
 	if validationErrors := h.userValidator.ValidateCreateUserRequest(&req); len(validationErrors) > 0 {
 		h.logger.Errorf("Validation failed: %v", validationErrors)
+		span.SetAttributes(attribute.String("error.type", "validation_failed"))
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Validation failed",
 			"details": validationErrors,
@@ -59,15 +78,18 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	}
 
 	// Create user
-	user, err := h.userService.CreateUser(c.Request.Context(), &req)
+	user, err := h.userService.CreateUser(ctx, &req)
 	if err != nil {
 		h.logger.Errorf("Failed to create user: %v", err)
+		h.tracing.RecordError(span, err)
 		if strings.Contains(err.Error(), "already exists") {
+			span.SetAttributes(attribute.String("error.type", "user_exists"))
 			c.JSON(http.StatusConflict, gin.H{
 				"error": "User already exists",
 			})
 			return
 		}
+		span.SetAttributes(attribute.String("error.type", "internal_error"))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to create user",
 		})
@@ -75,6 +97,10 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	}
 
 	h.logger.Infof("User created successfully: %s", user.ID)
+	span.SetAttributes(
+		attribute.String("user.id", user.ID.String()),
+		attribute.String("response.status", "success"),
+	)
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User created successfully",
 		"data":    user,

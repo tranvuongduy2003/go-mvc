@@ -21,8 +21,8 @@ type CacheOptions struct {
 	TTL time.Duration
 }
 
-// NewService creates a new cache service
-func NewService(client *redis.Client, logger *logger.Logger) *Service {
+// NewCacheService creates a new cache service
+func NewCacheService(client *redis.Client, logger *logger.Logger) *Service {
 	return &Service{
 		client: client,
 		logger: logger,

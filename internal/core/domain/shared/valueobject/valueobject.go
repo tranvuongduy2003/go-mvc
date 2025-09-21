@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 // Email represents an email value object
@@ -327,4 +330,29 @@ func (a Address) String() string {
 	parts = append(parts, a.country)
 
 	return strings.Join(parts, ", ")
+}
+
+// AuditLog represents audit information for entities
+type AuditLog struct {
+	CreatedBy uuid.UUID `json:"created_by"`
+	UpdatedBy uuid.UUID `json:"updated_by"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// NewAuditLog creates a new audit log
+func NewAuditLog(userID uuid.UUID) AuditLog {
+	now := time.Now()
+	return AuditLog{
+		CreatedBy: userID,
+		UpdatedBy: userID,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+}
+
+// Update updates the audit log with new user and time
+func (a *AuditLog) Update(userID uuid.UUID) {
+	a.UpdatedBy = userID
+	a.UpdatedAt = time.Now()
 }

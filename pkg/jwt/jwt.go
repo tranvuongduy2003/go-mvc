@@ -5,8 +5,19 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 )
+
+// JWTService defines the interface for JWT operations
+type JWTService interface {
+	GenerateAccessToken(userID uuid.UUID, email string) (string, error)
+	GenerateRefreshToken(userID uuid.UUID, email string) (string, error)
+	ValidateToken(tokenString string) (*Claims, error)
+	RefreshAccessToken(refreshToken string) (string, error)
+	GetAccessTokenExpirationTime() int64
+	GetRefreshTokenExpirationTime() int64
+}
 
 // Service handles JWT operations
 type Service struct {
@@ -16,6 +27,9 @@ type Service struct {
 	issuer        string
 	audience      string
 }
+
+// Ensure Service implements JWTService interface
+var _ JWTService = (*Service)(nil)
 
 // NewService creates a new JWT service
 func NewService(cfg config.JWT) *Service {
@@ -30,21 +44,23 @@ func NewService(cfg config.JWT) *Service {
 
 // Claims represents JWT claims
 type Claims struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
+	UserID uuid.UUID `json:"user_id"`
+	Email  string    `json:"email"`
+	Type   string    `json:"type"` // "access" or "refresh"
 	jwt.RegisteredClaims
 }
 
 // GenerateAccessToken generates an access token
-func (s *Service) GenerateAccessToken(userID, role string) (string, error) {
+func (s *Service) GenerateAccessToken(userID uuid.UUID, email string) (string, error) {
 	now := time.Now()
 	claims := Claims{
 		UserID: userID,
-		Role:   role,
+		Email:  email,
+		Type:   "access",
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    s.issuer,
 			Audience:  jwt.ClaimStrings{s.audience},
-			Subject:   userID,
+			Subject:   userID.String(),
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
 			NotBefore: jwt.NewNumericDate(now),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -56,23 +72,28 @@ func (s *Service) GenerateAccessToken(userID, role string) (string, error) {
 }
 
 // GenerateRefreshToken generates a refresh token
-func (s *Service) GenerateRefreshToken(userID string) (string, error) {
+func (s *Service) GenerateRefreshToken(userID uuid.UUID, email string) (string, error) {
 	now := time.Now()
-	claims := jwt.RegisteredClaims{
-		Issuer:    s.issuer,
-		Audience:  jwt.ClaimStrings{s.audience},
-		Subject:   userID,
-		ExpiresAt: jwt.NewNumericDate(now.Add(s.refreshExpiry)),
-		NotBefore: jwt.NewNumericDate(now),
-		IssuedAt:  jwt.NewNumericDate(now),
+	claims := Claims{
+		UserID: userID,
+		Email:  email,
+		Type:   "refresh",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    s.issuer,
+			Audience:  jwt.ClaimStrings{s.audience},
+			Subject:   userID.String(),
+			ExpiresAt: jwt.NewNumericDate(now.Add(s.refreshExpiry)),
+			NotBefore: jwt.NewNumericDate(now),
+			IssuedAt:  jwt.NewNumericDate(now),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.secret)
 }
 
-// ValidateAccessToken validates an access token and returns claims
-func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
+// ValidateToken validates a token and returns claims
+func (s *Service) ValidateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -91,28 +112,19 @@ func (s *Service) ValidateAccessToken(tokenString string) (*Claims, error) {
 	return nil, fmt.Errorf("invalid token")
 }
 
-// ValidateRefreshToken validates a refresh token and returns claims
-func (s *Service) ValidateRefreshToken(tokenString string) (jwt.MapClaims, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return s.secret, nil
-	})
-
+// RefreshAccessToken generates a new access token from a valid refresh token
+func (s *Service) RefreshAccessToken(refreshToken string) (string, error) {
+	claims, err := s.ValidateToken(refreshToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
+		return "", fmt.Errorf("invalid refresh token: %w", err)
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// Add user_id to claims if it's in subject
-		if sub, exists := claims["sub"]; exists {
-			claims["user_id"] = sub
-		}
-		return claims, nil
+	if claims.Type != "refresh" {
+		return "", fmt.Errorf("token is not a refresh token")
 	}
 
-	return nil, fmt.Errorf("invalid token")
+	// Generate new access token
+	return s.GenerateAccessToken(claims.UserID, claims.Email)
 }
 
 // GetAccessTokenExpirationTime returns the expiration time for access tokens

@@ -11,7 +11,9 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/shared/valueobject"
 	userDomain "github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/tracing"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // UserApplicationService coordinates user-related operations
@@ -37,6 +39,7 @@ type UserApplicationService struct {
 	userService *userDomain.Service
 	jwtService  *jwt.Service
 	logger      *logger.Logger
+	tracing     *tracing.TracingService
 }
 
 // NewUserApplicationService creates a new user application service
@@ -45,6 +48,7 @@ func NewUserApplicationService(
 	repository userDomain.Repository,
 	jwtService *jwt.Service,
 	logger *logger.Logger,
+	tracing *tracing.TracingService,
 ) *UserApplicationService {
 	return &UserApplicationService{
 		// Initialize command handlers
@@ -68,11 +72,22 @@ func NewUserApplicationService(
 		userService: userService,
 		jwtService:  jwtService,
 		logger:      logger,
+		tracing:     tracing,
 	}
 }
 
 // CreateUser creates a new user
 func (s *UserApplicationService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserDTO, error) {
+	ctx, span := s.tracing.StartServiceSpan(ctx, "UserApplicationService", "CreateUser")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("user.email", req.Email),
+		attribute.String("user.username", req.Username),
+		attribute.String("user.first_name", req.FirstName),
+		attribute.String("user.last_name", req.LastName),
+	)
+
 	cmd := userCommands.CreateUserCommand{
 		Email:     req.Email,
 		Username:  req.Username,
@@ -81,7 +96,13 @@ func (s *UserApplicationService) CreateUser(ctx context.Context, req *dto.Create
 		LastName:  req.LastName,
 	}
 
-	return s.createUserHandler.Handle(ctx, cmd)
+	result, err := s.createUserHandler.Handle(ctx, cmd)
+	if err != nil {
+		s.tracing.RecordError(span, err)
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // UpdateUser updates an existing user
@@ -227,12 +248,12 @@ func (s *UserApplicationService) Login(ctx context.Context, req *dto.LoginReques
 	}
 
 	// Generate tokens
-	accessToken, err := s.jwtService.GenerateAccessToken(user.ID().String(), string(user.Role()))
+	accessToken, err := s.jwtService.GenerateAccessToken(user.ID(), user.Email().Value())
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	refreshToken, err := s.jwtService.GenerateRefreshToken(user.ID().String())
+	refreshToken, err := s.jwtService.GenerateRefreshToken(user.ID(), user.Email().Value())
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
@@ -270,21 +291,18 @@ func (s *UserApplicationService) RefreshToken(ctx context.Context, req *dto.Refr
 	s.logger.Infof("Handling refresh token request")
 
 	// Validate refresh token
-	claims, err := s.jwtService.ValidateRefreshToken(req.RefreshToken)
+	claims, err := s.jwtService.ValidateToken(req.RefreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %w", err)
 	}
 
-	// Get user ID from claims
-	userIDStr, ok := claims["user_id"].(string)
-	if !ok {
-		return nil, fmt.Errorf("invalid token claims")
+	// Check if it's actually a refresh token
+	if claims.Type != "refresh" {
+		return nil, fmt.Errorf("token is not a refresh token")
 	}
 
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid user ID in token: %w", err)
-	}
+	// Get user ID from claims
+	userID := claims.UserID
 
 	// Get user
 	userDTO, err := s.GetUserByID(ctx, userID)
@@ -298,12 +316,12 @@ func (s *UserApplicationService) RefreshToken(ctx context.Context, req *dto.Refr
 	}
 
 	// Generate new tokens
-	accessToken, err := s.jwtService.GenerateAccessToken(userDTO.ID.String(), userDTO.Role)
+	accessToken, err := s.jwtService.GenerateAccessToken(userDTO.ID, userDTO.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %w", err)
 	}
 
-	refreshToken, err := s.jwtService.GenerateRefreshToken(userDTO.ID.String())
+	refreshToken, err := s.jwtService.GenerateRefreshToken(userDTO.ID, userDTO.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 	}

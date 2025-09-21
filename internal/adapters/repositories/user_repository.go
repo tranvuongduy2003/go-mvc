@@ -12,6 +12,8 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/shared/valueobject"
 	userDomain "github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/tracing"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // UserModel represents the user database model
@@ -37,20 +39,31 @@ func (UserModel) TableName() string {
 
 // UserRepository implements the user repository interface
 type UserRepository struct {
-	db     *gorm.DB
-	logger *logger.Logger
+	db      *gorm.DB
+	logger  *logger.Logger
+	tracing *tracing.TracingService
 }
 
 // NewUserRepository creates a new user repository
-func NewUserRepository(db *gorm.DB, logger *logger.Logger) *UserRepository {
+func NewUserRepository(db *gorm.DB, logger *logger.Logger, tracing *tracing.TracingService) *UserRepository {
 	return &UserRepository{
-		db:     db,
-		logger: logger,
+		db:      db,
+		logger:  logger,
+		tracing: tracing,
 	}
 }
 
 // Create creates a new user
 func (r *UserRepository) Create(ctx context.Context, user *userDomain.User) error {
+	ctx, span := r.tracing.StartDatabaseSpan(ctx, "INSERT", "users")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("user.id", user.ID().String()),
+		attribute.String("user.email", user.Email().String()),
+		attribute.String("user.username", user.Username()),
+	)
+
 	r.logger.Infof("Creating user with email: %s", user.Email)
 
 	userModel := &UserModel{
@@ -69,6 +82,7 @@ func (r *UserRepository) Create(ctx context.Context, user *userDomain.User) erro
 
 	if err := r.db.WithContext(ctx).Create(userModel).Error; err != nil {
 		r.logger.Errorf("Failed to create user: %v", err)
+		r.tracing.RecordError(span, err)
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
