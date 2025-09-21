@@ -10,11 +10,13 @@ import (
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 )
 
 // RecoveryConfig represents recovery middleware configuration
 type RecoveryConfig struct {
-	Logger           *zap.Logger
+	Logger           *logger.Logger
 	EnableStackTrace bool
 	EnablePanic      bool
 }
@@ -56,7 +58,7 @@ func CustomRecoveryMiddleware(config RecoveryConfig) gin.HandlerFunc {
 }
 
 // DefaultRecoveryMiddleware creates a recovery middleware with default configuration
-func DefaultRecoveryMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func DefaultRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return CustomRecoveryMiddleware(RecoveryConfig{
 		Logger:           logger,
 		EnableStackTrace: true,
@@ -65,7 +67,7 @@ func DefaultRecoveryMiddleware(logger *zap.Logger) gin.HandlerFunc {
 }
 
 // ProductionRecoveryMiddleware creates a recovery middleware for production
-func ProductionRecoveryMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func ProductionRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return CustomRecoveryMiddleware(RecoveryConfig{
 		Logger:           logger,
 		EnableStackTrace: false,
@@ -74,7 +76,7 @@ func ProductionRecoveryMiddleware(logger *zap.Logger) gin.HandlerFunc {
 }
 
 // DevelopmentRecoveryMiddleware creates a recovery middleware for development
-func DevelopmentRecoveryMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func DevelopmentRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if recovered := recover(); recovered != nil {

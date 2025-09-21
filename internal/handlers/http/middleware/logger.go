@@ -8,11 +8,13 @@ import (
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 )
 
 // LoggerConfig represents logger middleware configuration
 type LoggerConfig struct {
-	Logger          *zap.Logger
+	Logger          *logger.Logger
 	SkipPaths       []string
 	LogRequestBody  bool
 	LogResponseBody bool
@@ -20,7 +22,7 @@ type LoggerConfig struct {
 }
 
 // DefaultLoggerConfig returns default logger configuration
-func DefaultLoggerConfig(logger *zap.Logger) LoggerConfig {
+func DefaultLoggerConfig(logger *logger.Logger) LoggerConfig {
 	return LoggerConfig{
 		Logger:          logger,
 		SkipPaths:       []string{"/health", "/metrics", "/favicon.ico"},
@@ -148,7 +150,7 @@ func (w *bodyLogWriter) Write(b []byte) (int, error) {
 }
 
 // AccessLogMiddleware creates a simple access log middleware
-func AccessLogMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func AccessLogMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		logger.Info("HTTP Access Log",
 			zap.String("method", param.Method),
@@ -163,7 +165,7 @@ func AccessLogMiddleware(logger *zap.Logger) gin.HandlerFunc {
 }
 
 // ErrorLogMiddleware logs errors with structured logging
-func ErrorLogMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func ErrorLogMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 

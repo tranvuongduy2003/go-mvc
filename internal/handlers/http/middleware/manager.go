@@ -5,14 +5,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
 
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 
 // MiddlewareManager manages all application middleware
 type MiddlewareManager struct {
-	logger      *zap.Logger
+	logger      *logger.Logger
 	rateLimiter *RateLimiter
 	config      MiddlewareConfig
 }
@@ -175,7 +175,7 @@ func DefaultMiddlewareConfig() MiddlewareConfig {
 
 // NewMiddlewareManager creates a new middleware manager
 func NewMiddlewareManager(
-	logger *zap.Logger,
+	logger *logger.Logger,
 	config MiddlewareConfig,
 	jwtService jwt.JWTService,
 ) *MiddlewareManager {
@@ -288,6 +288,19 @@ func (mm *MiddlewareManager) SetupMiddleware(r *gin.Engine) {
 func (mm *MiddlewareManager) SetupDevelopmentMiddleware(r *gin.Engine) {
 	// Request ID
 	r.Use(RequestIDMiddleware())
+
+	// Security headers
+	if mm.config.Security.Enabled {
+		securityConfig := SecurityConfig{
+			FrameOptions:      mm.config.Security.FrameOptions,
+			ReferrerPolicy:    mm.config.Security.ReferrerPolicy,
+			CSP:               mm.config.Security.CSP,
+			PermissionsPolicy: mm.config.Security.PermissionsPolicy,
+			HSTSMaxAge:        "max-age=31536000; includeSubDomains",
+			CustomHeaders:     map[string]string{"X-API-Version": "v1"},
+		}
+		r.Use(SecureHeaders(securityConfig))
+	}
 
 	// Development CORS (allows all origins)
 	r.Use(DevCORSMiddleware())

@@ -89,6 +89,10 @@ func GlobalRateLimitMiddleware(rps int, burst int) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		if !limiter.Allow() {
+			c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", rps))
+			c.Header("X-RateLimit-Remaining", "0")
+			c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", time.Now().Add(time.Second).Unix()))
+
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error":   "Global rate limit exceeded",
 				"message": "Server is receiving too many requests, please try again later",
@@ -97,6 +101,11 @@ func GlobalRateLimitMiddleware(rps int, burst int) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
+		// Add rate limit headers for successful requests
+		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", rps))
+		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%.0f", limiter.Tokens()))
+
 		c.Next()
 	}
 }

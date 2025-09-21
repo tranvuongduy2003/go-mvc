@@ -19,7 +19,7 @@ var ApplicationModule = fx.Module("application",
 // ApplicationParams holds parameters for application service providers
 type ApplicationParams struct {
 	fx.In
-	JWTService *jwt.Service
+	JWTService jwt.JWTService
 	Logger     *logger.Logger
 	Tracing    *tracing.TracingService
 }
@@ -37,6 +37,6 @@ type ValidatorParams struct {
 }
 
 // NewJWTService provides JWT service
-func NewJWTService(params JWTParams) *jwt.Service {
+func NewJWTService(params JWTParams) jwt.JWTService {
 	return jwt.NewService(params.Config.JWT)
 }

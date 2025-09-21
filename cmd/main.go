@@ -27,6 +27,8 @@ func main() {
 
 		// Lifecycle hooks - temporarily disabled due to zap.Logger dependencies
 		fx.Invoke(fxmodules.InfrastructureLifecycle),
+		fx.Invoke(fxmodules.SetupMiddleware),
+		fx.Invoke(fxmodules.RegisterRoutes), // Routes after middleware
 		fx.Invoke(fxmodules.HTTPServerLifecycle),
 
 		// Logger configuration

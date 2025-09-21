@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -20,10 +21,9 @@ var ServerModule = fx.Module("server",
 	fx.Provide(
 		NewHTTPServer,
 		NewGinRouter,
-		// NewMiddlewareManager, // temporarily disabled
+		NewMiddlewareManager,
 	),
-	fx.Invoke(RegisterRoutes),
-	// fx.Invoke(SetupMiddleware), // temporarily disabled due to dependency issues
+	// Note: Routes registration moved to main.go after middleware setup
 )
 
 // ServerParams holds parameters for server providers
@@ -69,7 +69,7 @@ func NewGinRouter(params RouterParams) *gin.Engine {
 // NewMiddlewareManager creates middleware manager
 func NewMiddlewareManager(
 	config *config.AppConfig,
-	logger *zap.Logger,
+	logger *logger.Logger,
 	jwtService jwt.JWTService,
 ) *middleware.MiddlewareManager {
 	middlewareConfig := middleware.DefaultMiddlewareConfig()
@@ -112,6 +112,27 @@ func RegisterRoutes(params RouteParams) {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "Test API endpoint",
 				"data":    "Hello from Go MVC!",
+			})
+		})
+
+		// Test panic route for recovery middleware testing
+		v1.GET("/panic", func(c *gin.Context) {
+			panic("This is a test panic for recovery middleware")
+		})
+
+		// Test production-style panic route
+		v1.GET("/panic-prod", func(c *gin.Context) {
+			// This won't work exactly as expected because recovery middleware needs to be applied before
+			// But we can demonstrate the difference in error response format
+			panic("Production test panic")
+		})
+
+		// Test timeout route for timeout middleware testing
+		v1.GET("/slow", func(c *gin.Context) {
+			// Simulate slow request that might timeout
+			time.Sleep(10 * time.Second)
+			c.JSON(http.StatusOK, gin.H{
+				"message": "This response took 10 seconds",
 			})
 		})
 	}
