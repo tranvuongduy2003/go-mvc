@@ -28,7 +28,7 @@ var InfrastructureModule = fx.Module("infrastructure",
 
 // NewConfig provides application configuration
 func NewConfig() (*config.AppConfig, error) {
-	return config.LoadConfig("development")
+	return config.LoadConfig("configs/development.yaml")
 }
 
 // NewLogger provides application logger

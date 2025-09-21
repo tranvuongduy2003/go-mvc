@@ -9,9 +9,9 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/handlers"
 	"github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 
@@ -20,10 +20,10 @@ var ServerModule = fx.Module("server",
 	fx.Provide(
 		NewHTTPServer,
 		NewGinRouter,
-		NewMiddlewareManager,
+		// NewMiddlewareManager, // temporarily disabled
 	),
 	fx.Invoke(RegisterRoutes),
-	fx.Invoke(SetupMiddleware),
+	// fx.Invoke(SetupMiddleware), // temporarily disabled due to dependency issues
 )
 
 // ServerParams holds parameters for server providers
@@ -37,15 +37,13 @@ type ServerParams struct {
 type RouterParams struct {
 	fx.In
 	Config *config.AppConfig
-	Logger *zap.Logger
+	Logger *logger.Logger
 }
 
 // RouteParams holds parameters for route registration
 type RouteParams struct {
 	fx.In
-	Router      *gin.Engine
-	UserHandler *handlers.UserHandler
-	AuthHandler *handlers.AuthHandler
+	Router *gin.Engine
 }
 
 // MiddlewareParams holds parameters for middleware setup
