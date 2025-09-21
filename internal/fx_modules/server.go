@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -133,6 +134,27 @@ func RegisterRoutes(params RouteParams) {
 			time.Sleep(10 * time.Second)
 			c.JSON(http.StatusOK, gin.H{
 				"message": "This response took 10 seconds",
+			})
+		})
+
+		// Test tracing route
+		v1.GET("/trace-test", func(c *gin.Context) {
+			// Get span from context
+			span := trace.SpanFromContext(c.Request.Context())
+			traceID := span.SpanContext().TraceID().String()
+			spanID := span.SpanContext().SpanID().String()
+
+			// Add trace headers to response
+			c.Header("X-Trace-ID", traceID)
+			c.Header("X-Span-ID", spanID)
+			c.Header("X-Trace-Flags", fmt.Sprintf("%d", span.SpanContext().TraceFlags()))
+
+			c.JSON(http.StatusOK, gin.H{
+				"message":      "Tracing test",
+				"trace_id":     traceID,
+				"span_id":      spanID,
+				"is_recording": span.IsRecording(),
+				"is_valid":     span.SpanContext().IsValid(),
 			})
 		})
 	}

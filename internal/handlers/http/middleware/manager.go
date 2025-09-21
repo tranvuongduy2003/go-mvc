@@ -19,6 +19,9 @@ type MiddlewareManager struct {
 
 // MiddlewareConfig represents middleware configuration
 type MiddlewareConfig struct {
+	// Service Name for tracing
+	ServiceName string
+
 	// Rate limiting
 	RateLimit struct {
 		Enabled bool
@@ -87,6 +90,7 @@ type MiddlewareConfig struct {
 // DefaultMiddlewareConfig returns default middleware configuration
 func DefaultMiddlewareConfig() MiddlewareConfig {
 	return MiddlewareConfig{
+		ServiceName: "go-mvc",
 		RateLimit: struct {
 			Enabled bool
 			RPS     int
@@ -305,6 +309,9 @@ func (mm *MiddlewareManager) SetupDevelopmentMiddleware(r *gin.Engine) {
 	// Development CORS (allows all origins)
 	r.Use(DevCORSMiddleware())
 
+	// Tracing middleware (if enabled)
+	r.Use(CustomTracingMiddleware(mm.config.ServiceName))
+
 	// Development recovery (with detailed error info)
 	r.Use(DevelopmentRecoveryMiddleware(mm.logger))
 
@@ -344,6 +351,9 @@ func (mm *MiddlewareManager) SetupProductionMiddleware(r *gin.Engine, allowedOri
 
 	// Production CORS
 	r.Use(ProductionCORSMiddleware(allowedOrigins))
+
+	// Tracing middleware (if enabled)
+	r.Use(CustomTracingMiddleware(mm.config.ServiceName))
 
 	// Production recovery (no detailed error info)
 	r.Use(ProductionRecoveryMiddleware(mm.logger))
