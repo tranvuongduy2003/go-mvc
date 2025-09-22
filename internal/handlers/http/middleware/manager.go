@@ -327,6 +327,7 @@ func (mm *MiddlewareManager) SetupDevelopmentMiddleware(r *gin.Engine) {
 
 	// Metrics
 	r.Use(PrometheusMiddleware())
+	r.Use(BusinessMetricsMiddleware())
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Lenient rate limiting

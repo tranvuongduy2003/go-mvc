@@ -91,7 +91,7 @@ metrics:
 tracing:
   enabled: true
   service_name: "go-mvc"
-  endpoint: "http://localhost:4318"
+  endpoint: "localhost:4318"
   sample_rate: 1.0
 
 rate_limit:
