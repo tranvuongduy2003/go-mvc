@@ -104,7 +104,6 @@ func seedCommand() *cobra.Command {
 
 			app := fx.New(
 				fxmodules.InfrastructureModule,
-				fxmodules.RepositoryModule,
 				fxmodules.DomainModule,
 				fx.NopLogger,
 			)
