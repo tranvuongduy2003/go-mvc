@@ -22,6 +22,7 @@ go.work
 
 # Go build cache
 /build/
+/bin/
 /dist/
 
 # IDE files
