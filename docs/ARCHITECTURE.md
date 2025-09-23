@@ -90,7 +90,7 @@ cmd/
 **Details**:
 - **`main.go`**: Primary HTTP server with Gin router, middleware, and FX dependency injection
 - **`cli/main.go`**: Administrative commands using Cobra CLI framework
-- **`migrate/main.go`**: Database schema migration tool with up/down migrations
+- **`migrate/main.go`**: Database schema migration using golang-migrate/migrate v4.19.0+ with timestamp-based versioning
 - **`worker/main.go`**: Background job processor for async tasks (email, notifications, etc.)
 
 ### `/internal` - Private Application Code

@@ -34,7 +34,7 @@ A modern, scalable Go web application built with **Clean Architecture**, **Domai
 - **Code Quality**: golangci-lint, gosec, gofumpt
 - **Testing**: Unit, integration, and benchmark tests
 - **Documentation**: Swagger/OpenAPI generation
-- **Database Migrations**: Automated migration system
+- **Database Migrations**: golang-migrate/migrate v4.19.0+ with timestamp-based versioning
 
 ## 📁 Project Structure
 
@@ -172,9 +172,15 @@ make security      # Security scan
 
 ### Database
 ```bash
-make migrate-up      # Run migrations
+# Migration management (golang-migrate/migrate)
+make migrate-up      # Apply all pending migrations
 make migrate-down    # Rollback migrations
 make migrate-create  # Create new migration
+make migrate-status  # Show migration status
+make migrate-version # Show current version
+
+# See docs/DEVELOPMENT.md#database-migrations for detailed guide
+# Or docs/MIGRATIONS.md for comprehensive migration documentation
 ```
 
 ### Docker

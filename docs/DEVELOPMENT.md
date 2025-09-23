@@ -4,6 +4,7 @@
 - [Development Environment Setup](#development-environment-setup)
 - [Project Structure](#project-structure)
 - [Development Workflow](#development-workflow)
+- [Database Migrations](#database-migrations)
 - [Testing](#testing)
 - [Code Quality](#code-quality)
 - [Debugging](#debugging)
@@ -190,10 +191,11 @@ make format           # Format code
 make vet              # Run go vet
 make security         # Security scan
 
-# Database
+# Database (see Database Migrations section for details)
 make migrate-up       # Apply migrations
 make migrate-down     # Rollback migrations
 make migrate-create   # Create new migration
+make migrate-status   # Show migration status
 
 # Docker
 make docker-up        # Start all services
@@ -204,6 +206,327 @@ make docker-logs      # View container logs
 make monitoring       # Start monitoring stack
 make metrics          # View application metrics
 make health           # Health check
+```
+
+## 🗃️ Database Migrations
+
+The project uses **golang-migrate/migrate** for automated database schema management. All migration operations are integrated into the Makefile for easy use.
+
+> 📚 **For comprehensive migration documentation, see [MIGRATIONS.md](./MIGRATIONS.md)**
+
+### Migration System Overview
+
+- **Tool**: [golang-migrate/migrate](https://github.com/golang-migrate/migrate) v4.19.0+
+- **Database**: PostgreSQL with full SQL support
+- **Location**: `internal/adapters/persistence/postgres/migrations/`
+- **Naming**: Timestamp-based with descriptive names (e.g., `20250923181241_create_users_table`)
+- **Format**: Separate `.up.sql` and `.down.sql` files for each migration
+
+### Migration Commands
+
+#### Basic Operations
+
+```bash
+# Apply all pending migrations
+make migrate-up
+
+# Rollback the last migration
+make migrate-down-1
+
+# Rollback all migrations (DANGEROUS!)
+make migrate-down
+
+# Show current migration status
+make migrate-status
+
+# Show current migration version
+make migrate-version
+```
+
+#### Creating New Migrations
+
+```bash
+# Create a new migration with descriptive name
+make migrate-create name=add_user_avatar
+
+# This creates two files:
+# - 20250923182421_add_user_avatar.up.sql
+# - 20250923182421_add_user_avatar.down.sql
+```
+
+#### Advanced Operations
+
+```bash
+# Force migration to a specific version (use with caution)
+make migrate-force
+
+# Drop all migrations (DANGER! Will delete all data)
+make migrate-drop
+
+# Rollback exactly N migrations
+make migrate-down-1    # Rollback 1 migration
+```
+
+### Migration File Structure
+
+Each migration consists of two files:
+
+#### Up Migration (`*.up.sql`)
+```sql
+-- Create users table
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+
+-- Add trigger for automatic updated_at management
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_users_updated_at 
+    BEFORE UPDATE ON users 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+```
+
+#### Down Migration (`*.down.sql`)
+```sql
+-- Drop trigger first
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+
+-- Drop function
+DROP FUNCTION IF EXISTS update_updated_at_column();
+
+-- Drop indexes
+DROP INDEX IF EXISTS idx_users_created_at;
+DROP INDEX IF EXISTS idx_users_is_active;
+DROP INDEX IF EXISTS idx_users_email;
+
+-- Drop users table
+DROP TABLE IF EXISTS users;
+```
+
+### Best Practices
+
+#### 1. **Naming Conventions**
+```bash
+# Good examples:
+make migrate-create name=create_users_table
+make migrate-create name=add_user_avatar_column
+make migrate-create name=create_products_index
+make migrate-create name=update_user_email_constraint
+
+# Bad examples:
+make migrate-create name=fix_bug
+make migrate-create name=update_table
+make migrate-create name=temp_change
+```
+
+#### 2. **Writing Safe Migrations**
+
+**Always use IF EXISTS/IF NOT EXISTS:**
+```sql
+-- Good
+CREATE TABLE IF NOT EXISTS users (...);
+DROP TABLE IF EXISTS old_table;
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Bad (can fail if run multiple times)
+CREATE TABLE users (...);
+DROP TABLE old_table;
+CREATE INDEX idx_users_email ON users(email);
+```
+
+**Handle existing data carefully:**
+```sql
+-- Add column with default value
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(255) DEFAULT '';
+
+-- Update existing data safely
+UPDATE users SET avatar_url = '' WHERE avatar_url IS NULL;
+```
+
+#### 3. **Rollback Strategy**
+
+Every migration should have a corresponding rollback:
+```sql
+-- up.sql
+ALTER TABLE users ADD COLUMN phone VARCHAR(20);
+
+-- down.sql  
+ALTER TABLE users DROP COLUMN IF EXISTS phone;
+```
+
+#### 4. **Testing Migrations**
+
+```bash
+# Test the complete migration cycle
+make migrate-up      # Apply migration
+make migrate-down-1  # Test rollback
+make migrate-up      # Apply again
+
+# Verify database state
+make migrate-status
+```
+
+### Common Migration Patterns
+
+#### 1. **Creating Tables with Relationships**
+```sql
+-- Create parent table first
+CREATE TABLE IF NOT EXISTS roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Create child table with foreign key
+CREATE TABLE IF NOT EXISTS user_roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, role_id)
+);
+```
+
+#### 2. **Adding Indexes for Performance**
+```sql
+-- Single column indexes
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+
+-- Composite indexes
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_role ON user_roles(user_id, role_id);
+
+-- Partial indexes
+CREATE INDEX IF NOT EXISTS idx_active_users ON users(email) WHERE is_active = true;
+```
+
+#### 3. **Modifying Existing Tables**
+```sql
+-- Add new columns
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE;
+
+-- Modify column constraints
+ALTER TABLE users ALTER COLUMN phone TYPE VARCHAR(30);
+
+-- Add constraints
+ALTER TABLE users ADD CONSTRAINT check_email_format 
+    CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+```
+
+### Troubleshooting
+
+#### 1. **Migration Stuck in Dirty State**
+```bash
+# Check current status
+make migrate-version
+
+# If shows "dirty", force to clean state
+make migrate-force
+
+# Then continue with normal operations
+make migrate-up
+```
+
+#### 2. **Migration Failed**
+```bash
+# Check database logs
+make docker-logs
+
+# Review migration file for syntax errors
+cat internal/adapters/persistence/postgres/migrations/[timestamp]_name.up.sql
+
+# Fix the migration file and try again
+make migrate-up
+```
+
+#### 3. **Rolling Back Failed Migration**
+```bash
+# Force to previous version
+make migrate-force
+
+# Then rollback
+make migrate-down-1
+
+# Fix migration and try again
+```
+
+### Development Workflow with Migrations
+
+#### 1. **Starting Development**
+```bash
+# Setup fresh environment
+make setup
+
+# Check migration status
+make migrate-status
+
+# Apply any pending migrations
+make migrate-up
+```
+
+#### 2. **Adding New Features**
+```bash
+# Create migration for new feature
+make migrate-create name=add_feature_table
+
+# Edit the migration files
+vim internal/adapters/persistence/postgres/migrations/[timestamp]_add_feature_table.up.sql
+vim internal/adapters/persistence/postgres/migrations/[timestamp]_add_feature_table.down.sql
+
+# Test migration
+make migrate-up
+make migrate-down-1  # Test rollback
+make migrate-up      # Apply again
+
+# Continue with application development
+```
+
+#### 3. **Team Collaboration**
+```bash
+# After pulling changes
+git pull origin main
+
+# Check for new migrations
+make migrate-status
+
+# Apply new migrations
+make migrate-up
+
+# Verify everything works
+make test
+```
+
+### Configuration
+
+The migration system uses the following configuration:
+
+```bash
+# Environment variables (from Makefile)
+MIGRATION_PATH=internal/adapters/persistence/postgres/migrations
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/go_mvc_dev?sslmode=disable
+
+# Override for different environments
+make migrate-up DATABASE_URL="postgresql://user:pass@prod-db:5432/prod_db"
 ```
 
 ## 🧪 Testing

@@ -272,7 +272,7 @@ HTTP Request → Middleware → Handler → Application Service → Domain Entit
 - **Coverage**: HTML coverage reports
 
 ### Database
-- **Migrations**: Automated with migrate tool
+- **Migrations**: golang-migrate/migrate v4.19.0+ with timestamp-based versioning and up/down SQL files
 - **ORM**: GORM with PostgreSQL
 - **Connection Pooling**: Optimized configuration
 

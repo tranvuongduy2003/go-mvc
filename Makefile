@@ -11,6 +11,7 @@ DOCKER_COMPOSE=docker-compose
 CONFIG_FILE ?= configs/development.yaml
 MIGRATION_PATH=internal/adapters/persistence/postgres/migrations
 DATABASE_URL ?= postgresql://postgres:postgres@localhost:5432/go_mvc_dev?sslmode=disable
+MIGRATE_CMD=$(shell if command -v migrate >/dev/null 2>&1; then echo "migrate"; else echo "~/go/bin/migrate"; fi)
 
 # Go build flags
 LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME) -X main.gitCommit=$(GIT_COMMIT)"
@@ -177,29 +178,47 @@ swagger: ## Generate Swagger documentation
 
 migrate-up: ## Run database migrations up
 	@echo "$(YELLOW)Running migrations up...$(NC)"
-	@migrate -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" up
+	@$(MIGRATE_CMD) -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" up
 
 migrate-down: ## Run database migrations down
 	@echo "$(YELLOW)Running migrations down...$(NC)"
-	@migrate -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" down
+	@$(MIGRATE_CMD) -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" down
+
+migrate-down-1: ## Run database migrations down by 1 step
+	@echo "$(YELLOW)Running migration down by 1...$(NC)"
+	@$(MIGRATE_CMD) -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" down 1
 
 migrate-drop: ## Drop all migrations (DANGER!)
 	@echo "$(RED)Dropping all migrations...$(NC)"
 	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	if [[ $REPLY =~ ^[Yy]$ ]]; then \
-		migrate -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" drop; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		$(MIGRATE_CMD) -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" drop; \
 	fi
 
 migrate-force: ## Force migration version
 	@read -p "Enter migration version: " version; \
-	migrate -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" force $$version
+	$(MIGRATE_CMD) -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" force $$version
 
 migrate-create: ## Create new migration file
-	@read -p "Enter migration name: " name; \
-	migrate create -ext sql -dir $(MIGRATION_PATH) $$name
+	@if [ -z "$(name)" ]; then \
+		read -p "Enter migration name: " migration_name; \
+	else \
+		migration_name="$(name)"; \
+	fi; \
+	echo "$(YELLOW)Creating migration: $$migration_name$(NC)"; \
+	$(MIGRATE_CMD) create -ext sql -dir $(MIGRATION_PATH) $$migration_name
 
 migrate-version: ## Show current migration version
-	@migrate -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" version
+	@$(MIGRATE_CMD) -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" version
+
+migrate-status: ## Show migration status
+	@echo "$(YELLOW)Migration Status:$(NC)"
+	@echo "Migration Path: $(MIGRATION_PATH)"
+	@echo "Database URL: $(DATABASE_URL)"
+	@echo -n "Current Version: "
+	@$(MIGRATE_CMD) -path $(MIGRATION_PATH) -database "$(DATABASE_URL)" version 2>/dev/null || echo "No migrations applied"
+	@echo "Available Migrations:"
+	@ls -la $(MIGRATION_PATH)/ 2>/dev/null | grep -E '\.(up|down)\.sql$$' | wc -l | xargs -I {} echo "  {} migration files found"
 
 # ==========================================
 # Docker Commands
@@ -286,12 +305,34 @@ setup: ## Setup development environment
 	@echo "$(GREEN)Development environment ready!$(NC)"
 	@echo "$(GREEN)Run 'make run' or 'make dev' to start the application$(NC)"
 
+setup-db: ## Setup database only
+	@echo "$(YELLOW)Setting up database...$(NC)"
+	@$(DOCKER_COMPOSE) up -d postgres
+	@echo "$(YELLOW)Waiting for PostgreSQL to be ready...$(NC)"
+	@sleep 10
+	@make migrate-up
+	@echo "$(GREEN)Database setup completed!$(NC)"
+
+reset-db: ## Reset database (drop and recreate)
+	@echo "$(RED)Resetting database...$(NC)"
+	@read -p "This will delete all data. Are you sure? [y/N] " -n 1 -r; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		echo ""; \
+		make migrate-drop; \
+		make migrate-up; \
+		echo "$(GREEN)Database reset completed!$(NC)"; \
+	else \
+		echo ""; \
+		echo "$(YELLOW)Database reset cancelled$(NC)"; \
+	fi
+
 setup-tools: ## Install development tools
 	@echo "$(YELLOW)Installing development tools...$(NC)"
 	@go install github.com/cosmtrek/air@latest
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	@go install github.com/swaggo/swag/cmd/swag@latest
 	@go install golang.org/x/tools/cmd/goimports@latest
+	@go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 	@echo "$(GREEN)Development tools installed successfully$(NC)"
 
 # ==========================================
