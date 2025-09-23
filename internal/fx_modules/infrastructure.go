@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
+	postgresRepos "github.com/tranvuongduy2003/go-mvc/internal/adapters/persistence/postgres/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/database"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
@@ -23,6 +25,7 @@ var InfrastructureModule = fx.Module("infrastructure",
 		NewDatabase,
 		NewPasswordHasher,
 		NewTracingService,
+		NewUserRepository,
 	),
 )
 
@@ -60,6 +63,11 @@ func NewPasswordHasher() *security.PasswordHasher {
 // NewTracingService provides tracing service
 func NewTracingService(cfg *config.AppConfig) (*tracing.TracingService, error) {
 	return tracing.NewTracingService(cfg)
+}
+
+// NewUserRepository provides user repository
+func NewUserRepository(db *gorm.DB) repositories.UserRepository {
+	return postgresRepos.NewUserRepository(db)
 }
 
 // InfrastructureLifecycle handles infrastructure lifecycle

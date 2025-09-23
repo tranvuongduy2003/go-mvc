@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
 	"github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
+	v1 "github.com/tranvuongduy2003/go-mvc/internal/handlers/http/rest/v1"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
@@ -44,7 +43,8 @@ type RouterParams struct {
 // RouteParams holds parameters for route registration
 type RouteParams struct {
 	fx.In
-	Router *gin.Engine
+	Router      *gin.Engine
+	UserHandler *v1.UserHandler
 }
 
 // MiddlewareParams holds parameters for middleware setup
@@ -106,55 +106,23 @@ func SetupMiddleware(params MiddlewareParams) {
 
 // RegisterRoutes registers all application routes
 func RegisterRoutes(params RouteParams) {
-	v1 := params.Router.Group("/api/v1")
+	v1API := params.Router.Group("/api/v1")
 	{
+		// User routes
+		users := v1API.Group("/users")
+		{
+			users.POST("", params.UserHandler.CreateUser)
+			users.GET("", params.UserHandler.ListUsers)
+			users.GET("/:id", params.UserHandler.GetUserByID)
+			users.PUT("/:id", params.UserHandler.UpdateUser)
+			users.DELETE("/:id", params.UserHandler.DeleteUser)
+		}
+
 		// Test route
-		v1.GET("/test", func(c *gin.Context) {
+		v1API.GET("/test", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "Test API endpoint",
 				"data":    "Hello from Go MVC!",
-			})
-		})
-
-		// Test panic route for recovery middleware testing
-		v1.GET("/panic", func(c *gin.Context) {
-			panic("This is a test panic for recovery middleware")
-		})
-
-		// Test production-style panic route
-		v1.GET("/panic-prod", func(c *gin.Context) {
-			// This won't work exactly as expected because recovery middleware needs to be applied before
-			// But we can demonstrate the difference in error response format
-			panic("Production test panic")
-		})
-
-		// Test timeout route for timeout middleware testing
-		v1.GET("/slow", func(c *gin.Context) {
-			// Simulate slow request that might timeout
-			time.Sleep(10 * time.Second)
-			c.JSON(http.StatusOK, gin.H{
-				"message": "This response took 10 seconds",
-			})
-		})
-
-		// Test tracing route
-		v1.GET("/trace-test", func(c *gin.Context) {
-			// Get span from context
-			span := trace.SpanFromContext(c.Request.Context())
-			traceID := span.SpanContext().TraceID().String()
-			spanID := span.SpanContext().SpanID().String()
-
-			// Add trace headers to response
-			c.Header("X-Trace-ID", traceID)
-			c.Header("X-Span-ID", spanID)
-			c.Header("X-Trace-Flags", fmt.Sprintf("%d", span.SpanContext().TraceFlags()))
-
-			c.JSON(http.StatusOK, gin.H{
-				"message":      "Tracing test",
-				"trace_id":     traceID,
-				"span_id":      spanID,
-				"is_recording": span.IsRecording(),
-				"is_valid":     span.SpanContext().IsValid(),
 			})
 		})
 	}
