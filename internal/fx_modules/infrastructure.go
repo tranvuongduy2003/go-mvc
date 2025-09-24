@@ -3,10 +3,12 @@ package fxmodules
 import (
 	"context"
 
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
+	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
 	postgresRepos "github.com/tranvuongduy2003/go-mvc/internal/adapters/persistence/postgres/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
@@ -24,8 +26,14 @@ var InfrastructureModule = fx.Module("infrastructure",
 		NewDatabaseManager,
 		NewDatabase,
 		NewPasswordHasher,
+		NewTokenGenerator,
+		NewCacheService,
 		NewTracingService,
 		NewUserRepository,
+		NewRoleRepository,
+		NewPermissionRepository,
+		NewUserRoleRepository,
+		NewRolePermissionRepository,
 	),
 )
 
@@ -68,6 +76,50 @@ func NewTracingService(cfg *config.AppConfig) (*tracing.TracingService, error) {
 // NewUserRepository provides user repository
 func NewUserRepository(db *gorm.DB) repositories.UserRepository {
 	return postgresRepos.NewUserRepository(db)
+}
+
+// NewRoleRepository provides role repository
+func NewRoleRepository(db *gorm.DB) repositories.RoleRepository {
+	return postgresRepos.NewRoleRepository(db)
+}
+
+// NewPermissionRepository provides permission repository
+func NewPermissionRepository(db *gorm.DB) repositories.PermissionRepository {
+	return postgresRepos.NewPermissionRepository(db)
+}
+
+// NewUserRoleRepository provides user role repository
+func NewUserRoleRepository(db *gorm.DB) repositories.UserRoleRepository {
+	return postgresRepos.NewUserRoleRepository(db)
+}
+
+// NewRolePermissionRepository provides role permission repository
+func NewRolePermissionRepository(db *gorm.DB) repositories.RolePermissionRepository {
+	return postgresRepos.NewRolePermissionRepository(db)
+}
+
+// NewTokenGenerator provides token generator
+func NewTokenGenerator() *security.TokenGenerator {
+	return security.NewTokenGenerator()
+}
+
+// CacheServiceParams holds parameters for cache service
+type CacheServiceParams struct {
+	fx.In
+	Config *config.AppConfig
+	Logger *logger.Logger
+}
+
+// NewCacheService provides cache service
+func NewCacheService(params CacheServiceParams) *cache.Service {
+	// For now, create a Redis client - can be configured based on config later
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password
+		DB:       0,  // default DB
+	})
+
+	return cache.NewCacheService(rdb, params.Logger)
 }
 
 // InfrastructureLifecycle handles infrastructure lifecycle

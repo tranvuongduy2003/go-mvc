@@ -15,6 +15,7 @@ import (
 var ApplicationModule = fx.Module("application",
 	// Include domain modules
 	modules.UserModule,
+	modules.AuthModule,
 
 	// Core application services
 	fx.Provide(

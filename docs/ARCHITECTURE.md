@@ -201,6 +201,8 @@ internal/fx_modules/
 internal/handlers/
 └── http/                     # 🌐 HTTP-specific handlers
     ├── middleware/           # 🛡️ HTTP middleware components
+    │   ├── auth.go          # JWT authentication middleware
+    │   ├── authorization.go # RBAC authorization middleware
     │   ├── cors.go          # Cross-Origin Resource Sharing
     │   ├── logger.go        # HTTP request/response logging
     │   ├── manager.go       # Middleware manager and chaining
@@ -226,6 +228,7 @@ internal/handlers/
 6. **Security**: Security headers (CSP, XSS protection)
 7. **Rate Limiting**: Request throttling
 8. **Authentication**: JWT token validation
+9. **Authorization**: RBAC permission checking
 
 #### `/internal/shared` - Shared Infrastructure
 
@@ -448,9 +451,10 @@ tracing:
 ## 🛡️ Security Architecture
 
 ### Authentication & Authorization
-- **JWT Tokens**: Stateless authentication
-- **Middleware**: Token validation on protected routes
-- **RBAC**: Role-based access control (future implementation)
+- **JWT Tokens**: Stateless authentication with refresh tokens
+- **Authentication Middleware**: `auth.go` - Token validation and user context
+- **Authorization Middleware**: `authorization.go` - RBAC permission and role checking
+- **RBAC System**: Complete role-based access control implementation
 
 ### Security Measures
 - **CORS**: Cross-origin resource sharing protection

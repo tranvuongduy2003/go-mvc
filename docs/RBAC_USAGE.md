@@ -20,7 +20,8 @@ The RBAC system provides:
 
 ### 2. Services
 - **RBACService**: Core business logic for role and permission management
-- **AuthMiddleware**: Gin middleware for route protection
+- **AuthMiddleware**: JWT authentication middleware (`auth.go`)
+- **AuthzMiddleware**: RBAC authorization middleware (`authorization.go`)
 
 ### 3. Repositories
 - **RoleRepository**: CRUD operations for roles

@@ -45,6 +45,7 @@ type RouteParams struct {
 	fx.In
 	Router      *gin.Engine
 	UserHandler *v1.UserHandler
+	AuthHandler *v1.AuthHandler
 }
 
 // MiddlewareParams holds parameters for middleware setup
@@ -108,7 +109,24 @@ func SetupMiddleware(params MiddlewareParams) {
 func RegisterRoutes(params RouteParams) {
 	v1API := params.Router.Group("/api/v1")
 	{
-		// User routes
+		// Authentication routes (no auth required)
+		auth := v1API.Group("/auth")
+		{
+			auth.POST("/register", params.AuthHandler.Register)
+			auth.POST("/login", params.AuthHandler.Login)
+			auth.POST("/refresh", params.AuthHandler.RefreshToken)
+			auth.POST("/verify-email", params.AuthHandler.VerifyEmail)
+			auth.POST("/reset-password", params.AuthHandler.ResetPassword)
+			auth.POST("/confirm-reset", params.AuthHandler.ConfirmPasswordReset)
+			auth.POST("/logout", params.AuthHandler.Logout)
+			auth.POST("/logout-all", params.AuthHandler.LogoutAllDevices)
+			auth.GET("/profile", params.AuthHandler.GetProfile)
+			auth.GET("/permissions", params.AuthHandler.GetPermissions)
+			auth.PUT("/change-password", params.AuthHandler.ChangePassword)
+			auth.POST("/resend-verification", params.AuthHandler.ResendVerificationEmail)
+		}
+
+		// User routes (protected)
 		users := v1API.Group("/users")
 		{
 			users.POST("", params.UserHandler.CreateUser)

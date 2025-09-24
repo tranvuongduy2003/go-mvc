@@ -79,6 +79,8 @@ go-mvc/
 │   ├── 🌐 handlers/                # Presentation Layer
 │   │   └── http/                   # HTTP-specific handlers
 │   │       ├── 🛡️ middleware/      # HTTP middleware components
+│   │       │   ├── 📄 auth.go      # JWT authentication middleware
+│   │       │   ├── 📄 authorization.go # RBAC authorization middleware
 │   │       │   ├── 📄 cors.go      # Cross-Origin Resource Sharing
 │   │       │   ├── 📄 logger.go    # HTTP request/response logging
 │   │       │   ├── 📄 manager.go   # Middleware manager and chaining
@@ -219,7 +221,7 @@ HTTP Request → Middleware → Handler → Application Service → Domain Entit
 
 ### 4. **Middleware Pattern**
 - **Location**: `internal/handlers/http/middleware/`
-- **Order**: Recovery → Logger → Tracing → Metrics → CORS → Security → Rate Limit → Auth
+- **Order**: Recovery → Logger → Tracing → Metrics → CORS → Security → Rate Limit → Authentication → Authorization
 
 ### 5. **Domain Events**
 - **Events**: `internal/core/domain/shared/events/`
@@ -246,7 +248,8 @@ HTTP Request → Middleware → Handler → Application Service → Domain Entit
 
 ### Authentication & Authorization
 - **JWT Tokens**: `pkg/jwt/jwt.go`
-- **Middleware**: Authentication validation
+- **Authentication Middleware**: `internal/handlers/http/middleware/auth.go` - Token validation
+- **Authorization Middleware**: `internal/handlers/http/middleware/authorization.go` - RBAC permissions
 - **Security Headers**: XSS, CSRF, HSTS protection
 
 ### Input Validation
