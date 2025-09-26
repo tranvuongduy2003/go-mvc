@@ -4,11 +4,14 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
+	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
 	authCommands "github.com/tranvuongduy2003/go-mvc/internal/application/commands/auth"
 	authQueries "github.com/tranvuongduy2003/go-mvc/internal/application/queries/auth"
 	appServices "github.com/tranvuongduy2003/go-mvc/internal/application/services"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/security"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
@@ -35,6 +38,7 @@ var AuthModule = fx.Module("auth",
 		// Services
 		NewAuthService,
 		NewAuthorizationService,
+		NewSMTPService,
 	),
 )
 
@@ -115,6 +119,8 @@ type AuthServiceParams struct {
 	JWTService     jwt.JWTService
 	PasswordHasher *security.PasswordHasher
 	CacheService   *cache.Service
+	SMTPService    *external.SMTPService
+	Logger         *logger.Logger
 }
 
 // NewAuthService provides AuthService
@@ -124,6 +130,8 @@ func NewAuthService(params AuthServiceParams) services.AuthService {
 		params.JWTService,
 		params.PasswordHasher,
 		params.CacheService,
+		params.SMTPService,
+		params.Logger,
 	)
 }
 
@@ -146,4 +154,9 @@ func NewAuthorizationService(params AuthorizationServiceParams) services.Authori
 		params.UserRoleRepo,
 		params.RolePermissionRepo,
 	)
+}
+
+// NewSMTPService provides SMTPService
+func NewSMTPService(cfg *config.AppConfig, logger *logger.Logger) *external.SMTPService {
+	return external.NewSMTPService(&cfg.External.EmailService.SMTP, logger)
 }

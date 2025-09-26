@@ -7,6 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
+	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
 // JWTService defines the interface for JWT operations
@@ -96,31 +97,31 @@ func (s *Service) GenerateRefreshToken(userID uuid.UUID, email string) (string, 
 func (s *Service) ValidateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, apperrors.NewUnauthorizedError(fmt.Sprintf("unexpected signing method: %v", token.Header["alg"]))
 		}
 		return s.secret, nil
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
+		return nil, apperrors.NewUnauthorizedError("failed to parse token")
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
 
-	return nil, fmt.Errorf("invalid token")
+	return nil, apperrors.NewUnauthorizedError("invalid token")
 }
 
 // RefreshAccessToken generates a new access token from a valid refresh token
 func (s *Service) RefreshAccessToken(refreshToken string) (string, error) {
 	claims, err := s.ValidateToken(refreshToken)
 	if err != nil {
-		return "", fmt.Errorf("invalid refresh token: %w", err)
+		return "", apperrors.NewUnauthorizedError("invalid refresh token")
 	}
 
 	if claims.Type != "refresh" {
-		return "", fmt.Errorf("token is not a refresh token")
+		return "", apperrors.NewUnauthorizedError("token is not a refresh token")
 	}
 
 	// Generate new access token

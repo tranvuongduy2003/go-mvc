@@ -3,6 +3,7 @@ package fxmodules
 import (
 	"go.uber.org/fx"
 
+	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
 	authCommands "github.com/tranvuongduy2003/go-mvc/internal/application/commands/auth"
 	authQueries "github.com/tranvuongduy2003/go-mvc/internal/application/queries/auth"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
@@ -17,6 +18,7 @@ var HandlerModule = fx.Module("handler",
 	fx.Provide(
 		NewUserHandler,
 		NewAuthHandler,
+		NewRedisTestHandler,
 	),
 )
 
@@ -65,4 +67,9 @@ func NewAuthHandler(params AuthHandlerParams) *v1.AuthHandler {
 		params.GetUserProfileHandler,
 		params.GetUserPermissionsHandler,
 	)
+}
+
+// NewRedisTestHandler provides RedisTestHandler
+func NewRedisTestHandler(cacheService *cache.Service) *v1.RedisTestHandler {
+	return v1.NewRedisTestHandler(cacheService)
 }

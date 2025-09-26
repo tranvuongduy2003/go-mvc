@@ -7,10 +7,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
+	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/security"
+	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 
@@ -21,6 +24,8 @@ type authService struct {
 	passwordHasher  *security.PasswordHasher
 	tokenGenerator  *security.TokenGenerator
 	cacheService    *cache.Service
+	smtpService     *external.SMTPService
+	logger          *logger.Logger
 	tokenBlacklist  string // Redis key prefix for blacklisted tokens
 	verificationTTL time.Duration
 	resetTokenTTL   time.Duration
@@ -32,6 +37,8 @@ func NewAuthService(
 	jwtService jwt.JWTService,
 	passwordHasher *security.PasswordHasher,
 	cacheService *cache.Service,
+	smtpService *external.SMTPService,
+	logger *logger.Logger,
 ) services.AuthService {
 	return &authService{
 		userRepo:        userRepo,
@@ -39,6 +46,8 @@ func NewAuthService(
 		passwordHasher:  passwordHasher,
 		tokenGenerator:  security.NewTokenGenerator(),
 		cacheService:    cacheService,
+		smtpService:     smtpService,
+		logger:          logger,
 		tokenBlacklist:  "blacklist:token:",
 		verificationTTL: 24 * time.Hour, // Email verification valid for 24 hours
 		resetTokenTTL:   1 * time.Hour,  // Password reset valid for 1 hour
@@ -99,38 +108,38 @@ func (s *authService) Register(ctx context.Context, req *services.RegisterReques
 func (s *authService) Login(ctx context.Context, credentials *services.LoginCredentials) (*services.AuthenticatedUser, error) {
 	// Validate credentials
 	if err := s.validateLoginCredentials(credentials); err != nil {
-		return nil, fmt.Errorf("invalid credentials: %w", err)
+		return nil, apperrors.NewValidationError("invalid credentials", err)
 	}
 
 	// Get user by email
 	userEntity, err := s.userRepo.GetByEmail(ctx, credentials.Email)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, apperrors.NewInternalError("failed to get user", err)
 	}
 	if userEntity == nil {
-		return nil, fmt.Errorf("invalid email or password")
+		return nil, apperrors.NewUnauthorizedError("invalid email or password")
 	}
 
 	// Check if user is active
 	if !userEntity.IsActive() {
-		return nil, fmt.Errorf("user account is inactive")
+		return nil, apperrors.NewUnauthorizedError("user account is inactive")
 	}
 
 	// Verify password
 	if !userEntity.VerifyPassword(credentials.Password) {
-		return nil, fmt.Errorf("invalid email or password")
+		return nil, apperrors.NewUnauthorizedError("invalid email or password")
 	}
 
 	// Parse user ID as UUID
 	userID, err := uuid.Parse(userEntity.ID())
 	if err != nil {
-		return nil, fmt.Errorf("invalid user ID format: %w", err)
+		return nil, apperrors.NewInternalError("invalid user ID format", err)
 	}
 
 	// Generate tokens
 	tokens, err := s.generateTokens(userID, userEntity.Email())
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate tokens: %w", err)
+		return nil, apperrors.NewInternalError("failed to generate tokens", err)
 	}
 
 	return &services.AuthenticatedUser{
@@ -143,21 +152,21 @@ func (s *authService) Login(ctx context.Context, credentials *services.LoginCred
 func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (*services.AuthTokens, error) {
 	// Check if token is blacklisted
 	if blacklisted, err := s.IsTokenBlacklisted(ctx, refreshToken); err != nil {
-		return nil, fmt.Errorf("failed to check token blacklist: %w", err)
+		return nil, apperrors.NewInternalError("failed to check token blacklist", err)
 	} else if blacklisted {
-		return nil, fmt.Errorf("refresh token is invalid")
+		return nil, apperrors.NewUnauthorizedError("refresh token is invalid")
 	}
 
 	// Validate refresh token and generate new access token
 	newAccessToken, err := s.jwtService.RefreshAccessToken(refreshToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to refresh token: %w", err)
+		return nil, err // Already an AppError from jwt service
 	}
 
 	// Parse refresh token to get expiry
 	claims, err := s.jwtService.ValidateToken(refreshToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse refresh token: %w", err)
+		return nil, err // Already an AppError from jwt service
 	}
 
 	return &services.AuthTokens{
@@ -188,34 +197,34 @@ func (s *authService) LogoutAll(ctx context.Context, userID string) error {
 func (s *authService) ValidateToken(ctx context.Context, accessToken string) (*user.User, error) {
 	// Check if token is blacklisted
 	if blacklisted, err := s.IsTokenBlacklisted(ctx, accessToken); err != nil {
-		return nil, fmt.Errorf("failed to check token blacklist: %w", err)
+		return nil, apperrors.NewInternalError("failed to check token blacklist", err)
 	} else if blacklisted {
-		return nil, fmt.Errorf("token is invalid")
+		return nil, apperrors.NewUnauthorizedError("token is invalid")
 	}
 
 	// Validate token
 	claims, err := s.jwtService.ValidateToken(accessToken)
 	if err != nil {
-		return nil, fmt.Errorf("invalid token: %w", err)
+		return nil, apperrors.NewUnauthorizedError("invalid token")
 	}
 
 	// Check token type
 	if claims.Type != "access" {
-		return nil, fmt.Errorf("token is not an access token")
+		return nil, apperrors.NewUnauthorizedError("token is not an access token")
 	}
 
 	// Get user from repository
 	userEntity, err := s.userRepo.GetByID(ctx, claims.UserID.String())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, apperrors.NewInternalError("failed to get user", err)
 	}
 	if userEntity == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, apperrors.NewUnauthorizedError("user not found")
 	}
 
 	// Check if user is active
 	if !userEntity.IsActive() {
-		return nil, fmt.Errorf("user account is inactive")
+		return nil, apperrors.NewUnauthorizedError("user account is inactive")
 	}
 
 	return userEntity, nil
@@ -260,7 +269,7 @@ func (s *authService) ResetPassword(ctx context.Context, email string) error {
 	// Get user by email
 	userEntity, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
-		return fmt.Errorf("failed to get user: %w", err)
+		return apperrors.NewInternalError("failed to get user", err)
 	}
 	if userEntity == nil {
 		// Don't reveal that user doesn't exist
@@ -270,7 +279,7 @@ func (s *authService) ResetPassword(ctx context.Context, email string) error {
 	// Generate reset token
 	resetToken, err := s.tokenGenerator.Generate(32)
 	if err != nil {
-		return fmt.Errorf("failed to generate reset token: %w", err)
+		return apperrors.NewInternalError("failed to generate reset token", err)
 	}
 
 	// Store reset token in cache with TTL
@@ -278,12 +287,14 @@ func (s *authService) ResetPassword(ctx context.Context, email string) error {
 	cacheOptions := &cache.CacheOptions{TTL: s.resetTokenTTL}
 
 	if err := s.cacheService.Set(ctx, cacheKey, userEntity.ID(), cacheOptions); err != nil {
-		return fmt.Errorf("failed to store reset token: %w", err)
+		return apperrors.NewInternalError("failed to store reset token", err)
 	}
 
-	// TODO: Send password reset email
-	// This would typically involve sending an email with the reset token
-	// For now, we'll just log it (in a real system, integrate with email service)
+	// Send password reset email
+	if err := s.smtpService.SendPasswordResetEmail(ctx, userEntity.Email(), userEntity.Name(), resetToken); err != nil {
+		s.logger.Errorf("Failed to send password reset email: %v", err)
+		// Continue - we don't want to fail the reset process if email fails
+	}
 
 	return nil
 }
@@ -292,33 +303,33 @@ func (s *authService) ResetPassword(ctx context.Context, email string) error {
 func (s *authService) ConfirmPasswordReset(ctx context.Context, token, newPassword string) error {
 	// Validate new password
 	if err := s.validatePassword(newPassword); err != nil {
-		return fmt.Errorf("invalid password: %w", err)
+		return apperrors.NewValidationError("invalid password", err)
 	}
 
 	// Get user ID from reset token
 	cacheKey := fmt.Sprintf("password_reset:%s", token)
 	var userID string
 	if err := s.cacheService.Get(ctx, cacheKey, &userID); err != nil {
-		return fmt.Errorf("invalid or expired reset token")
+		return apperrors.NewValidationError("invalid or expired reset token", err)
 	}
 
 	// Get user
 	userEntity, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("failed to get user: %w", err)
+		return apperrors.NewInternalError("failed to get user", err)
 	}
 	if userEntity == nil {
-		return fmt.Errorf("user not found")
+		return apperrors.NewNotFoundError("user not found")
 	}
 
 	// Update password using domain method
 	if err := userEntity.ChangePassword(newPassword); err != nil {
-		return fmt.Errorf("failed to update password: %w", err)
+		return apperrors.NewInternalError("failed to update password", err)
 	}
 
 	// Save updated user
 	if err := s.userRepo.Update(ctx, userEntity); err != nil {
-		return fmt.Errorf("failed to save user: %w", err)
+		return apperrors.NewInternalError("failed to save user", err)
 	}
 
 	// Delete reset token from cache
@@ -333,16 +344,16 @@ func (s *authService) VerifyEmail(ctx context.Context, token string) error {
 	cacheKey := fmt.Sprintf("email_verification:%s", token)
 	var userID string
 	if err := s.cacheService.Get(ctx, cacheKey, &userID); err != nil {
-		return fmt.Errorf("invalid or expired verification token")
+		return apperrors.NewValidationError("invalid or expired verification token", err)
 	}
 
 	// Get user
 	userEntity, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
-		return fmt.Errorf("failed to get user: %w", err)
+		return apperrors.NewInternalError("failed to get user", err)
 	}
 	if userEntity == nil {
-		return fmt.Errorf("user not found")
+		return apperrors.NewNotFoundError("user not found")
 	}
 
 	// For now, just activate the user since we don't have email verification in domain
@@ -351,7 +362,7 @@ func (s *authService) VerifyEmail(ctx context.Context, token string) error {
 
 	// Save updated user
 	if err := s.userRepo.Update(ctx, userEntity); err != nil {
-		return fmt.Errorf("failed to save user: %w", err)
+		return apperrors.NewInternalError("failed to save user", err)
 	}
 
 	// Delete verification token from cache
@@ -365,7 +376,7 @@ func (s *authService) ResendVerificationEmail(ctx context.Context, email string)
 	// Get user by email
 	userEntity, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
-		return fmt.Errorf("failed to get user: %w", err)
+		return apperrors.NewInternalError("failed to get user", err)
 	}
 	if userEntity == nil {
 		// Don't reveal that user doesn't exist
@@ -378,7 +389,7 @@ func (s *authService) ResendVerificationEmail(ctx context.Context, email string)
 	// Generate verification token
 	verificationToken, err := s.tokenGenerator.Generate(32)
 	if err != nil {
-		return fmt.Errorf("failed to generate verification token: %w", err)
+		return apperrors.NewInternalError("failed to generate verification token", err)
 	}
 
 	// Store verification token in cache with TTL
@@ -386,11 +397,14 @@ func (s *authService) ResendVerificationEmail(ctx context.Context, email string)
 	cacheOptions := &cache.CacheOptions{TTL: s.verificationTTL}
 
 	if err := s.cacheService.Set(ctx, cacheKey, userEntity.ID(), cacheOptions); err != nil {
-		return fmt.Errorf("failed to store verification token: %w", err)
+		return apperrors.NewInternalError("failed to store verification token", err)
 	}
 
-	// TODO: Send verification email
-	// This would typically involve sending an email with the verification token
+	// Send verification email
+	if err := s.smtpService.SendVerificationEmail(ctx, userEntity.Email(), userEntity.Name(), verificationToken); err != nil {
+		s.logger.Errorf("Failed to send verification email: %v", err)
+		// Continue - we don't want to fail the process if email fails
+	}
 
 	return nil
 }

@@ -199,6 +199,17 @@ services:
     networks:
       - dev-network
 
+  # MailCatcher for Email Testing
+  mailcatcher:
+    image: schickling/mailcatcher:latest
+    container_name: dev-mailcatcher
+    restart: unless-stopped
+    ports:
+      - "1080:1080"  # Web interface
+      - "1025:1025"  # SMTP server
+    networks:
+      - dev-network
+
 volumes:
   postgres_data:
   redis_data:

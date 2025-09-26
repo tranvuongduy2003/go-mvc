@@ -153,9 +153,11 @@ internal/adapters/
 │   ├── cache.go             # Redis cache adapter
 │   └── errors.go            # Cache-specific error types
 ├── external/                # 🌐 External service clients
-│   ├── services.go          # Service registry and clients
-│   ├── notification/        # Email, SMS, push notification services
-│   └── payment/             # Payment gateway integrations
+│   ├── email_service.go     # API-based email service (SendGrid, etc.)
+│   ├── file_storage_service.go # File storage services (S3, etc.)
+│   ├── push_notification_service.go # Push notification services
+│   ├── sms_service.go       # SMS service integrations
+│   └── smtp_service.go      # SMTP email service implementation
 ├── messaging/               # 📬 Message queue implementations
 │   └── rabbitmq/            # RabbitMQ adapter for async messaging
 ├── monitoring/              # 📊 Observability implementations
@@ -172,9 +174,15 @@ internal/adapters/
 
 **Key Components**:
 - **Cache**: Redis-based caching with connection pooling
-- **External**: HTTP clients for third-party APIs
+- **External**: Email services (SMTP & API), file storage, notifications
 - **Messaging**: RabbitMQ for async communication
 - **Persistence**: Database repositories with GORM ORM
+
+**Email Service Implementation**:
+- **SMTP Service**: Direct SMTP integration for development (MailCatcher) and production
+- **API Service**: External email providers (SendGrid, AWS SES) for scalable email delivery
+- **Templates**: Built-in email templates for password reset and email verification
+- **Error Handling**: Graceful email failure handling without blocking operations
 
 #### `/internal/fx_modules` - Dependency Injection Modules
 

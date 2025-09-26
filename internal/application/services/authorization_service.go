@@ -6,6 +6,7 @@ import (
 
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
 // authorizationService implements the AuthorizationService interface
@@ -39,7 +40,7 @@ func (s *authorizationService) UserHasPermission(ctx context.Context, userID, re
 	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
-		return false, fmt.Errorf("failed to get user roles: %w", err)
+		return false, apperrors.NewInternalError("failed to get user roles", err)
 	}
 
 	if len(userRoles) == 0 {
@@ -50,7 +51,7 @@ func (s *authorizationService) UserHasPermission(ctx context.Context, userID, re
 	for _, userRole := range userRoles {
 		hasPermission, err := s.rolePermissionRepo.RoleHasResourceAction(ctx, userRole.RoleID, resource, action)
 		if err != nil {
-			return false, fmt.Errorf("failed to check role permission: %w", err)
+			return false, apperrors.NewInternalError("failed to check role permission", err)
 		}
 		if hasPermission {
 			return true, nil
@@ -124,7 +125,7 @@ func (s *authorizationService) GetUserPermissions(ctx context.Context, userID st
 	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user roles: %w", err)
+		return nil, apperrors.NewInternalError("failed to get user roles", err)
 	}
 
 	if len(userRoles) == 0 {
@@ -137,14 +138,14 @@ func (s *authorizationService) GetUserPermissions(ctx context.Context, userID st
 	for _, userRole := range userRoles {
 		rolePermissions, err := s.rolePermissionRepo.GetActiveRolePermissions(ctx, userRole.RoleID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get role permissions: %w", err)
+			return nil, apperrors.NewInternalError("failed to get role permissions", err)
 		}
 
 		// Get permission details
 		for _, rolePerm := range rolePermissions {
 			permission, err := s.permissionRepo.GetByID(ctx, rolePerm.PermissionID)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get permission: %w", err)
+				return nil, apperrors.NewInternalError("failed to get permission", err)
 			}
 			if permission != nil && permission.IsActive() {
 				permissionsMap[permission.Name().String()] = true
@@ -166,7 +167,7 @@ func (s *authorizationService) GetUserRoles(ctx context.Context, userID string) 
 	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user roles: %w", err)
+		return nil, apperrors.NewInternalError("failed to get user roles", err)
 	}
 
 	if len(userRoles) == 0 {
@@ -179,7 +180,7 @@ func (s *authorizationService) GetUserRoles(ctx context.Context, userID string) 
 	for _, userRole := range userRoles {
 		role, err := s.roleRepo.GetByID(ctx, userRole.RoleID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get role: %w", err)
+			return nil, apperrors.NewInternalError("failed to get role", err)
 		}
 		if role != nil && role.IsActive() {
 			roles = append(roles, role.Name().String())
@@ -196,7 +197,7 @@ func (s *authorizationService) CheckMultiplePermissions(ctx context.Context, use
 	for _, permission := range permissions {
 		hasPermission, err := s.UserHasPermissionByName(ctx, userID, permission)
 		if err != nil {
-			return nil, fmt.Errorf("failed to check permission %s: %w", permission, err)
+			return nil, apperrors.NewInternalError(fmt.Sprintf("failed to check permission %s", permission), err)
 		}
 		result[permission] = hasPermission
 	}
@@ -208,11 +209,11 @@ func (s *authorizationService) CheckMultiplePermissions(ctx context.Context, use
 func (s *authorizationService) CanAccessResource(ctx context.Context, userID, resource, action string) error {
 	hasPermission, err := s.UserHasPermission(ctx, userID, resource, action)
 	if err != nil {
-		return fmt.Errorf("failed to check permission: %w", err)
+		return apperrors.NewInternalError("failed to check permission", err)
 	}
 
 	if !hasPermission {
-		return fmt.Errorf("access denied: user does not have permission to %s on %s", action, resource)
+		return apperrors.NewForbiddenError(fmt.Sprintf("access denied: user does not have permission to %s on %s", action, resource))
 	}
 
 	return nil
@@ -233,7 +234,7 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user roles: %w", err)
+		return nil, apperrors.NewInternalError("failed to get user roles", err)
 	}
 
 	if len(userRoles) == 0 {
@@ -246,13 +247,13 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 	for _, userRole := range userRoles {
 		rolePermissions, err := s.rolePermissionRepo.GetActiveRolePermissions(ctx, userRole.RoleID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get role permissions: %w", err)
+			return nil, apperrors.NewInternalError("failed to get role permissions", err)
 		}
 
 		// Get role name for granted_by field
 		role, err := s.roleRepo.GetByID(ctx, userRole.RoleID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get role: %w", err)
+			return nil, apperrors.NewInternalError("failed to get role", err)
 		}
 
 		roleName := "unknown"
@@ -264,7 +265,7 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 		for _, rolePerm := range rolePermissions {
 			permission, err := s.permissionRepo.GetByID(ctx, rolePerm.PermissionID)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get permission: %w", err)
+				return nil, apperrors.NewInternalError("failed to get permission", err)
 			}
 			if permission != nil && permission.IsActive() {
 				// Use permission name as key to avoid duplicates

@@ -9,6 +9,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
 	"github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
 	v1 "github.com/tranvuongduy2003/go-mvc/internal/handlers/http/rest/v1"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
@@ -43,9 +44,11 @@ type RouterParams struct {
 // RouteParams holds parameters for route registration
 type RouteParams struct {
 	fx.In
-	Router      *gin.Engine
-	UserHandler *v1.UserHandler
-	AuthHandler *v1.AuthHandler
+	Router           *gin.Engine
+	UserHandler      *v1.UserHandler
+	AuthHandler      *v1.AuthHandler
+	RedisTestHandler *v1.RedisTestHandler
+	AuthService      services.AuthService
 }
 
 // MiddlewareParams holds parameters for middleware setup
@@ -107,6 +110,9 @@ func SetupMiddleware(params MiddlewareParams) {
 
 // RegisterRoutes registers all application routes
 func RegisterRoutes(params RouteParams) {
+	// Create auth middleware
+	authMiddleware := middleware.NewAuthMiddleware(params.AuthService)
+
 	v1API := params.Router.Group("/api/v1")
 	{
 		// Authentication routes (no auth required)
@@ -118,12 +124,18 @@ func RegisterRoutes(params RouteParams) {
 			auth.POST("/verify-email", params.AuthHandler.VerifyEmail)
 			auth.POST("/reset-password", params.AuthHandler.ResetPassword)
 			auth.POST("/confirm-reset", params.AuthHandler.ConfirmPasswordReset)
-			auth.POST("/logout", params.AuthHandler.Logout)
-			auth.POST("/logout-all", params.AuthHandler.LogoutAllDevices)
-			auth.GET("/profile", params.AuthHandler.GetProfile)
-			auth.GET("/permissions", params.AuthHandler.GetPermissions)
-			auth.PUT("/change-password", params.AuthHandler.ChangePassword)
 			auth.POST("/resend-verification", params.AuthHandler.ResendVerificationEmail)
+		}
+
+		// Protected auth routes (authentication required)
+		protectedAuth := v1API.Group("/auth")
+		protectedAuth.Use(authMiddleware.RequireAuth())
+		{
+			protectedAuth.POST("/logout", params.AuthHandler.Logout)
+			protectedAuth.POST("/logout-all", params.AuthHandler.LogoutAllDevices)
+			protectedAuth.GET("/profile", params.AuthHandler.GetProfile)
+			protectedAuth.GET("/permissions", params.AuthHandler.GetPermissions)
+			protectedAuth.PUT("/change-password", params.AuthHandler.ChangePassword)
 		}
 
 		// User routes (protected)
@@ -143,6 +155,19 @@ func RegisterRoutes(params RouteParams) {
 				"data":    "Hello from Go MVC!",
 			})
 		})
+
+		// Redis test routes
+		redisTest := v1API.Group("/redis-test")
+		{
+			redisTest.GET("/ping", params.RedisTestHandler.Ping)
+			redisTest.POST("/set", params.RedisTestHandler.Set)
+			redisTest.GET("/get/:key", params.RedisTestHandler.Get)
+			redisTest.DELETE("/delete/:key", params.RedisTestHandler.Delete)
+			redisTest.GET("/exists/:key", params.RedisTestHandler.Exists)
+			redisTest.POST("/incr/:key", params.RedisTestHandler.Increment)
+			redisTest.POST("/incrby/:key", params.RedisTestHandler.IncrementBy)
+			redisTest.GET("/stats", params.RedisTestHandler.GetStats)
+		}
 	}
 }
 

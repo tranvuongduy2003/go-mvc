@@ -2,11 +2,11 @@ package auth
 
 import (
 	"context"
-	"fmt"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
 // GetUserProfileQuery represents the get user profile query
@@ -43,7 +43,7 @@ func (h *GetUserProfileQueryHandler) Handle(ctx context.Context, query GetUserPr
 	}
 
 	if user == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, apperrors.NewNotFoundError("user not found")
 	}
 
 	// Get user roles

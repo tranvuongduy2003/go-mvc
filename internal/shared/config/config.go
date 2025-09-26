@@ -162,9 +162,19 @@ type PaymentServiceConfig struct {
 }
 
 type EmailServiceConfig struct {
-	Provider string `mapstructure:"provider"`
-	APIKey   string `mapstructure:"api_key"`
+	Provider string     `mapstructure:"provider"`
+	SMTP     SMTPConfig `mapstructure:"smtp"`
+	APIKey   string     `mapstructure:"api_key"`
+	From     string     `mapstructure:"from"`
+}
+
+type SMTPConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 	From     string `mapstructure:"from"`
+	UseTLS   bool   `mapstructure:"tls"`
 }
 
 type Feature struct {

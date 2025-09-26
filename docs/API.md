@@ -258,6 +258,103 @@ POST /api/v1/auth/refresh
 Authorization: Bearer <refresh-token>
 ```
 
+#### Reset Password Request
+```http
+POST /api/v1/auth/reset-password
+```
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Reset instructions sent",
+  "data": {
+    "status": "success",
+    "message": "Password reset instructions have been sent to your email"
+  }
+}
+```
+
+#### Confirm Password Reset
+```http
+POST /api/v1/auth/confirm-reset
+```
+
+**Request Body:**
+```json
+{
+  "token": "reset-token-here",
+  "new_password": "newpassword123"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Password reset successfully",
+  "data": {
+    "status": "success",
+    "message": "Your password has been reset successfully"
+  }
+}
+```
+
+#### Verify Email
+```http
+POST /api/v1/auth/verify-email
+```
+
+**Request Body:**
+```json
+{
+  "token": "verification-token-here"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Email verified successfully",
+  "data": {
+    "status": "success",
+    "message": "Your email has been verified successfully"
+  }
+}
+```
+
+#### Resend Verification Email
+```http
+POST /api/v1/auth/resend-verification
+```
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Verification email sent",
+  "data": {
+    "status": "success",
+    "message": "Verification email has been sent"
+  }
+}
+```
+
 ### User Management
 
 #### Get Current User
@@ -398,19 +495,6 @@ POST /api/v1/auth/forgot-password
 ```json
 {
   "email": "user@example.com"
-}
-```
-
-#### Reset Password
-```http
-POST /api/v1/auth/reset-password
-```
-
-**Request Body:**
-```json
-{
-  "token": "reset-token-here",
-  "new_password": "newpassword123"
 }
 ```
 

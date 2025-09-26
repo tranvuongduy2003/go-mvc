@@ -86,6 +86,86 @@ cp .env.example .env
 make status
 ```
 
+## 📧 Email Service Development
+
+### MailCatcher for Email Testing
+
+The project integrates with **MailCatcher** for email testing in development. MailCatcher is a SMTP server that captures emails instead of sending them, providing a web interface to view and test email functionality.
+
+#### Setup and Usage
+
+1. **MailCatcher is automatically started** with `docker-compose up`:
+   ```bash
+   # MailCatcher runs on:
+   # - Web Interface: http://localhost:1080
+   # - SMTP Server: localhost:1025
+   ```
+
+2. **Email Service Configuration** in `configs/development.yaml`:
+   ```yaml
+   external:
+     email_service:
+       provider: "smtp"
+       smtp:
+         host: "localhost"
+         port: 1025
+         username: ""
+         password: ""
+         from: "noreply@go-mvc.dev"
+         tls: false
+   ```
+
+3. **Testing Email Endpoints**:
+   ```bash
+   # Test password reset email
+   curl -X POST http://localhost:8080/api/v1/auth/reset-password \
+     -H "Content-Type: application/json" \
+     -d '{"email": "test@example.com"}'
+
+   # Test email verification
+   curl -X POST http://localhost:8080/api/v1/auth/resend-verification \
+     -H "Content-Type: application/json" \
+     -d '{"email": "test@example.com"}'
+   ```
+
+4. **View Captured Emails**:
+   - Open http://localhost:1080 in your browser
+   - All sent emails will be captured and displayed
+   - View email content, headers, and attachments
+
+#### Available Email Features
+
+| Feature | Endpoint | Description |
+|---------|----------|-------------|
+| **Password Reset** | `POST /api/v1/auth/reset-password` | Sends password reset link |
+| **Email Verification** | `POST /api/v1/auth/resend-verification` | Sends email verification link |
+| **Password Confirm** | `POST /api/v1/auth/confirm-reset` | Confirms password reset with token |
+| **Email Verify** | `POST /api/v1/auth/verify-email` | Verifies email with token |
+
+#### Email Templates
+
+The SMTP service includes built-in email templates:
+
+- **Password Reset**: Professional email with reset link and expiry notice
+- **Email Verification**: Welcome email with verification link
+- **Error Handling**: Graceful degradation if email fails (operations continue)
+
+#### Debugging Email Issues
+
+```bash
+# Check MailCatcher container status
+docker ps | grep mailcatcher
+
+# View MailCatcher logs
+docker logs <mailcatcher-container-id>
+
+# Test SMTP connection manually
+telnet localhost 1025
+
+# Check application logs for email sending
+make logs | grep -i "email\|smtp"
+```
+
 ## 📁 Project Structure
 
 ### Key Development Directories

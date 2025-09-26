@@ -55,9 +55,11 @@ go-mvc/
 │   │   │   ├── 📄 cache.go         # Redis cache adapter
 │   │   │   └── 📄 errors.go        # Cache-specific error types
 │   │   ├── 🌐 external/            # External service clients
-│   │   │   ├── 📄 services.go      # Service registry and clients
-│   │   │   ├── notification/       # Email, SMS, push notifications
-│   │   │   └── payment/            # Payment gateway integrations
+│   │   │   ├── 📄 email_service.go # Email service (SendGrid/API-based)
+│   │   │   ├── 📄 file_storage_service.go # File storage services
+│   │   │   ├── 📄 push_notification_service.go # Push notification services
+│   │   │   ├── 📄 sms_service.go   # SMS service integrations
+│   │   │   └── 📄 smtp_service.go  # SMTP email service implementation
 │   │   ├── 📬 messaging/           # Message queue implementations
 │   │   │   └── rabbitmq/           # RabbitMQ adapter
 │   │   ├── 📊 monitoring/          # Observability implementations

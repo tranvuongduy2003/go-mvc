@@ -2,10 +2,10 @@ package queries
 
 import (
 	"context"
-	"errors"
 
 	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
 // GetUserByIDQuery represents the query to get a user by ID
@@ -32,7 +32,7 @@ func (h *GetUserByIDQueryHandler) Handle(ctx context.Context, query GetUserByIDQ
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, apperrors.NewNotFoundError("user not found")
 	}
 	return user, nil
 }

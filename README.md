@@ -21,6 +21,7 @@ A modern, scalable Go web application built with **Clean Architecture**, **Domai
 - **Cache**: Redis for high-performance caching
 - **Message Queue**: RabbitMQ for async processing
 - **Authentication**: JWT-based with security middleware
+- **Email Service**: SMTP integration with MailCatcher for development testing
 
 ### Observability Stack
 - **Metrics**: Prometheus + Grafana dashboards
@@ -110,6 +111,7 @@ make run
 - **Application**: http://localhost:8080
 - **Health Check**: http://localhost:8080/health
 - **Metrics**: http://localhost:8080/metrics
+- **MailCatcher**: http://localhost:1080 (email testing interface)
 - **Prometheus**: http://localhost:9091
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Jaeger**: http://localhost:16686
@@ -259,7 +261,8 @@ docker-compose up -d
 
 ### API & Technical Guides
 - [**📋 API Documentation**](docs/API.md) - REST API endpoints, examples, and usage
-- [**🔌 Dependency Injection**](docs/DEPENDENCY_INJECTION.md) - Uber FX usage patterns and modules
+- [**� Email Service Guide**](docs/EMAIL_SERVICE.md) - Email service implementation and MailCatcher testing
+- [**�🔌 Dependency Injection**](docs/DEPENDENCY_INJECTION.md) - Uber FX usage patterns and modules
 - [**🔍 Tracing Guide**](docs/TRACING.md) - OpenTelemetry and Jaeger setup
 - [**🛡️ RBAC Usage**](docs/RBAC_USAGE.md) - Role-based access control implementation
 
