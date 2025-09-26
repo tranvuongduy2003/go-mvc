@@ -1,4 +1,4 @@
-package fxmodules
+package di
 
 import (
 	"context"
@@ -9,7 +9,8 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
+	portServices "github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
 	"github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
 	v1 "github.com/tranvuongduy2003/go-mvc/internal/handlers/http/rest/v1"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
@@ -44,11 +45,11 @@ type RouterParams struct {
 // RouteParams holds parameters for route registration
 type RouteParams struct {
 	fx.In
-	Router           *gin.Engine
-	UserHandler      *v1.UserHandler
-	AuthHandler      *v1.AuthHandler
-	RedisTestHandler *v1.RedisTestHandler
-	AuthService      services.AuthService
+	Router      *gin.Engine
+	UserHandler *v1.UserHandler
+	UserService *services.UserService
+	AuthHandler *v1.AuthHandler
+	AuthService portServices.AuthService
 }
 
 // MiddlewareParams holds parameters for middleware setup
@@ -155,19 +156,6 @@ func RegisterRoutes(params RouteParams) {
 				"data":    "Hello from Go MVC!",
 			})
 		})
-
-		// Redis test routes
-		redisTest := v1API.Group("/redis-test")
-		{
-			redisTest.GET("/ping", params.RedisTestHandler.Ping)
-			redisTest.POST("/set", params.RedisTestHandler.Set)
-			redisTest.GET("/get/:key", params.RedisTestHandler.Get)
-			redisTest.DELETE("/delete/:key", params.RedisTestHandler.Delete)
-			redisTest.GET("/exists/:key", params.RedisTestHandler.Exists)
-			redisTest.POST("/incr/:key", params.RedisTestHandler.Increment)
-			redisTest.POST("/incrby/:key", params.RedisTestHandler.IncrementBy)
-			redisTest.GET("/stats", params.RedisTestHandler.GetStats)
-		}
 	}
 }
 

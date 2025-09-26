@@ -25,7 +25,7 @@ internal/
 │   └── smtp_service.go      # SMTP email service implementation
 ├── application/services/
 │   └── auth_service.go      # Integration with authentication flows
-└── fx_modules/modules/
+└── di/modules/
     └── auth.go              # Dependency injection configuration
 ```
 
@@ -224,7 +224,7 @@ func (s *authService) ResetPassword(ctx context.Context, email string) error {
 
 ### Dependency Injection
 
-**File**: `internal/fx_modules/modules/auth.go`
+**File**: `internal/di/modules/auth.go`
 
 ```go
 // SMTP service provider

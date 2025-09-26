@@ -4,32 +4,32 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 
-	fxmodules "github.com/tranvuongduy2003/go-mvc/internal/fx_modules"
+	di "github.com/tranvuongduy2003/go-mvc/internal/di"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 )
 
 func main() {
 	fx.New(
 		// Infrastructure modules
-		fxmodules.InfrastructureModule,
+		di.InfrastructureModule,
 
 		// Domain layer - temporarily disabled
-		fxmodules.DomainModule,
+		di.DomainModule,
 
 		// Application layer - temporarily disabled
-		fxmodules.ApplicationModule,
+		di.ApplicationModule,
 
 		// HTTP handlers - temporarily disabled
-		fxmodules.HandlerModule,
+		di.HandlerModule,
 
 		// Server
-		fxmodules.ServerModule,
+		di.ServerModule,
 
 		// Lifecycle hooks - temporarily disabled due to zap.Logger dependencies
-		fx.Invoke(fxmodules.InfrastructureLifecycle),
-		fx.Invoke(fxmodules.SetupMiddleware),
-		fx.Invoke(fxmodules.RegisterRoutes), // Routes after middleware
-		fx.Invoke(fxmodules.HTTPServerLifecycle),
+		fx.Invoke(di.InfrastructureLifecycle),
+		fx.Invoke(di.SetupMiddleware),
+		fx.Invoke(di.RegisterRoutes), // Routes after middleware
+		fx.Invoke(di.HTTPServerLifecycle),
 
 		// Logger configuration
 		fx.WithLogger(func(customLogger *logger.Logger) fxevent.Logger {

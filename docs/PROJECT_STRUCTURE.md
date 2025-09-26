@@ -71,7 +71,7 @@ go-mvc/
 │   │   │   └── redis/              # Redis specific implementations
 │   │   └── 📚 repositories/        # Repository interface implementations
 │   │
-│   ├── 🔌 fx_modules/              # Dependency Injection Modules (Uber FX)
+│   ├── 🔌 di/                      # Dependency Injection Modules (Uber FX)
 │   │   ├── 📄 application.go       # Application layer DI bindings
 │   │   ├── 📄 domain.go            # Domain layer DI bindings
 │   │   ├── 📄 handler.go           # HTTP handler DI bindings
@@ -215,7 +215,7 @@ HTTP Request → Middleware → Handler → Application Service → Domain Entit
 
 ### 2. **Dependency Injection**
 - **Framework**: Uber FX
-- **Modules**: `internal/fx_modules/`
+- **Modules**: `internal/di/`
 
 ### 3. **CQRS (Command Query Responsibility Segregation)**
 - **Commands**: `internal/application/commands/`

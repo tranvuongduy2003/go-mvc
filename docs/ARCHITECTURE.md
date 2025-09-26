@@ -184,10 +184,10 @@ internal/adapters/
 - **Templates**: Built-in email templates for password reset and email verification
 - **Error Handling**: Graceful email failure handling without blocking operations
 
-#### `/internal/fx_modules` - Dependency Injection Modules
+#### `/internal/di` - Dependency Injection Modules
 
 ```bash
-internal/fx_modules/
+internal/di/
 ├── application.go            # 🎯 Application layer DI bindings
 ├── domain.go                # 🏛️ Domain layer DI bindings
 ├── handler.go               # 🌐 HTTP handler DI bindings
@@ -196,6 +196,8 @@ internal/fx_modules/
 ```
 
 **Purpose**: Uber FX dependency injection modules for clean separation of concerns.
+
+> **Note**: This folder was previously named `fx_modules` but was renamed to `di` (Dependency Injection) for better clarity and industry-standard naming conventions.
 
 **Key Files**:
 - **`infrastructure.go`**: Database, cache, external service connections
@@ -368,7 +370,7 @@ api/
 
 ### 2. **Dependency Injection**
 - **Framework**: Uber FX
-- **Location**: `internal/fx_modules/`
+- **Location**: `internal/di/`
 - **Purpose**: Inversion of control and testability
 
 ### 3. **CQRS (Command Query Responsibility Segregation)**

@@ -4,6 +4,8 @@
 
 Ứng dụng đã được tích hợp dependency injection sử dụng Uber Fx, một framework mạnh mẽ để quản lý dependencies và lifecycle của ứng dụng Go.
 
+> **Note**: Dependency injection modules được đặt trong folder `internal/di/` (viết tắt của "Dependency Injection") thay vì tên cũ `fx_modules` để tuân theo naming conventions phổ biến trong industry.
+
 ## Tính năng Fx Dependency Injection
 
 ### 1. **Modular Architecture**
@@ -26,7 +28,7 @@
 
 ## Cấu trúc Modules
 
-### Infrastructure Module (`internal/fx_modules/infrastructure.go`)
+### Infrastructure Module (`internal/di/infrastructure.go`)
 ```go
 var InfrastructureModule = fx.Module("infrastructure",
     fx.Provide(
@@ -40,7 +42,7 @@ var InfrastructureModule = fx.Module("infrastructure",
 )
 ```
 
-### Repository Module (`internal/fx_modules/repository.go`)
+### Repository Module (`internal/di/repository.go`)
 ```go
 var RepositoryModule = fx.Module("repository",
     fx.Provide(
@@ -53,7 +55,7 @@ var RepositoryModule = fx.Module("repository",
 )
 ```
 
-### Domain Module (`internal/fx_modules/domain.go`)
+### Domain Module (`internal/di/domain.go`)
 ```go
 var DomainModule = fx.Module("domain",
     fx.Provide(
@@ -62,7 +64,7 @@ var DomainModule = fx.Module("domain",
 )
 ```
 
-### Application Module (`internal/fx_modules/application.go`)
+### Application Module (`internal/di/application.go`)
 ```go
 var ApplicationModule = fx.Module("application",
     fx.Provide(
@@ -73,7 +75,7 @@ var ApplicationModule = fx.Module("application",
 )
 ```
 
-### Handler Module (`internal/fx_modules/handler.go`)
+### Handler Module (`internal/di/handler.go`)
 ```go
 var HandlerModule = fx.Module("handler",
     fx.Provide(
@@ -83,7 +85,7 @@ var HandlerModule = fx.Module("handler",
 )
 ```
 
-### Server Module (`internal/fx_modules/server.go`)
+### Server Module (`internal/di/server.go`)
 ```go
 var ServerModule = fx.Module("server",
     fx.Provide(
@@ -139,26 +141,26 @@ type ApplicationParams struct {
 func main() {
     fx.New(
         // Infrastructure modules
-        fxmodules.InfrastructureModule,
+        di.InfrastructureModule,
         
         // Repository layer
-        fxmodules.RepositoryModule,
+        di.RepositoryModule,
         
         // Domain layer
-        fxmodules.DomainModule,
+        di.DomainModule,
         
         // Application layer
-        fxmodules.ApplicationModule,
+        di.ApplicationModule,
         
         // Handler layer
-        fxmodules.HandlerModule,
+        di.HandlerModule,
         
         // HTTP Server
-        fxmodules.ServerModule,
+        di.ServerModule,
         
         // Lifecycle hooks
-        fx.Invoke(fxmodules.InfrastructureLifecycle),
-        fx.Invoke(fxmodules.HTTPServerLifecycle),
+        fx.Invoke(di.InfrastructureLifecycle),
+        fx.Invoke(di.HTTPServerLifecycle),
         
         // Logger configuration
         fx.WithLogger(func(logger *zap.Logger) fxevent.Logger {

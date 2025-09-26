@@ -1,4 +1,4 @@
-package fxmodules
+package di
 
 import (
 	"context"

@@ -1,9 +1,9 @@
-package fxmodules
+package di
 
 import (
 	"go.uber.org/fx"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/fx_modules/modules"
+	"github.com/tranvuongduy2003/go-mvc/internal/di/modules"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/tracing"

@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	fxmodules "github.com/tranvuongduy2003/go-mvc/internal/fx_modules"
+	di "github.com/tranvuongduy2003/go-mvc/internal/di"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 )
 
@@ -49,7 +49,7 @@ func createDBCommand() *cobra.Command {
 			fmt.Println("Creating database...")
 
 			app := fx.New(
-				fxmodules.InfrastructureModule,
+				di.InfrastructureModule,
 				fx.Invoke(func(db *gorm.DB, logger *zap.Logger) {
 					logger.Info("Database connection established successfully")
 					fmt.Println("✅ Database created successfully!")
@@ -74,7 +74,7 @@ func migrateCommand() *cobra.Command {
 			fmt.Println("Running database migrations...")
 
 			app := fx.New(
-				fxmodules.InfrastructureModule,
+				di.InfrastructureModule,
 				fx.Invoke(func(db *gorm.DB, logger *zap.Logger) {
 					if err := runMigrations(db); err != nil {
 						logger.Error("Migration failed", zap.Error(err))
@@ -103,8 +103,8 @@ func seedCommand() *cobra.Command {
 			fmt.Println("Seeding database...")
 
 			app := fx.New(
-				fxmodules.InfrastructureModule,
-				fxmodules.DomainModule,
+				di.InfrastructureModule,
+				di.DomainModule,
 				fx.NopLogger,
 			)
 
@@ -132,7 +132,7 @@ func resetDBCommand() *cobra.Command {
 			fmt.Println("Resetting database...")
 
 			app := fx.New(
-				fxmodules.InfrastructureModule,
+				di.InfrastructureModule,
 				fx.Invoke(func(db *gorm.DB, logger *zap.Logger) {
 					if err := resetDatabase(db); err != nil {
 						logger.Error("Database reset failed", zap.Error(err))
@@ -165,7 +165,7 @@ func healthCheckCommand() *cobra.Command {
 			fmt.Println("Performing health check...")
 
 			app := fx.New(
-				fxmodules.InfrastructureModule,
+				di.InfrastructureModule,
 				fx.Invoke(func(db *gorm.DB, config *config.AppConfig, logger *zap.Logger) {
 					// Database health check
 					sqlDB, err := db.DB()
