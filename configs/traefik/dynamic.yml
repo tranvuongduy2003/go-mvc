@@ -1,0 +1,63 @@
+http:
+  routers:
+    # API Routes - Go MVC Backend
+    api:
+      rule: "Host(`api.localhost`)"
+      entryPoints:
+        - "web"
+      service: "api-service"
+      middlewares:
+        - "cors-headers"
+
+    # CDN Routes - MinIO Static Files
+    cdn:
+      rule: "Host(`cdn.localhost`)"
+      entryPoints:
+        - "web"
+      service: "cdn-service"
+      middlewares:
+        - "cdn-headers"
+
+  services:
+    # Go MVC API Service
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8000"
+
+    # MinIO CDN Service
+    cdn-service:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9000"
+
+  middlewares:
+    # CORS Headers for API
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+          - "OPTIONS"
+        accessControlAllowHeaders:
+          - "Content-Type"
+          - "Authorization"
+          - "X-Requested-With"
+        accessControlAllowOriginList:
+          - "http://localhost:3000"
+          - "http://localhost:8080"
+          - "http://api.localhost"
+        accessControlMaxAge: 86400
+
+    # CDN Headers for Static Assets
+    cdn-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "http"
+        customResponseHeaders:
+          Cache-Control: "public, max-age=31536000"
+          X-Content-Type-Options: "nosniff"
+          Access-Control-Allow-Origin: "*"
+          Access-Control-Allow-Methods: "GET, HEAD, OPTIONS"

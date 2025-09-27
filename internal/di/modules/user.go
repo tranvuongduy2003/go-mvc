@@ -3,6 +3,7 @@ package modules
 import (
 	"go.uber.org/fx"
 
+	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
 	userCommands "github.com/tranvuongduy2003/go-mvc/internal/application/commands/user"
 	userQueries "github.com/tranvuongduy2003/go-mvc/internal/application/queries/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
@@ -16,6 +17,7 @@ var UserModule = fx.Module("user",
 		NewCreateUserCommandHandler,
 		NewUpdateUserCommandHandler,
 		NewDeleteUserCommandHandler,
+		NewUploadAvatarCommandHandler,
 		NewGetUserByIDQueryHandler,
 		NewListUsersQueryHandler,
 		NewUserService,
@@ -48,14 +50,20 @@ func NewListUsersQueryHandler(userRepo repositories.UserRepository) *userQueries
 	return userQueries.NewListUsersQueryHandler(userRepo)
 }
 
+// NewUploadAvatarCommandHandler provides UploadAvatarCommandHandler
+func NewUploadAvatarCommandHandler(userRepo repositories.UserRepository, fileStorageService *external.FileStorageService) *userCommands.UploadAvatarCommandHandler {
+	return userCommands.NewUploadAvatarCommandHandler(userRepo, fileStorageService)
+}
+
 // UserServiceParams holds parameters for UserService
 type UserServiceParams struct {
 	fx.In
-	CreateUserHandler  *userCommands.CreateUserCommandHandler
-	UpdateUserHandler  *userCommands.UpdateUserCommandHandler
-	DeleteUserHandler  *userCommands.DeleteUserCommandHandler
-	GetUserByIDHandler *userQueries.GetUserByIDQueryHandler
-	ListUsersHandler   *userQueries.ListUsersQueryHandler
+	CreateUserHandler   *userCommands.CreateUserCommandHandler
+	UpdateUserHandler   *userCommands.UpdateUserCommandHandler
+	DeleteUserHandler   *userCommands.DeleteUserCommandHandler
+	UploadAvatarHandler *userCommands.UploadAvatarCommandHandler
+	GetUserByIDHandler  *userQueries.GetUserByIDQueryHandler
+	ListUsersHandler    *userQueries.ListUsersQueryHandler
 }
 
 // NewUserService provides UserService
@@ -64,6 +72,7 @@ func NewUserService(params UserServiceParams) *services.UserService {
 		params.CreateUserHandler,
 		params.UpdateUserHandler,
 		params.DeleteUserHandler,
+		params.UploadAvatarHandler,
 		params.GetUserByIDHandler,
 		params.ListUsersHandler,
 	)

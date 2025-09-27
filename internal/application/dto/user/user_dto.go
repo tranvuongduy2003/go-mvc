@@ -26,6 +26,7 @@ type UserResponse struct {
 	Email     string    `json:"email"`
 	Name      string    `json:"name"`
 	Phone     string    `json:"phone,omitempty"`
+	AvatarURL string    `json:"avatar_url,omitempty"`
 	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -62,6 +63,7 @@ func UserResponseFromDomain(u *user.User) UserResponse {
 		Email:     u.Email(),
 		Name:      u.Name(),
 		Phone:     u.Phone(),
+		AvatarURL: u.Avatar().CDNUrl(),
 		IsActive:  u.IsActive(),
 		CreatedAt: u.CreatedAt(),
 		UpdatedAt: u.UpdatedAt(),

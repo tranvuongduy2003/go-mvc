@@ -147,6 +147,7 @@ func RegisterRoutes(params RouteParams) {
 			users.GET("/:id", params.UserHandler.GetUserByID)
 			users.PUT("/:id", params.UserHandler.UpdateUser)
 			users.DELETE("/:id", params.UserHandler.DeleteUser)
+			users.POST("/:id/avatar", params.UserHandler.UploadAvatar) // Avatar upload endpoint
 		}
 
 		// Test route

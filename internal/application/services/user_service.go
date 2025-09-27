@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"mime/multipart"
 
 	userCommands "github.com/tranvuongduy2003/go-mvc/internal/application/commands/user"
 	userDto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/user"
@@ -10,11 +11,12 @@ import (
 
 // UserService provides high-level business operations for users
 type UserService struct {
-	createUserHandler  *userCommands.CreateUserCommandHandler
-	updateUserHandler  *userCommands.UpdateUserCommandHandler
-	deleteUserHandler  *userCommands.DeleteUserCommandHandler
-	getUserByIDHandler *userQueries.GetUserByIDQueryHandler
-	listUsersHandler   *userQueries.ListUsersQueryHandler
+	createUserHandler   *userCommands.CreateUserCommandHandler
+	updateUserHandler   *userCommands.UpdateUserCommandHandler
+	deleteUserHandler   *userCommands.DeleteUserCommandHandler
+	uploadAvatarHandler *userCommands.UploadAvatarCommandHandler
+	getUserByIDHandler  *userQueries.GetUserByIDQueryHandler
+	listUsersHandler    *userQueries.ListUsersQueryHandler
 }
 
 // NewUserService creates a new UserService
@@ -22,15 +24,17 @@ func NewUserService(
 	createUserHandler *userCommands.CreateUserCommandHandler,
 	updateUserHandler *userCommands.UpdateUserCommandHandler,
 	deleteUserHandler *userCommands.DeleteUserCommandHandler,
+	uploadAvatarHandler *userCommands.UploadAvatarCommandHandler,
 	getUserByIDHandler *userQueries.GetUserByIDQueryHandler,
 	listUsersHandler *userQueries.ListUsersQueryHandler,
 ) *UserService {
 	return &UserService{
-		createUserHandler:  createUserHandler,
-		updateUserHandler:  updateUserHandler,
-		deleteUserHandler:  deleteUserHandler,
-		getUserByIDHandler: getUserByIDHandler,
-		listUsersHandler:   listUsersHandler,
+		createUserHandler:   createUserHandler,
+		updateUserHandler:   updateUserHandler,
+		deleteUserHandler:   deleteUserHandler,
+		uploadAvatarHandler: uploadAvatarHandler,
+		getUserByIDHandler:  getUserByIDHandler,
+		listUsersHandler:    listUsersHandler,
 	}
 }
 
@@ -115,4 +119,15 @@ func (s *UserService) ListUsers(ctx context.Context, req userDto.ListUsersReques
 			Pages:    pag.Pages,
 		},
 	}, nil
+}
+
+// UploadAvatar uploads user avatar
+func (s *UserService) UploadAvatar(ctx context.Context, userID string, file multipart.File, header *multipart.FileHeader) (userDto.UserResponse, error) {
+	cmd := userCommands.UploadAvatarCommand{
+		UserID: userID,
+		File:   file,
+		Header: header,
+	}
+
+	return s.uploadAvatarHandler.Handle(ctx, cmd)
 }

@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
+	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
 	postgresRepos "github.com/tranvuongduy2003/go-mvc/internal/adapters/persistence/postgres/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
@@ -29,6 +30,7 @@ var InfrastructureModule = fx.Module("infrastructure",
 		NewTokenGenerator,
 		NewCacheService,
 		NewTracingService,
+		NewFileStorageService,
 		NewUserRepository,
 		NewRoleRepository,
 		NewPermissionRepository,
@@ -151,4 +153,18 @@ func InfrastructureLifecycle(
 			return nil
 		},
 	})
+}
+
+// NewFileStorageService provides file storage service
+func NewFileStorageService(cfg *config.AppConfig, logger *logger.Logger) (*external.FileStorageService, error) {
+	fileStorageConfig := &external.FileStorageConfig{
+		Endpoint:        cfg.External.FileStorage.Endpoint,
+		AccessKeyID:     cfg.External.FileStorage.AccessKeyID,
+		SecretAccessKey: cfg.External.FileStorage.SecretAccessKey,
+		BucketName:      cfg.External.FileStorage.BucketName,
+		CDNUrl:          cfg.External.FileStorage.CDNUrl,
+		UseSSL:          cfg.External.FileStorage.UseSSL,
+	}
+
+	return external.NewFileStorageService(fileStorageConfig, logger)
 }

@@ -8,6 +8,7 @@ import (
 	userDto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
 	userValidators "github.com/tranvuongduy2003/go-mvc/internal/application/validators/user"
+	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 	"github.com/tranvuongduy2003/go-mvc/pkg/pagination"
 	"github.com/tranvuongduy2003/go-mvc/pkg/response"
 )
@@ -218,4 +219,49 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	}
 
 	response.SuccessWithPagination(c, result.Users, pag)
+}
+
+// UploadAvatar uploads user avatar
+// @Summary Upload user avatar
+// @Description Upload an avatar image for a user
+// @Tags users
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path string true "User ID"
+// @Param avatar formData file true "Avatar image file"
+// @Success 200 {object} response.APIResponse{data=dto.UserResponse}
+// @Failure 400 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Failure 500 {object} response.APIResponse
+// @Router /api/v1/users/{id}/avatar [post]
+func (h *UserHandler) UploadAvatar(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.Error(c, apperrors.NewValidationError("User ID is required", nil))
+		return
+	}
+
+	// Get file from form
+	file, header, err := c.Request.FormFile("avatar")
+	if err != nil {
+		response.Error(c, apperrors.NewValidationError("Avatar file is required", err))
+		return
+	}
+	defer file.Close()
+
+	// Validate file size (e.g., max 5MB)
+	const maxFileSize = 5 * 1024 * 1024 // 5MB
+	if header.Size > maxFileSize {
+		response.Error(c, apperrors.NewValidationError("File size exceeds 5MB limit", nil))
+		return
+	}
+
+	// Call service to handle avatar upload
+	user, err := h.userService.UploadAvatar(c.Request.Context(), id, file, header)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, user)
 }

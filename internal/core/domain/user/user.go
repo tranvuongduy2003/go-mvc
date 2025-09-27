@@ -18,6 +18,7 @@ type User struct {
 	name      Name
 	phone     Phone
 	password  Password
+	avatar    Avatar
 	isActive  bool
 	createdAt time.Time
 	updatedAt time.Time
@@ -132,6 +133,35 @@ func (p Phone) IsEmpty() bool {
 	return p.value == ""
 }
 
+// Avatar value object
+type Avatar struct {
+	fileKey string
+	cdnUrl  string
+}
+
+// NewAvatar creates a new avatar value object
+func NewAvatar(fileKey, cdnUrl string) Avatar {
+	return Avatar{
+		fileKey: strings.TrimSpace(fileKey),
+		cdnUrl:  strings.TrimSpace(cdnUrl),
+	}
+}
+
+// FileKey returns the file key
+func (a Avatar) FileKey() string {
+	return a.fileKey
+}
+
+// CDNUrl returns the CDN URL
+func (a Avatar) CDNUrl() string {
+	return a.cdnUrl
+}
+
+// IsEmpty checks if avatar is empty
+func (a Avatar) IsEmpty() bool {
+	return a.fileKey == "" || a.cdnUrl == ""
+}
+
 // Password value object
 type Password struct {
 	hashedValue string
@@ -229,6 +259,7 @@ func NewUser(email, name, phone, password string) (*User, error) {
 		name:      nameVO,
 		phone:     phoneVO,
 		password:  passwordVO,
+		avatar:    NewAvatar("", ""), // Empty avatar initially
 		isActive:  true,
 		createdAt: now,
 		updatedAt: now,
@@ -254,7 +285,7 @@ func NewUser(email, name, phone, password string) (*User, error) {
 }
 
 // ReconstructUser reconstructs a user from persistence
-func ReconstructUser(id, email, name, phone, hashedPassword string, isActive bool, createdAt, updatedAt time.Time, version int64) (*User, error) {
+func ReconstructUser(id, email, name, phone, hashedPassword, avatarFileKey, avatarCDNUrl string, isActive bool, createdAt, updatedAt time.Time, version int64) (*User, error) {
 	userID, err := NewUserIDFromString(id)
 	if err != nil {
 		return nil, err
@@ -275,12 +306,15 @@ func ReconstructUser(id, email, name, phone, hashedPassword string, isActive boo
 		return nil, err
 	}
 
+	avatarVO := NewAvatar(avatarFileKey, avatarCDNUrl)
+
 	return &User{
 		id:        userID,
 		email:     emailVO,
 		name:      nameVO,
 		phone:     phoneVO,
 		password:  NewHashedPassword(hashedPassword),
+		avatar:    avatarVO,
 		isActive:  isActive,
 		createdAt: createdAt,
 		updatedAt: updatedAt,
@@ -324,6 +358,10 @@ func (u *User) UpdatedAt() time.Time {
 
 func (u *User) Version() int64 {
 	return u.version
+}
+
+func (u *User) Avatar() Avatar {
+	return u.avatar
 }
 
 // Business Methods
@@ -371,6 +409,12 @@ func (u *User) ChangePassword(newPassword string) error {
 	u.version++
 
 	return nil
+}
+
+func (u *User) UpdateAvatar(fileKey, cdnUrl string) {
+	u.avatar = NewAvatar(fileKey, cdnUrl)
+	u.updatedAt = time.Now()
+	u.version++
 }
 
 func (u *User) Deactivate() {

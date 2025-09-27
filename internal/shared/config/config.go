@@ -152,6 +152,7 @@ type NATSConfig struct {
 type External struct {
 	PaymentService PaymentServiceConfig `mapstructure:"payment_service"`
 	EmailService   EmailServiceConfig   `mapstructure:"email_service"`
+	FileStorage    FileStorageConfig    `mapstructure:"file_storage"`
 }
 
 type PaymentServiceConfig struct {
@@ -175,6 +176,15 @@ type SMTPConfig struct {
 	Password string `mapstructure:"password"`
 	From     string `mapstructure:"from"`
 	UseTLS   bool   `mapstructure:"tls"`
+}
+
+type FileStorageConfig struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	SecretAccessKey string `mapstructure:"secret_access_key"`
+	BucketName      string `mapstructure:"bucket_name"`
+	CDNUrl          string `mapstructure:"cdn_url"`
+	UseSSL          bool   `mapstructure:"use_ssl"`
 }
 
 type Feature struct {

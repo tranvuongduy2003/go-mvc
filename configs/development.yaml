@@ -124,6 +124,13 @@ external:
       tls: false
     api_key: ""
     from: "noreply@go-mvc.dev"
+  file_storage:
+    endpoint: "localhost:9000"
+    access_key_id: "minioadmin"
+    secret_access_key: "minioadmin"
+    bucket_name: "uploads"
+    cdn_url: "http://cdn.localhost"
+    use_ssl: false
 
 feature:
   enable_swagger: true

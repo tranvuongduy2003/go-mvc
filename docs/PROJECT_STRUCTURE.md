@@ -4,7 +4,14 @@
 
 ```
 go-mvc/
-├── 📄 README.md                     # Project overview and quick start guide
+├── 📄 README.md                     # Project ov├── ⚙️ configs/                    # Configuration Files
+│   ├── 📄 development.yaml        # Development environment config
+│   ├── 📄 production.yaml         # Production environment config
+│   ├── 📄 prometheus.yml          # Prometheus scraping configuration
+│   ├── 📄 redis.conf              # Redis server configuration
+│   ├── 🌐 traefik/                # Traefik reverse proxy configuration
+│   │   └── 📄 dynamic.yml         # Dynamic routing configuration
+│   └── 📈 grafana/                # Grafana monitoring setup and quick start guide
 ├── 📄 Makefile                      # Build automation and development commands
 ├── 📄 go.mod                        # Go module definition and dependencies
 ├── 📄 go.sum                        # Dependency checksums for security

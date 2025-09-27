@@ -163,14 +163,16 @@ func (r *userRepository) Count(ctx context.Context) (int64, error) {
 // domainToModel converts domain User to GORM UserModel
 func (r *userRepository) domainToModel(u *user.User) *models.UserModel {
 	return &models.UserModel{
-		ID:           u.ID(),
-		Email:        u.Email(),
-		Name:         u.Name(),
-		Phone:        u.Phone(),
-		PasswordHash: u.HashedPassword(),
-		IsActive:     u.IsActive(),
-		CreatedAt:    u.CreatedAt(),
-		UpdatedAt:    u.UpdatedAt(),
+		ID:            u.ID(),
+		Email:         u.Email(),
+		Name:          u.Name(),
+		Phone:         u.Phone(),
+		PasswordHash:  u.HashedPassword(),
+		AvatarFileKey: u.Avatar().FileKey(),
+		AvatarCDNUrl:  u.Avatar().CDNUrl(),
+		IsActive:      u.IsActive(),
+		CreatedAt:     u.CreatedAt(),
+		UpdatedAt:     u.UpdatedAt(),
 	}
 }
 
@@ -182,6 +184,8 @@ func (r *userRepository) modelToDomain(m *models.UserModel) (*user.User, error) 
 		m.Name,
 		m.Phone,
 		m.PasswordHash,
+		m.AvatarFileKey,
+		m.AvatarCDNUrl,
 		m.IsActive,
 		m.CreatedAt,
 		m.UpdatedAt,
