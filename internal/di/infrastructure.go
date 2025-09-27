@@ -10,7 +10,9 @@ import (
 
 	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
 	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
+	natsAdapter "github.com/tranvuongduy2003/go-mvc/internal/adapters/messaging/nats"
 	postgresRepos "github.com/tranvuongduy2003/go-mvc/internal/adapters/persistence/postgres/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
 	"github.com/tranvuongduy2003/go-mvc/internal/shared/database"
@@ -26,11 +28,14 @@ var InfrastructureModule = fx.Module("infrastructure",
 		NewLogger,
 		NewDatabaseManager,
 		NewDatabase,
+		NewRedisClient,
 		NewPasswordHasher,
 		NewTokenGenerator,
 		NewCacheService,
 		NewTracingService,
 		NewFileStorageService,
+		NewMessageBroker,
+		NewEventBus,
 		NewUserRepository,
 		NewRoleRepository,
 		NewPermissionRepository,
@@ -112,16 +117,29 @@ type CacheServiceParams struct {
 	Logger *logger.Logger
 }
 
-// NewCacheService provides cache service
-func NewCacheService(params CacheServiceParams) *cache.Service {
+// NewRedisClient provides a shared Redis client
+func NewRedisClient(config *config.AppConfig) redis.UniversalClient {
 	// For now, create a Redis client - can be configured based on config later
-	rdb := redis.NewClient(&redis.Options{
+	return redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password
 		DB:       0,  // default DB
 	})
+}
 
-	return cache.NewCacheService(rdb, params.Logger)
+// NewCacheService provides cache service
+func NewCacheService(rdb redis.UniversalClient, logger *logger.Logger) *cache.Service {
+	// Convert UniversalClient to concrete *redis.Client
+	client, ok := rdb.(*redis.Client)
+	if !ok {
+		// If it's not a *redis.Client, create a new one with same options
+		client = redis.NewClient(&redis.Options{
+			Addr:     "localhost:6379",
+			Password: "", // no password
+			DB:       0,  // default DB
+		})
+	}
+	return cache.NewCacheService(client, logger)
 }
 
 // InfrastructureLifecycle handles infrastructure lifecycle
@@ -167,4 +185,29 @@ func NewFileStorageService(cfg *config.AppConfig, logger *logger.Logger) (*exter
 	}
 
 	return external.NewFileStorageService(fileStorageConfig, logger)
+}
+
+// NewMessageBroker provides NATS message broker
+func NewMessageBroker(cfg *config.AppConfig, logger *logger.Logger) (messaging.MessageBroker, error) {
+	broker := natsAdapter.NewNATSBroker(cfg.Messaging.NATS, logger.Logger)
+
+	if err := broker.Connect(); err != nil {
+		return nil, err
+	}
+
+	return broker, nil
+}
+
+// NewEventBus provides NATS event bus
+func NewEventBus(broker messaging.MessageBroker, logger *logger.Logger) messaging.EventBus {
+	if natsBroker, ok := broker.(*natsAdapter.NATSBroker); ok {
+		return natsAdapter.NewNATSEventBus(natsBroker, logger.Logger)
+	}
+
+	// Fallback - should not happen in normal circumstances
+	natsBroker := natsAdapter.NewNATSBroker(config.NATSConfig{
+		URL: "nats://localhost:4222",
+	}, logger.Logger)
+
+	return natsAdapter.NewNATSEventBus(natsBroker, logger.Logger)
 }

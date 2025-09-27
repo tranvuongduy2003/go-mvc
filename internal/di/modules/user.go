@@ -5,10 +5,13 @@ import (
 
 	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
 	userCommands "github.com/tranvuongduy2003/go-mvc/internal/application/commands/user"
+	"github.com/tranvuongduy2003/go-mvc/internal/application/events/handlers"
 	userQueries "github.com/tranvuongduy2003/go-mvc/internal/application/queries/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
 	userValidators "github.com/tranvuongduy2003/go-mvc/internal/application/validators/user"
+	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
 	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
 )
 
 // UserModule provides user domain dependencies
@@ -22,7 +25,9 @@ var UserModule = fx.Module("user",
 		NewListUsersQueryHandler,
 		NewUserService,
 		NewUserValidator,
+		NewUserEventHandler,
 	),
+	fx.Invoke(SetupUserEventSubscriptions),
 )
 
 // NewCreateUserCommandHandler provides CreateUserCommandHandler
@@ -51,8 +56,12 @@ func NewListUsersQueryHandler(userRepo repositories.UserRepository) *userQueries
 }
 
 // NewUploadAvatarCommandHandler provides UploadAvatarCommandHandler
-func NewUploadAvatarCommandHandler(userRepo repositories.UserRepository, fileStorageService *external.FileStorageService) *userCommands.UploadAvatarCommandHandler {
-	return userCommands.NewUploadAvatarCommandHandler(userRepo, fileStorageService)
+func NewUploadAvatarCommandHandler(
+	userRepo repositories.UserRepository,
+	fileStorageService *external.FileStorageService,
+	eventBus messaging.EventBus,
+) *userCommands.UploadAvatarCommandHandler {
+	return userCommands.NewUploadAvatarCommandHandler(userRepo, fileStorageService, eventBus)
 }
 
 // UserServiceParams holds parameters for UserService
@@ -81,4 +90,14 @@ func NewUserService(params UserServiceParams) *services.UserService {
 // NewUserValidator provides UserValidator
 func NewUserValidator() userValidators.IUserValidator {
 	return userValidators.NewUserValidator()
+}
+
+// NewUserEventHandler provides UserEventHandler
+func NewUserEventHandler(logger *logger.Logger) *handlers.UserEventHandler {
+	return handlers.NewUserEventHandler(logger.Logger)
+}
+
+// SetupUserEventSubscriptions sets up event subscriptions for user events
+func SetupUserEventSubscriptions(eventHandler *handlers.UserEventHandler, eventBus messaging.EventBus) error {
+	return eventHandler.SetupEventSubscriptions(eventBus)
 }

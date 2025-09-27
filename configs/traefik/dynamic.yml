@@ -47,6 +47,7 @@ http:
           - "X-Requested-With"
         accessControlAllowOriginList:
           - "http://localhost:3000"
+          - "http://localhost:8081"
           - "http://localhost:8080"
           - "http://api.localhost"
         accessControlMaxAge: 86400

@@ -49,7 +49,7 @@ traefik:
   restart: unless-stopped
   ports:
     - "80:80"      # HTTP
-    - "8080:8080"  # Traefik Dashboard
+    - "8081:8080"  # Traefik Dashboard
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock:ro
     - ./configs/traefik:/etc/traefik/dynamic:ro
@@ -223,7 +223,7 @@ go run ./cmd/main.go
 - **API**: http://api.localhost/api/v1
 - **CDN/Files**: http://cdn.localhost/uploads/...
 - **MinIO Console**: http://minio.localhost (minioadmin/minioadmin)
-- **Traefik Dashboard**: http://localhost:8080
+- **Traefik Dashboard**: http://localhost:8081
 
 ## Implementation Pattern
 

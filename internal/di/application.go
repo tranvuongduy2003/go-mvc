@@ -16,6 +16,7 @@ var ApplicationModule = fx.Module("application",
 	// Include domain modules
 	modules.UserModule,
 	modules.AuthModule,
+	modules.JobsModule,
 
 	// Core application services
 	fx.Provide(

@@ -62,7 +62,7 @@ go-mvc/
 │   ├── core/              # Core domain layer
 │   │   ├── domain/        # Domain entities and business logic
 │   │   └── ports/         # Interface definitions
-│   ├── fx_modules/        # Dependency injection modules
+│   ├── di/               # Dependency injection modules
 │   ├── handlers/          # HTTP handlers and middleware
 │   └── shared/            # Shared utilities and infrastructure
 ├── pkg/                   # Public packages (can be imported)
