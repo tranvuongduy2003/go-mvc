@@ -8,6 +8,12 @@ A modern, scalable Go web application built with **Clean Architecture**, **Domai
 
 ## 🚀 Features
 
+### 🤖 AI-Powered Development
+- **AI API Generation**: Automatically generate complete APIs from User Stories
+- **Clean Architecture Compliance**: AI generates code following project patterns
+- **Production-Ready Code**: Generated code includes validation, error handling, tests
+- **Documentation Integration**: Auto-generated Swagger docs and architecture compliance
+
 ### Core Features
 - **Clean Architecture**: Separated layers (Domain, Application, Infrastructure, Handlers)
 - **Domain-Driven Design**: Rich domain models with business logic encapsulation
@@ -145,6 +151,50 @@ This application follows **Clean Architecture** principles with clear separation
 - **Validators**: Request validation
 - **Responses**: Response formatting
 
+## 🤖 AI-Powered API Generation
+
+This project includes a comprehensive AI system that can automatically generate complete APIs from User Stories.
+
+### Quick AI Generation
+```bash
+# 1. Create User Story from template
+cp docs/USER_STORY_TEMPLATE.md my_feature.md
+
+# 2. Fill in your requirements (business rules, validation, etc.)
+
+# 3. Give AI this instruction with your User Story:
+```
+
+```markdown
+Hãy sinh ra một bộ API hoàn chỉnh theo Clean Architecture từ User Story bên dưới.
+Sử dụng các quy tắc trong docs/AI_API_GENERATION_RULES.md và docs/CODE_GENERATION_GUIDELINES.md.
+
+[Your User Story Here]
+```
+
+**AI will generate:**
+- ✅ **Domain Layer**: Entities, value objects, repository interfaces
+- ✅ **Application Layer**: Commands/queries, DTOs, validators, services  
+- ✅ **Infrastructure Layer**: Database models, repositories, migrations
+- ✅ **Presentation Layer**: HTTP handlers, routes, Swagger docs
+- ✅ **Integration**: Dependency injection và complete setup
+
+### AI Documentation
+- **[📖 AI Quick Start Guide](docs/AI_QUICK_START.md)** - 5-minute tutorial
+- **[� User Story Template](docs/USER_STORY_TEMPLATE.md)** - Complete template với examples
+- **[⚙️ AI Generation Rules](docs/AI_API_GENERATION_RULES.md)** - Comprehensive rules for AI
+- **[�🔧 Code Generation Guidelines](docs/CODE_GENERATION_GUIDELINES.md)** - Layer-by-layer guidelines
+
+### Example Generated API
+From a simple User Story like "Admin can create products", AI generates:
+- Product domain entity với business validation
+- Create/Update/Delete/List commands và queries
+- Database table với proper constraints và indexes
+- HTTP handlers với authentication và authorization
+- Complete test suite và error handling
+- Swagger documentation
+- **Production-ready code in minutes!**
+
 ## 🔧 Development Commands
 
 ### Build & Run
@@ -153,6 +203,13 @@ make build          # Build server binary
 make build-all      # Build all binaries
 make run           # Run server
 make dev           # Run with hot reload
+```
+
+### AI-Generated Code
+```bash
+make validate-generated [entity]  # Validate AI-generated code
+make test-generated [entity]      # Test generated components
+make integrate-generated [entity] # Integrate with existing codebase
 ```
 
 ### Testing
