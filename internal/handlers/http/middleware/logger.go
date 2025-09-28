@@ -177,7 +177,7 @@ func ErrorLogMiddleware(logger *logger.Logger) gin.HandlerFunc {
 				zap.String("path", c.Request.URL.Path),
 				zap.String("ip", c.ClientIP()),
 				zap.Error(err.Err),
-				zap.String("type", string(err.Type)),
+				zap.Uint64("type", uint64(err.Type)),
 				zap.Any("meta", err.Meta),
 			)
 		}

@@ -17,6 +17,7 @@ var ApplicationModule = fx.Module("application",
 	modules.UserModule,
 	modules.AuthModule,
 	modules.JobsModule,
+	modules.MessagingModule,
 
 	// Core application services
 	fx.Provide(
