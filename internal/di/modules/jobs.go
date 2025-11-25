@@ -9,12 +9,12 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/fx"
 
-	jobsmetrics "github.com/tranvuongduy2003/go-mvc/internal/adapters/jobs/metrics"
-	redisqueue "github.com/tranvuongduy2003/go-mvc/internal/adapters/jobs/redis"
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/jobs/scheduler"
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/jobs/worker"
-	domainjobs "github.com/tranvuongduy2003/go-mvc/internal/core/domain/jobs"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/jobs"
+	domainjobs "github.com/tranvuongduy2003/go-mvc/internal/domain/jobs"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/jobs"
+	jobsmetrics "github.com/tranvuongduy2003/go-mvc/internal/infrastructure/jobs/metrics"
+	redisqueue "github.com/tranvuongduy2003/go-mvc/internal/infrastructure/jobs/redis"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/jobs/scheduler"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/jobs/worker"
 )
 
 // JobsModuleParams defines the parameters required by the jobs module

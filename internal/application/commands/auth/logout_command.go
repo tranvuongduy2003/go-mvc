@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
 )
 
 // LogoutCommand represents the logout command
@@ -14,20 +14,20 @@ type LogoutCommand struct {
 
 // LogoutCommandHandler handles the LogoutCommand
 type LogoutCommandHandler struct {
-	authService services.AuthService
+	tokenService services.TokenManagementService
 }
 
 // NewLogoutCommandHandler creates a new LogoutCommandHandler
-func NewLogoutCommandHandler(authService services.AuthService) *LogoutCommandHandler {
+func NewLogoutCommandHandler(tokenService services.TokenManagementService) *LogoutCommandHandler {
 	return &LogoutCommandHandler{
-		authService: authService,
+		tokenService: tokenService,
 	}
 }
 
 // Handle executes the LogoutCommand
 func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) (*dto.StatusResponse, error) {
 	// Logout user by invalidating tokens
-	err := h.authService.Logout(ctx, cmd.UserID)
+	err := h.tokenService.Logout(ctx, cmd.UserID)
 	if err != nil {
 		return nil, err
 	}

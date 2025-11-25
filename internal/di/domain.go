@@ -3,8 +3,8 @@ package di
 import (
 	"go.uber.org/fx"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/security"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/security"
 )
 
 // DomainModule provides domain layer dependencies

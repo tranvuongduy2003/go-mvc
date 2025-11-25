@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
 )
 
 // ChangePasswordCommand represents the change password command
@@ -16,20 +16,20 @@ type ChangePasswordCommand struct {
 
 // ChangePasswordCommandHandler handles the ChangePasswordCommand
 type ChangePasswordCommandHandler struct {
-	authService services.AuthService
+	passwordService services.PasswordManagementService
 }
 
 // NewChangePasswordCommandHandler creates a new ChangePasswordCommandHandler
-func NewChangePasswordCommandHandler(authService services.AuthService) *ChangePasswordCommandHandler {
+func NewChangePasswordCommandHandler(passwordService services.PasswordManagementService) *ChangePasswordCommandHandler {
 	return &ChangePasswordCommandHandler{
-		authService: authService,
+		passwordService: passwordService,
 	}
 }
 
 // Handle executes the ChangePasswordCommand
 func (h *ChangePasswordCommandHandler) Handle(ctx context.Context, cmd ChangePasswordCommand) (*dto.StatusResponse, error) {
 	// Change password
-	err := h.authService.ChangePassword(ctx, cmd.UserID, cmd.OldPassword, cmd.NewPassword)
+	err := h.passwordService.ChangePassword(ctx, cmd.UserID, cmd.OldPassword, cmd.NewPassword)
 	if err != nil {
 		return nil, err
 	}

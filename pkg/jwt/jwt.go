@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 

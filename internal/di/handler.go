@@ -3,14 +3,14 @@ package di
 import (
 	"go.uber.org/fx"
 
-	// "github.com/tranvuongduy2003/go-mvc/internal/adapters/cache" // Commented out - not used currently
+	// "github.com/tranvuongduy2003/go-mvc/internal/infrastructure/cache" // Commented out - not used currently
 	authCommands "github.com/tranvuongduy2003/go-mvc/internal/application/commands/auth"
 	authQueries "github.com/tranvuongduy2003/go-mvc/internal/application/queries/auth"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
 	userValidators "github.com/tranvuongduy2003/go-mvc/internal/application/validators/user"
-	v1 "github.com/tranvuongduy2003/go-mvc/internal/handlers/http/rest/v1"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/tracing"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/tracing"
+	v1 "github.com/tranvuongduy2003/go-mvc/internal/interfaces/http/rest/v1"
 )
 
 // HandlerModule provides handler layer dependencies

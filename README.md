@@ -316,10 +316,23 @@ docker-compose up -d
 - [**🛠️ Development Guide**](docs/DEVELOPMENT.md) - Development setup, testing, and best practices
 - [**🚀 Deployment Guide**](docs/DEPLOYMENT.md) - Production deployment with Docker and Kubernetes
 
+### Code Organization & Best Practices ⭐ NEW
+> **[📚 Complete Index & Navigation Guide](docs/CODE_ORGANIZATION_INDEX.md)** ← START HERE!
+
+**Quick Access**:
+- [**🚀 Quick Reference**](docs/QUICK_REFERENCE.md) - Cheat sheet (5 min read)
+- [**📊 Reorganization Summary**](docs/REORGANIZATION_SUMMARY.md) - TL;DR with action plan (10 min)
+- [**📐 Visual Comparison**](docs/VISUAL_STRUCTURE_COMPARISON.md) - See the difference (15 min)
+- [**🔍 Current Analysis**](docs/CURRENT_STRUCTURE_ANALYSIS.md) - Deep dive (30 min)
+- [**📖 Best Practices Guide**](docs/CODE_ORGANIZATION_BEST_PRACTICES.md) - Complete reference (45 min)
+- [**🔧 Migration Script**](scripts/reorganize.sh) - Automated reorganization tool
+
+**Current Status**: 7/10 (Very good!) → Can reach 9-10/10 in 30 minutes with automated script
+
 ### API & Technical Guides
 - [**📋 API Documentation**](docs/API.md) - REST API endpoints, examples, and usage
-- [**� Email Service Guide**](docs/EMAIL_SERVICE.md) - Email service implementation and MailCatcher testing
-- [**�🔌 Dependency Injection**](docs/DEPENDENCY_INJECTION.md) - Uber FX usage patterns and modules
+- [**📧 Email Service Guide**](docs/EMAIL_SERVICE.md) - Email service implementation and MailCatcher testing
+- [**🔌 Dependency Injection**](docs/DEPENDENCY_INJECTION.md) - Uber FX usage patterns and modules
 - [**🔍 Tracing Guide**](docs/TRACING.md) - OpenTelemetry and Jaeger setup
 - [**🛡️ RBAC Usage**](docs/RBAC_USAGE.md) - Role-based access control implementation
 

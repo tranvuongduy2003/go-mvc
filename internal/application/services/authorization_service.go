@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 

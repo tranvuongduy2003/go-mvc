@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 )
 
 // CreateUserRequest represents the request to create a new user

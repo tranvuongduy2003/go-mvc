@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
 )
 
 // ConfirmPasswordResetCommand represents the password reset confirmation command
@@ -15,20 +15,20 @@ type ConfirmPasswordResetCommand struct {
 
 // ConfirmPasswordResetCommandHandler handles the ConfirmPasswordResetCommand
 type ConfirmPasswordResetCommandHandler struct {
-	authService services.AuthService
+	passwordService services.PasswordManagementService
 }
 
 // NewConfirmPasswordResetCommandHandler creates a new ConfirmPasswordResetCommandHandler
-func NewConfirmPasswordResetCommandHandler(authService services.AuthService) *ConfirmPasswordResetCommandHandler {
+func NewConfirmPasswordResetCommandHandler(passwordService services.PasswordManagementService) *ConfirmPasswordResetCommandHandler {
 	return &ConfirmPasswordResetCommandHandler{
-		authService: authService,
+		passwordService: passwordService,
 	}
 }
 
 // Handle executes the ConfirmPasswordResetCommand
 func (h *ConfirmPasswordResetCommandHandler) Handle(ctx context.Context, cmd ConfirmPasswordResetCommand) (*dto.StatusResponse, error) {
 	// Confirm password reset
-	err := h.authService.ConfirmPasswordReset(ctx, cmd.Token, cmd.NewPassword)
+	err := h.passwordService.ConfirmPasswordReset(ctx, cmd.Token, cmd.NewPassword)
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
 )
 
 // ResetPasswordCommand represents the reset password initiation command
@@ -14,20 +14,20 @@ type ResetPasswordCommand struct {
 
 // ResetPasswordCommandHandler handles the ResetPasswordCommand
 type ResetPasswordCommandHandler struct {
-	authService services.AuthService
+	passwordService services.PasswordManagementService
 }
 
 // NewResetPasswordCommandHandler creates a new ResetPasswordCommandHandler
-func NewResetPasswordCommandHandler(authService services.AuthService) *ResetPasswordCommandHandler {
+func NewResetPasswordCommandHandler(passwordService services.PasswordManagementService) *ResetPasswordCommandHandler {
 	return &ResetPasswordCommandHandler{
-		authService: authService,
+		passwordService: passwordService,
 	}
 }
 
 // Handle executes the ResetPasswordCommand
 func (h *ResetPasswordCommandHandler) Handle(ctx context.Context, cmd ResetPasswordCommand) (*dto.StatusResponse, error) {
 	// Initiate password reset
-	err := h.authService.ResetPassword(ctx, cmd.Email)
+	err := h.passwordService.ResetPassword(ctx, cmd.Email)
 	if err != nil {
 		return nil, err
 	}

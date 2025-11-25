@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	di "github.com/tranvuongduy2003/go-mvc/internal/di"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
 )
 
 var rootCmd = &cobra.Command{

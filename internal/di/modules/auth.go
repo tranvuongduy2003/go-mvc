@@ -3,22 +3,30 @@ package modules
 import (
 	"go.uber.org/fx"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
 	authCommands "github.com/tranvuongduy2003/go-mvc/internal/application/commands/auth"
 	authQueries "github.com/tranvuongduy2003/go-mvc/internal/application/queries/auth"
 	appServices "github.com/tranvuongduy2003/go-mvc/internal/application/services"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/security"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/cache"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/external"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/security"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 
 // AuthModule provides authentication and authorization dependencies
 var AuthModule = fx.Module("auth",
 	fx.Provide(
+		// Services - provide concrete service as all interface types
+		NewAuthService,
+		NewTokenManagementService,
+		NewPasswordManagementService,
+		NewEmailVerificationService,
+		NewAuthorizationService,
+		NewSMTPService,
+
 		// Command Handlers
 		NewLoginCommandHandler,
 		NewRegisterCommandHandler,
@@ -34,11 +42,6 @@ var AuthModule = fx.Module("auth",
 		// Query Handlers
 		NewGetUserProfileQueryHandler,
 		NewGetUserPermissionsQueryHandler,
-
-		// Services
-		NewAuthService,
-		NewAuthorizationService,
-		NewSMTPService,
 	),
 )
 
@@ -60,38 +63,38 @@ func NewRefreshTokenCommandHandler(authService services.AuthService) *authComman
 }
 
 // NewChangePasswordCommandHandler provides ChangePasswordCommandHandler
-func NewChangePasswordCommandHandler(authService services.AuthService) *authCommands.ChangePasswordCommandHandler {
-	return authCommands.NewChangePasswordCommandHandler(authService)
+func NewChangePasswordCommandHandler(passwordService services.PasswordManagementService) *authCommands.ChangePasswordCommandHandler {
+	return authCommands.NewChangePasswordCommandHandler(passwordService)
 }
 
 // NewResetPasswordCommandHandler provides ResetPasswordCommandHandler
-func NewResetPasswordCommandHandler(authService services.AuthService) *authCommands.ResetPasswordCommandHandler {
-	return authCommands.NewResetPasswordCommandHandler(authService)
+func NewResetPasswordCommandHandler(passwordService services.PasswordManagementService) *authCommands.ResetPasswordCommandHandler {
+	return authCommands.NewResetPasswordCommandHandler(passwordService)
 }
 
 // NewConfirmPasswordResetCommandHandler provides ConfirmPasswordResetCommandHandler
-func NewConfirmPasswordResetCommandHandler(authService services.AuthService) *authCommands.ConfirmPasswordResetCommandHandler {
-	return authCommands.NewConfirmPasswordResetCommandHandler(authService)
+func NewConfirmPasswordResetCommandHandler(passwordService services.PasswordManagementService) *authCommands.ConfirmPasswordResetCommandHandler {
+	return authCommands.NewConfirmPasswordResetCommandHandler(passwordService)
 }
 
 // NewVerifyEmailCommandHandler provides VerifyEmailCommandHandler
-func NewVerifyEmailCommandHandler(authService services.AuthService) *authCommands.VerifyEmailCommandHandler {
-	return authCommands.NewVerifyEmailCommandHandler(authService)
+func NewVerifyEmailCommandHandler(emailVerificationService services.EmailVerificationService) *authCommands.VerifyEmailCommandHandler {
+	return authCommands.NewVerifyEmailCommandHandler(emailVerificationService)
 }
 
 // NewResendVerificationEmailCommandHandler provides ResendVerificationEmailCommandHandler
-func NewResendVerificationEmailCommandHandler(authService services.AuthService) *authCommands.ResendVerificationEmailCommandHandler {
-	return authCommands.NewResendVerificationEmailCommandHandler(authService)
+func NewResendVerificationEmailCommandHandler(emailVerificationService services.EmailVerificationService) *authCommands.ResendVerificationEmailCommandHandler {
+	return authCommands.NewResendVerificationEmailCommandHandler(emailVerificationService)
 }
 
 // NewLogoutCommandHandler provides LogoutCommandHandler
-func NewLogoutCommandHandler(authService services.AuthService) *authCommands.LogoutCommandHandler {
-	return authCommands.NewLogoutCommandHandler(authService)
+func NewLogoutCommandHandler(tokenService services.TokenManagementService) *authCommands.LogoutCommandHandler {
+	return authCommands.NewLogoutCommandHandler(tokenService)
 }
 
 // NewLogoutAllDevicesCommandHandler provides LogoutAllDevicesCommandHandler
-func NewLogoutAllDevicesCommandHandler(authService services.AuthService) *authCommands.LogoutAllDevicesCommandHandler {
-	return authCommands.NewLogoutAllDevicesCommandHandler(authService)
+func NewLogoutAllDevicesCommandHandler(tokenService services.TokenManagementService) *authCommands.LogoutAllDevicesCommandHandler {
+	return authCommands.NewLogoutAllDevicesCommandHandler(tokenService)
 }
 
 // Query Handler Providers
@@ -123,8 +126,47 @@ type AuthServiceParams struct {
 	Logger         *logger.Logger
 }
 
-// NewAuthService provides AuthService
+// NewAuthService provides AuthService interface
 func NewAuthService(params AuthServiceParams) services.AuthService {
+	return appServices.NewAuthService(
+		params.UserRepo,
+		params.JWTService,
+		params.PasswordHasher,
+		params.CacheService,
+		params.SMTPService,
+		params.Logger,
+	)
+}
+
+// NewTokenManagementService provides TokenManagementService
+// The concrete auth service implements all split interfaces
+func NewTokenManagementService(params AuthServiceParams) services.TokenManagementService {
+	return appServices.NewAuthService(
+		params.UserRepo,
+		params.JWTService,
+		params.PasswordHasher,
+		params.CacheService,
+		params.SMTPService,
+		params.Logger,
+	)
+}
+
+// NewPasswordManagementService provides PasswordManagementService
+// The concrete auth service implements all split interfaces
+func NewPasswordManagementService(params AuthServiceParams) services.PasswordManagementService {
+	return appServices.NewAuthService(
+		params.UserRepo,
+		params.JWTService,
+		params.PasswordHasher,
+		params.CacheService,
+		params.SMTPService,
+		params.Logger,
+	)
+}
+
+// NewEmailVerificationService provides EmailVerificationService
+// The concrete auth service implements all split interfaces
+func NewEmailVerificationService(params AuthServiceParams) services.EmailVerificationService {
 	return appServices.NewAuthService(
 		params.UserRepo,
 		params.JWTService,

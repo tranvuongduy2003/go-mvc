@@ -6,19 +6,20 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/security"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/cache"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/external"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/security"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 
-// authService implements the AuthService interface
-type authService struct {
+// AuthService is the concrete implementation
+// It implements AuthService, TokenManagementService, PasswordManagementService, and EmailVerificationService
+type AuthService struct {
 	userRepo        repositories.UserRepository
 	jwtService      jwt.JWTService
 	passwordHasher  *security.PasswordHasher
@@ -31,6 +32,12 @@ type authService struct {
 	resetTokenTTL   time.Duration
 }
 
+// Compile-time interface checks
+var _ services.AuthService = (*AuthService)(nil)
+var _ services.TokenManagementService = (*AuthService)(nil)
+var _ services.PasswordManagementService = (*AuthService)(nil)
+var _ services.EmailVerificationService = (*AuthService)(nil)
+
 // NewAuthService creates a new authentication service
 func NewAuthService(
 	userRepo repositories.UserRepository,
@@ -39,8 +46,8 @@ func NewAuthService(
 	cacheService *cache.Service,
 	smtpService *external.SMTPService,
 	logger *logger.Logger,
-) services.AuthService {
-	return &authService{
+) *AuthService {
+	return &AuthService{
 		userRepo:        userRepo,
 		jwtService:      jwtService,
 		passwordHasher:  passwordHasher,
@@ -55,7 +62,7 @@ func NewAuthService(
 }
 
 // Register creates a new user account
-func (s *authService) Register(ctx context.Context, req *services.RegisterRequest) (*services.AuthenticatedUser, error) {
+func (s *AuthService) Register(ctx context.Context, req *services.RegisterRequest) (*services.AuthenticatedUser, error) {
 	// Validate request
 	if err := s.validateRegisterRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid registration data: %w", err)
@@ -105,7 +112,7 @@ func (s *authService) Register(ctx context.Context, req *services.RegisterReques
 }
 
 // Login authenticates a user with email and password
-func (s *authService) Login(ctx context.Context, credentials *services.LoginCredentials) (*services.AuthenticatedUser, error) {
+func (s *AuthService) Login(ctx context.Context, credentials *services.LoginCredentials) (*services.AuthenticatedUser, error) {
 	// Validate credentials
 	if err := s.validateLoginCredentials(credentials); err != nil {
 		return nil, apperrors.NewValidationError("invalid credentials", err)
@@ -149,7 +156,7 @@ func (s *authService) Login(ctx context.Context, credentials *services.LoginCred
 }
 
 // RefreshToken generates new access token using refresh token
-func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (*services.AuthTokens, error) {
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*services.AuthTokens, error) {
 	// Check if token is blacklisted
 	if blacklisted, err := s.IsTokenBlacklisted(ctx, refreshToken); err != nil {
 		return nil, apperrors.NewInternalError("failed to check token blacklist", err)
@@ -179,7 +186,7 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (*s
 }
 
 // Logout invalidates user tokens
-func (s *authService) Logout(ctx context.Context, userID string) error {
+func (s *AuthService) Logout(ctx context.Context, userID string) error {
 	// This would typically blacklist the specific token
 	// For now, we'll implement a simple approach
 	// In a production system, you might want to track active sessions
@@ -187,14 +194,14 @@ func (s *authService) Logout(ctx context.Context, userID string) error {
 }
 
 // LogoutAll invalidates all tokens for a user across all devices
-func (s *authService) LogoutAll(ctx context.Context, userID string) error {
+func (s *AuthService) LogoutAll(ctx context.Context, userID string) error {
 	// This would typically blacklist all tokens for the user
 	// Implementation would depend on your session management strategy
 	return nil
 }
 
 // ValidateToken validates an access token and returns user info
-func (s *authService) ValidateToken(ctx context.Context, accessToken string) (*user.User, error) {
+func (s *AuthService) ValidateToken(ctx context.Context, accessToken string) (*user.User, error) {
 	// Check if token is blacklisted
 	if blacklisted, err := s.IsTokenBlacklisted(ctx, accessToken); err != nil {
 		return nil, apperrors.NewInternalError("failed to check token blacklist", err)
@@ -231,7 +238,7 @@ func (s *authService) ValidateToken(ctx context.Context, accessToken string) (*u
 }
 
 // ChangePassword changes user password
-func (s *authService) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
+func (s *AuthService) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
 	// Get user
 	userEntity, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
@@ -265,7 +272,7 @@ func (s *authService) ChangePassword(ctx context.Context, userID, oldPassword, n
 }
 
 // ResetPassword initiates password reset process
-func (s *authService) ResetPassword(ctx context.Context, email string) error {
+func (s *AuthService) ResetPassword(ctx context.Context, email string) error {
 	// Get user by email
 	userEntity, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
@@ -300,7 +307,7 @@ func (s *authService) ResetPassword(ctx context.Context, email string) error {
 }
 
 // ConfirmPasswordReset completes password reset with token
-func (s *authService) ConfirmPasswordReset(ctx context.Context, token, newPassword string) error {
+func (s *AuthService) ConfirmPasswordReset(ctx context.Context, token, newPassword string) error {
 	// Validate new password
 	if err := s.validatePassword(newPassword); err != nil {
 		return apperrors.NewValidationError("invalid password", err)
@@ -339,7 +346,7 @@ func (s *authService) ConfirmPasswordReset(ctx context.Context, token, newPasswo
 }
 
 // VerifyEmail verifies user email with verification token
-func (s *authService) VerifyEmail(ctx context.Context, token string) error {
+func (s *AuthService) VerifyEmail(ctx context.Context, token string) error {
 	// Get user ID from verification token
 	cacheKey := fmt.Sprintf("email_verification:%s", token)
 	var userID string
@@ -372,7 +379,7 @@ func (s *authService) VerifyEmail(ctx context.Context, token string) error {
 }
 
 // ResendVerificationEmail resends email verification
-func (s *authService) ResendVerificationEmail(ctx context.Context, email string) error {
+func (s *AuthService) ResendVerificationEmail(ctx context.Context, email string) error {
 	// Get user by email
 	userEntity, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
@@ -410,12 +417,12 @@ func (s *authService) ResendVerificationEmail(ctx context.Context, email string)
 }
 
 // GetUserFromToken extracts user information from a valid token
-func (s *authService) GetUserFromToken(ctx context.Context, token string) (*user.User, error) {
+func (s *AuthService) GetUserFromToken(ctx context.Context, token string) (*user.User, error) {
 	return s.ValidateToken(ctx, token)
 }
 
 // IsTokenBlacklisted checks if a token is blacklisted
-func (s *authService) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
+func (s *AuthService) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
 	cacheKey := s.tokenBlacklist + token
 	var exists bool
 	if err := s.cacheService.Get(ctx, cacheKey, &exists); err != nil {
@@ -426,7 +433,7 @@ func (s *authService) IsTokenBlacklisted(ctx context.Context, token string) (boo
 }
 
 // BlacklistToken adds a token to blacklist
-func (s *authService) BlacklistToken(ctx context.Context, token string) error {
+func (s *AuthService) BlacklistToken(ctx context.Context, token string) error {
 	// Parse token to get expiry
 	claims, err := s.jwtService.ValidateToken(token)
 	if err != nil {
@@ -452,7 +459,7 @@ func (s *authService) BlacklistToken(ctx context.Context, token string) error {
 }
 
 // generateTokens generates both access and refresh tokens
-func (s *authService) generateTokens(userID uuid.UUID, email string) (*services.AuthTokens, error) {
+func (s *AuthService) generateTokens(userID uuid.UUID, email string) (*services.AuthTokens, error) {
 	// Generate access token
 	accessToken, err := s.jwtService.GenerateAccessToken(userID, email)
 	if err != nil {
@@ -476,7 +483,7 @@ func (s *authService) generateTokens(userID uuid.UUID, email string) (*services.
 
 // Validation methods
 
-func (s *authService) validateRegisterRequest(req *services.RegisterRequest) error {
+func (s *AuthService) validateRegisterRequest(req *services.RegisterRequest) error {
 	if req.Email == "" {
 		return fmt.Errorf("email is required")
 	}
@@ -490,7 +497,7 @@ func (s *authService) validateRegisterRequest(req *services.RegisterRequest) err
 	return s.validatePassword(req.Password)
 }
 
-func (s *authService) validateLoginCredentials(credentials *services.LoginCredentials) error {
+func (s *AuthService) validateLoginCredentials(credentials *services.LoginCredentials) error {
 	if credentials.Email == "" {
 		return fmt.Errorf("email is required")
 	}
@@ -500,7 +507,7 @@ func (s *authService) validateLoginCredentials(credentials *services.LoginCreden
 	return nil
 }
 
-func (s *authService) validatePassword(password string) error {
+func (s *AuthService) validatePassword(password string) error {
 	if len(password) < 8 {
 		return fmt.Errorf("password must be at least 8 characters long")
 	}

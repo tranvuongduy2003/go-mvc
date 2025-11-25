@@ -8,17 +8,18 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/cache"
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
-	natsAdapter "github.com/tranvuongduy2003/go-mvc/internal/adapters/messaging/nats"
-	postgresRepos "github.com/tranvuongduy2003/go-mvc/internal/adapters/persistence/postgres/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/database"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/security"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/tracing"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	coreServices "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/cache"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/database"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/external"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
+	natsAdapter "github.com/tranvuongduy2003/go-mvc/internal/infrastructure/messaging/nats"
+	postgresRepos "github.com/tranvuongduy2003/go-mvc/internal/infrastructure/persistence/postgres/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/security"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/tracing"
 )
 
 // InfrastructureModule provides infrastructure dependencies
@@ -173,8 +174,10 @@ func InfrastructureLifecycle(
 	})
 }
 
-// NewFileStorageService provides file storage service
-func NewFileStorageService(cfg *config.AppConfig, logger *logger.Logger) (*external.FileStorageService, error) {
+// NewFileStorageService provides file storage service as interface
+// Returns the port interface, not the concrete implementation
+// This follows Dependency Inversion Principle
+func NewFileStorageService(cfg *config.AppConfig, logger *logger.Logger) (coreServices.FileStorageService, error) {
 	fileStorageConfig := &external.FileStorageConfig{
 		Endpoint:        cfg.External.FileStorage.Endpoint,
 		AccessKeyID:     cfg.External.FileStorage.AccessKeyID,
@@ -184,6 +187,7 @@ func NewFileStorageService(cfg *config.AppConfig, logger *logger.Logger) (*exter
 		UseSSL:          cfg.External.FileStorage.UseSSL,
 	}
 
+	// Return as interface type, not concrete type
 	return external.NewFileStorageService(fileStorageConfig, logger)
 }
 

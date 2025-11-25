@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 )
 
 // UpdateUserCommand represents the command to update an existing user

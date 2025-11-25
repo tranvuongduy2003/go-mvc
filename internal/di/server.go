@@ -10,11 +10,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
-	portServices "github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
-	"github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
-	v1 "github.com/tranvuongduy2003/go-mvc/internal/handlers/http/rest/v1"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
+	portServices "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/interfaces/http/middleware"
+	v1 "github.com/tranvuongduy2003/go-mvc/internal/interfaces/http/rest/v1"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 

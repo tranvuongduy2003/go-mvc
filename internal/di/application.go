@@ -4,9 +4,9 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/tranvuongduy2003/go-mvc/internal/di/modules"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/tracing"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/tracing"
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 	"github.com/tranvuongduy2003/go-mvc/pkg/validator"
 )

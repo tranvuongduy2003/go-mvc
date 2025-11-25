@@ -6,8 +6,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/shared/events"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/shared/events"
 )
 
 // UserEventHandler handles user domain events

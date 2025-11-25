@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
 )
 
 // VerifyEmailCommand represents the email verification command
@@ -14,20 +14,20 @@ type VerifyEmailCommand struct {
 
 // VerifyEmailCommandHandler handles the VerifyEmailCommand
 type VerifyEmailCommandHandler struct {
-	authService services.AuthService
+	emailVerificationService services.EmailVerificationService
 }
 
 // NewVerifyEmailCommandHandler creates a new VerifyEmailCommandHandler
-func NewVerifyEmailCommandHandler(authService services.AuthService) *VerifyEmailCommandHandler {
+func NewVerifyEmailCommandHandler(emailVerificationService services.EmailVerificationService) *VerifyEmailCommandHandler {
 	return &VerifyEmailCommandHandler{
-		authService: authService,
+		emailVerificationService: emailVerificationService,
 	}
 }
 
 // Handle executes the VerifyEmailCommand
 func (h *VerifyEmailCommandHandler) Handle(ctx context.Context, cmd VerifyEmailCommand) (*dto.StatusResponse, error) {
 	// Verify email
-	err := h.authService.VerifyEmail(ctx, cmd.Token)
+	err := h.emailVerificationService.VerifyEmail(ctx, cmd.Token)
 	if err != nil {
 		return nil, err
 	}

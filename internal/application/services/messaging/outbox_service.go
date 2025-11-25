@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
+	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
 )
 
 // OutboxService handles the outbox pattern for reliable message publishing

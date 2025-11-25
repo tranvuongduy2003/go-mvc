@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
+	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
 )
 
 // InboxService handles the inbox pattern for message deduplication on consumer side

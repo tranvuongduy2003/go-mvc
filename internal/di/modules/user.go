@@ -3,15 +3,15 @@ package modules
 import (
 	"go.uber.org/fx"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/adapters/external"
 	userCommands "github.com/tranvuongduy2003/go-mvc/internal/application/commands/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/events/handlers"
 	userQueries "github.com/tranvuongduy2003/go-mvc/internal/application/queries/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services"
 	userValidators "github.com/tranvuongduy2003/go-mvc/internal/application/validators/user"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/external"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
 )
 
 // UserModule provides user domain dependencies

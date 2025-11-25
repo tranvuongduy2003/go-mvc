@@ -5,7 +5,7 @@ import (
 	"go.uber.org/fx/fxevent"
 
 	di "github.com/tranvuongduy2003/go-mvc/internal/di"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/logger"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
 )
 
 // ResendVerificationEmailCommand represents the resend verification email command
@@ -14,20 +14,19 @@ type ResendVerificationEmailCommand struct {
 
 // ResendVerificationEmailCommandHandler handles the ResendVerificationEmailCommand
 type ResendVerificationEmailCommandHandler struct {
-	authService services.AuthService
+	emailVerificationService services.EmailVerificationService
 }
 
 // NewResendVerificationEmailCommandHandler creates a new ResendVerificationEmailCommandHandler
-func NewResendVerificationEmailCommandHandler(authService services.AuthService) *ResendVerificationEmailCommandHandler {
+func NewResendVerificationEmailCommandHandler(emailVerificationService services.EmailVerificationService) *ResendVerificationEmailCommandHandler {
 	return &ResendVerificationEmailCommandHandler{
-		authService: authService,
+		emailVerificationService: emailVerificationService,
 	}
 }
 
 // Handle executes the ResendVerificationEmailCommand
 func (h *ResendVerificationEmailCommandHandler) Handle(ctx context.Context, cmd ResendVerificationEmailCommand) (*dto.StatusResponse, error) {
-	// Resend verification email
-	err := h.authService.ResendVerificationEmail(ctx, cmd.Email)
+	err := h.emailVerificationService.ResendVerificationEmail(ctx, cmd.Email)
 	if err != nil {
 		return nil, err
 	}

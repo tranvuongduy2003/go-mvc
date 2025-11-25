@@ -3,8 +3,8 @@ package queries
 import (
 	"context"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 

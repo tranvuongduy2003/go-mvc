@@ -7,13 +7,13 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	jobHandlers "github.com/tranvuongduy2003/go-mvc/internal/adapters/jobs/handlers"
-	natsAdapter "github.com/tranvuongduy2003/go-mvc/internal/adapters/messaging/nats"
-	postgresMessaging "github.com/tranvuongduy2003/go-mvc/internal/adapters/persistence/postgres/messaging"
 	messagingServices "github.com/tranvuongduy2003/go-mvc/internal/application/services/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
-	"github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
-	"github.com/tranvuongduy2003/go-mvc/internal/shared/config"
+	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
+	jobHandlers "github.com/tranvuongduy2003/go-mvc/internal/infrastructure/jobs/handlers"
+	natsAdapter "github.com/tranvuongduy2003/go-mvc/internal/infrastructure/messaging/nats"
+	postgresMessaging "github.com/tranvuongduy2003/go-mvc/internal/infrastructure/persistence/postgres/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/interfaces/http/middleware"
 )
 
 // MessagingModule provides messaging-related dependencies

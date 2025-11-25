@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
 )
 
 // DeleteUserCommand represents the command to delete a user
