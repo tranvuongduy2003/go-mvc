@@ -7,8 +7,8 @@ on:
     branches: [main, master, develop]
 
 env:
-  GO_VERSION: "1.24"
-  GOLANGCI_LINT_VERSION: "v1.61"
+  GO_VERSION: "1.24.5"
+  GOLANGCI_LINT_VERSION: "v2.2"
 
 jobs:
   # Code Quality Checks
