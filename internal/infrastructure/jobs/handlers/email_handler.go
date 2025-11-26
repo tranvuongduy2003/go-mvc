@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	domainjobs "github.com/tranvuongduy2003/go-mvc/internal/domain/jobs"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/jobs"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
 // EmailJobHandler handles email sending jobs
 type EmailJobHandler struct {
 	emailService EmailService
-	metrics      jobs.JobMetrics
+	metrics      job.JobMetrics
 }
 
 // EmailService defines the interface for sending emails
@@ -23,7 +22,7 @@ type EmailService interface {
 }
 
 // NewEmailJobHandler creates a new email job handler
-func NewEmailJobHandler(emailService EmailService, metrics jobs.JobMetrics) *EmailJobHandler {
+func NewEmailJobHandler(emailService EmailService, metrics job.JobMetrics) *EmailJobHandler {
 	return &EmailJobHandler{
 		emailService: emailService,
 		metrics:      metrics,
@@ -31,21 +30,21 @@ func NewEmailJobHandler(emailService EmailService, metrics jobs.JobMetrics) *Ema
 }
 
 // Execute processes an email job
-func (h *EmailJobHandler) Execute(ctx context.Context, job jobs.Job) error {
+func (h *EmailJobHandler) Execute(ctx context.Context, excutedJob job.Job) error {
 	// Start timing
 	start := time.Now()
 	defer func() {
 		if h.metrics != nil {
-			h.metrics.ObserveJobDuration(job.GetType(), time.Since(start))
+			h.metrics.ObserveJobDuration(excutedJob.GetType(), time.Since(start))
 		}
 	}()
 
 	// Cast to EmailJob
-	emailJob, ok := job.(*domainjobs.EmailJob)
+	emailJob, ok := excutedJob.(*job.EmailJob)
 	if !ok {
-		err := fmt.Errorf("expected EmailJob, got %T", job)
+		err := fmt.Errorf("expected EmailJob, got %T", excutedJob)
 		if h.metrics != nil {
-			h.metrics.IncrementJobsProcessed(job.GetType(), false)
+			h.metrics.IncrementJobsProcessed(excutedJob.GetType(), false)
 		}
 		return err
 	}
@@ -79,7 +78,7 @@ func (h *EmailJobHandler) Execute(ctx context.Context, job jobs.Job) error {
 	// Record metrics
 	if h.metrics != nil {
 		success := err == nil
-		h.metrics.IncrementJobsProcessed(job.GetType(), success)
+		h.metrics.IncrementJobsProcessed(excutedJob.GetType(), success)
 
 		// Custom business metrics
 		if businessMetrics, ok := h.metrics.(*BusinessEmailMetrics); ok {
@@ -101,7 +100,7 @@ func (h *EmailJobHandler) GetJobType() string {
 
 // Private helper methods for different email types
 
-func (h *EmailJobHandler) handleWelcomeEmail(ctx context.Context, to string, payload jobs.JobPayload) error {
+func (h *EmailJobHandler) handleWelcomeEmail(ctx context.Context, to string, payload job.JobPayload) error {
 	username, _ := payload["username"].(string)
 
 	subject := "Welcome to Go-MVC!"
@@ -115,7 +114,7 @@ func (h *EmailJobHandler) handleWelcomeEmail(ctx context.Context, to string, pay
 	return h.emailService.SendEmail(ctx, to, subject, body)
 }
 
-func (h *EmailJobHandler) handlePasswordResetEmail(ctx context.Context, to string, payload jobs.JobPayload) error {
+func (h *EmailJobHandler) handlePasswordResetEmail(ctx context.Context, to string, payload job.JobPayload) error {
 	token, _ := payload["reset_token"].(string)
 	resetURL, _ := payload["reset_url"].(string)
 
@@ -152,7 +151,7 @@ func (h *EmailJobHandler) handleNotificationEmail(ctx context.Context, to, subje
 	return h.emailService.SendEmail(ctx, to, subject, wrappedBody)
 }
 
-func (h *EmailJobHandler) handleBulkEmail(ctx context.Context, payload jobs.JobPayload) error {
+func (h *EmailJobHandler) handleBulkEmail(ctx context.Context, payload job.JobPayload) error {
 	recipients, _ := payload["recipients"].([]string)
 	subject, _ := payload["subject"].(string)
 	body, _ := payload["body"].(string)
@@ -164,7 +163,7 @@ func (h *EmailJobHandler) handleBulkEmail(ctx context.Context, payload jobs.JobP
 	return h.emailService.SendBulkEmail(ctx, recipients, subject, body)
 }
 
-func (h *EmailJobHandler) handleTemplateEmail(ctx context.Context, to string, payload jobs.JobPayload) error {
+func (h *EmailJobHandler) handleTemplateEmail(ctx context.Context, to string, payload job.JobPayload) error {
 	templateID, _ := payload["template_id"].(string)
 	templateData, _ := payload["template_data"].(map[string]interface{})
 
@@ -184,63 +183,63 @@ func NewEmailJobFactory() *EmailJobFactory {
 }
 
 // CreateWelcomeEmailJob creates a welcome email job
-func (f *EmailJobFactory) CreateWelcomeEmailJob(to, username string) (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *EmailJobFactory) CreateWelcomeEmailJob(to, username string) (job.Job, error) {
+	payload := job.JobPayload{
 		"email_type": "welcome",
 		"to":         to,
 		"username":   username,
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJob("email", payload)
 }
 
 // CreatePasswordResetEmailJob creates a password reset email job
-func (f *EmailJobFactory) CreatePasswordResetEmailJob(to, resetToken, resetURL string) (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *EmailJobFactory) CreatePasswordResetEmailJob(to, resetToken, resetURL string) (job.Job, error) {
+	payload := job.JobPayload{
 		"email_type":  "password_reset",
 		"to":          to,
 		"reset_token": resetToken,
 		"reset_url":   resetURL,
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJob("email", payload)
 }
 
 // CreateNotificationEmailJob creates a notification email job
-func (f *EmailJobFactory) CreateNotificationEmailJob(to, subject, body string, priority jobs.JobPriority) (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *EmailJobFactory) CreateNotificationEmailJob(to, subject, body string, priority job.JobPriority) (job.Job, error) {
+	payload := job.JobPayload{
 		"email_type": "notification",
 		"to":         to,
 		"subject":    subject,
 		"body":       body,
 	}
 
-	opts := jobs.JobOptions{
+	opts := job.JobOptions{
 		Priority: priority,
 		Queue:    "notifications",
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJobWithOptions("email", payload, opts)
 }
 
 // CreateBulkEmailJob creates a bulk email job
-func (f *EmailJobFactory) CreateBulkEmailJob(recipients []string, subject, body string) (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *EmailJobFactory) CreateBulkEmailJob(recipients []string, subject, body string) (job.Job, error) {
+	payload := job.JobPayload{
 		"email_type": "bulk",
 		"recipients": recipients,
 		"subject":    subject,
 		"body":       body,
 	}
 
-	opts := jobs.JobOptions{
-		Priority: jobs.PriorityLow, // Bulk emails have lower priority
+	opts := job.JobOptions{
+		Priority: job.PriorityLow, // Bulk emails have lower priority
 		Queue:    "bulk",
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJobWithOptions("email", payload, opts)
 }
 
@@ -293,12 +292,12 @@ func (m *MockEmailService) SendTemplateEmail(ctx context.Context, to, templateID
 
 // BusinessEmailMetrics extends the basic metrics with email-specific metrics
 type BusinessEmailMetrics struct {
-	jobs.JobMetrics
+	job.JobMetrics
 	emailCounts map[string]int64
 }
 
 // NewBusinessEmailMetrics creates enhanced email metrics
-func NewBusinessEmailMetrics(baseMetrics jobs.JobMetrics) *BusinessEmailMetrics {
+func NewBusinessEmailMetrics(baseMetrics job.JobMetrics) *BusinessEmailMetrics {
 	return &BusinessEmailMetrics{
 		JobMetrics:  baseMetrics,
 		emailCounts: make(map[string]int64),

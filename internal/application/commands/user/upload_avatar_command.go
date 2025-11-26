@@ -5,10 +5,10 @@ import (
 	"mime/multipart"
 
 	userDto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/user"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/shared/events"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
@@ -23,15 +23,15 @@ type UploadAvatarCommand struct {
 // Now depends on port interface instead of concrete implementation
 // This follows Dependency Inversion Principle
 type UploadAvatarCommandHandler struct {
-	userRepo           repositories.UserRepository
-	fileStorageService services.FileStorageService // Changed to use port interface
+	userRepo           user.UserRepository
+	fileStorageService contracts.FileStorageService // Changed to use port interface
 	eventBus           messaging.EventBus
 }
 
 // NewUploadAvatarCommandHandler creates a new UploadAvatarCommandHandler
 func NewUploadAvatarCommandHandler(
-	userRepo repositories.UserRepository,
-	fileStorageService services.FileStorageService, // Changed parameter type
+	userRepo user.UserRepository,
+	fileStorageService contracts.FileStorageService, // Changed parameter type
 	eventBus messaging.EventBus,
 ) *UploadAvatarCommandHandler {
 	return &UploadAvatarCommandHandler{

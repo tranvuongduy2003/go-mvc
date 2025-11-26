@@ -10,7 +10,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
 )
 
@@ -354,7 +354,7 @@ func (e *NATSEventBus) PublishEvent(ctx context.Context, event messaging.Event) 
 func (e *NATSEventBus) SubscribeToEvent(eventType string, handler messaging.EventHandler) (messaging.Subscription, error) {
 	subject := fmt.Sprintf("events.%s", eventType)
 
-	messageHandler := func(msg messaging.Message) error {
+	messageHandler := func(msg messaging.BrokerMessage) error {
 		// Parse the event from message data
 		var eventData map[string]interface{}
 		if err := json.Unmarshal(msg.Data(), &eventData); err != nil {

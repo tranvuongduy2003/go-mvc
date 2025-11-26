@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/jobs"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 // SimpleScheduler implements the Scheduler interface using Redis
 type SimpleScheduler struct {
 	client   redis.UniversalClient
-	queue    jobs.JobQueue
+	queue    job.JobQueue
 	running  bool
 	shutdown chan struct{}
 	wg       sync.WaitGroup
@@ -34,13 +34,13 @@ type SimpleScheduler struct {
 
 // ScheduledJobInfo holds information about a scheduled job
 type ScheduledJobInfo struct {
-	Job         jobs.Job  `json:"job"`
+	Job         job.Job   `json:"job"`
 	ScheduledAt time.Time `json:"scheduled_at"`
 }
 
 // RecurringJobInfo holds information about a recurring job
 type RecurringJobInfo struct {
-	Job       jobs.Job      `json:"job"`
+	Job       job.Job       `json:"job"`
 	Interval  time.Duration `json:"interval"`
 	LastRun   time.Time     `json:"last_run"`
 	NextRun   time.Time     `json:"next_run"`
@@ -48,7 +48,7 @@ type RecurringJobInfo struct {
 }
 
 // NewSimpleScheduler creates a new simple scheduler
-func NewSimpleScheduler(client redis.UniversalClient, queue jobs.JobQueue) *SimpleScheduler {
+func NewSimpleScheduler(client redis.UniversalClient, queue job.JobQueue) *SimpleScheduler {
 	return &SimpleScheduler{
 		client:        client,
 		queue:         queue,
@@ -59,7 +59,7 @@ func NewSimpleScheduler(client redis.UniversalClient, queue jobs.JobQueue) *Simp
 }
 
 // Schedule adds a job to be executed at a specific time
-func (ss *SimpleScheduler) Schedule(ctx context.Context, job jobs.Job, at time.Time) error {
+func (ss *SimpleScheduler) Schedule(ctx context.Context, job job.Job, at time.Time) error {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
@@ -83,7 +83,7 @@ func (ss *SimpleScheduler) Schedule(ctx context.Context, job jobs.Job, at time.T
 }
 
 // ScheduleRecurring adds a recurring job with interval
-func (ss *SimpleScheduler) ScheduleRecurring(ctx context.Context, job jobs.Job, cronExpr string) error {
+func (ss *SimpleScheduler) ScheduleRecurring(ctx context.Context, job job.Job, cronExpr string) error {
 	// Parse simple interval from cronExpr (simplified implementation)
 	interval, err := ss.parseInterval(cronExpr)
 	if err != nil {
@@ -190,11 +190,11 @@ func (ss *SimpleScheduler) Stop(ctx context.Context) error {
 }
 
 // GetScheduledJobs returns all scheduled jobs
-func (ss *SimpleScheduler) GetScheduledJobs(ctx context.Context) ([]jobs.Job, error) {
+func (ss *SimpleScheduler) GetScheduledJobs(ctx context.Context) ([]job.Job, error) {
 	ss.mu.RLock()
 	defer ss.mu.RUnlock()
 
-	allJobs := make([]jobs.Job, 0, len(ss.scheduledJobs)+len(ss.recurringJobs))
+	allJobs := make([]job.Job, 0, len(ss.scheduledJobs)+len(ss.recurringJobs))
 
 	for _, info := range ss.scheduledJobs {
 		allJobs = append(allJobs, info.Job)
@@ -280,21 +280,21 @@ func (ss *SimpleScheduler) processJobs(ctx context.Context) {
 }
 
 // cloneJob creates a copy of a job for recurring execution
-func (ss *SimpleScheduler) cloneJob(job jobs.Job) jobs.Job {
+func (ss *SimpleScheduler) cloneJob(clonedJob job.Job) job.Job {
 	// Create a new job with the same type and payload but new ID
 	newID := uuid.New()
 
-	payload := make(jobs.JobPayload)
-	for k, v := range job.GetPayload() {
+	payload := make(job.JobPayload)
+	for k, v := range clonedJob.GetPayload() {
 		payload[k] = v
 	}
 
 	return &BasicScheduledJob{
 		id:         newID,
-		jobType:    job.GetType(),
+		jobType:    clonedJob.GetType(),
 		payload:    payload,
-		priority:   job.GetPriority(),
-		status:     jobs.JobStatusPending,
+		priority:   clonedJob.GetPriority(),
+		status:     job.JobStatusPending,
 		maxRetries: 3,
 		createdAt:  time.Now(),
 	}
@@ -321,9 +321,9 @@ func (ss *SimpleScheduler) parseInterval(cronExpr string) (time.Duration, error)
 type BasicScheduledJob struct {
 	id          uuid.UUID
 	jobType     string
-	payload     jobs.JobPayload
-	priority    jobs.JobPriority
-	status      jobs.JobStatus
+	payload     job.JobPayload
+	priority    job.JobPriority
+	status      job.JobStatus
 	maxRetries  int
 	retryCount  int
 	createdAt   time.Time
@@ -332,23 +332,23 @@ type BasicScheduledJob struct {
 	error       error
 }
 
-func (b *BasicScheduledJob) GetID() uuid.UUID                { return b.id }
-func (b *BasicScheduledJob) GetType() string                 { return b.jobType }
-func (b *BasicScheduledJob) GetPayload() jobs.JobPayload     { return b.payload }
-func (b *BasicScheduledJob) GetPriority() jobs.JobPriority   { return b.priority }
-func (b *BasicScheduledJob) GetStatus() jobs.JobStatus       { return b.status }
-func (b *BasicScheduledJob) SetStatus(status jobs.JobStatus) { b.status = status }
-func (b *BasicScheduledJob) GetMaxRetries() int              { return b.maxRetries }
-func (b *BasicScheduledJob) GetRetryCount() int              { return b.retryCount }
-func (b *BasicScheduledJob) IncrementRetryCount()            { b.retryCount++ }
-func (b *BasicScheduledJob) CanRetry() bool                  { return b.retryCount < b.maxRetries }
-func (b *BasicScheduledJob) GetCreatedAt() time.Time         { return b.createdAt }
-func (b *BasicScheduledJob) GetScheduledAt() *time.Time      { return b.scheduledAt }
-func (b *BasicScheduledJob) SetScheduledAt(at *time.Time)    { b.scheduledAt = at }
-func (b *BasicScheduledJob) GetProcessedAt() *time.Time      { return b.processedAt }
-func (b *BasicScheduledJob) SetProcessedAt(at *time.Time)    { b.processedAt = at }
-func (b *BasicScheduledJob) GetError() error                 { return b.error }
-func (b *BasicScheduledJob) SetError(err error)              { b.error = err }
+func (b *BasicScheduledJob) GetID() uuid.UUID               { return b.id }
+func (b *BasicScheduledJob) GetType() string                { return b.jobType }
+func (b *BasicScheduledJob) GetPayload() job.JobPayload     { return b.payload }
+func (b *BasicScheduledJob) GetPriority() job.JobPriority   { return b.priority }
+func (b *BasicScheduledJob) GetStatus() job.JobStatus       { return b.status }
+func (b *BasicScheduledJob) SetStatus(status job.JobStatus) { b.status = status }
+func (b *BasicScheduledJob) GetMaxRetries() int             { return b.maxRetries }
+func (b *BasicScheduledJob) GetRetryCount() int             { return b.retryCount }
+func (b *BasicScheduledJob) IncrementRetryCount()           { b.retryCount++ }
+func (b *BasicScheduledJob) CanRetry() bool                 { return b.retryCount < b.maxRetries }
+func (b *BasicScheduledJob) GetCreatedAt() time.Time        { return b.createdAt }
+func (b *BasicScheduledJob) GetScheduledAt() *time.Time     { return b.scheduledAt }
+func (b *BasicScheduledJob) SetScheduledAt(at *time.Time)   { b.scheduledAt = at }
+func (b *BasicScheduledJob) GetProcessedAt() *time.Time     { return b.processedAt }
+func (b *BasicScheduledJob) SetProcessedAt(at *time.Time)   { b.processedAt = at }
+func (b *BasicScheduledJob) GetError() error                { return b.error }
+func (b *BasicScheduledJob) SetError(err error)             { b.error = err }
 
 // Redis storage methods
 
@@ -454,9 +454,9 @@ func (ss *SimpleScheduler) parseScheduledJobData(data map[string]string) (*Sched
 	job := &BasicScheduledJob{
 		id:         jobID,
 		jobType:    jobType,
-		payload:    make(jobs.JobPayload),
-		priority:   jobs.PriorityNormal,
-		status:     jobs.JobStatusPending,
+		payload:    make(job.JobPayload),
+		priority:   job.PriorityNormal,
+		status:     job.JobStatusPending,
 		maxRetries: 3,
 		createdAt:  time.Now(),
 	}
@@ -501,9 +501,9 @@ func (ss *SimpleScheduler) parseRecurringJobData(data map[string]string) (*Recur
 	job := &BasicScheduledJob{
 		id:         jobID,
 		jobType:    jobType,
-		payload:    make(jobs.JobPayload),
-		priority:   jobs.PriorityNormal,
-		status:     jobs.JobStatusPending,
+		payload:    make(job.JobPayload),
+		priority:   job.PriorityNormal,
+		status:     job.JobStatusPending,
 		maxRetries: 3,
 		createdAt:  time.Now(),
 	}
@@ -552,7 +552,7 @@ func (ss *SimpleScheduler) getRecurringJobKey(jobID uuid.UUID) string {
 // Helper functions
 
 // ScheduleBatch schedules multiple jobs at once
-func (ss *SimpleScheduler) ScheduleBatch(ctx context.Context, jobs []jobs.Job, at time.Time) error {
+func (ss *SimpleScheduler) ScheduleBatch(ctx context.Context, jobs []job.Job, at time.Time) error {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
@@ -574,11 +574,11 @@ func (ss *SimpleScheduler) ScheduleBatch(ctx context.Context, jobs []jobs.Job, a
 }
 
 // GetJobsByScheduleTime returns jobs scheduled within a time range
-func (ss *SimpleScheduler) GetJobsByScheduleTime(start, end time.Time) []jobs.Job {
+func (ss *SimpleScheduler) GetJobsByScheduleTime(start, end time.Time) []job.Job {
 	ss.mu.RLock()
 	defer ss.mu.RUnlock()
 
-	var filteredJobs []jobs.Job
+	var filteredJobs []job.Job
 
 	for _, info := range ss.scheduledJobs {
 		if info.ScheduledAt.After(start) && info.ScheduledAt.Before(end) {

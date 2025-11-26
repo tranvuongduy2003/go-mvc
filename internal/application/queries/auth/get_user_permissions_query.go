@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // GetUserPermissionsQuery represents the get user permissions query
@@ -14,11 +14,11 @@ type GetUserPermissionsQuery struct {
 
 // GetUserPermissionsQueryHandler handles the GetUserPermissionsQuery
 type GetUserPermissionsQueryHandler struct {
-	authorizationService services.AuthorizationService
+	authorizationService contracts.AuthorizationService
 }
 
 // NewGetUserPermissionsQueryHandler creates a new GetUserPermissionsQueryHandler
-func NewGetUserPermissionsQueryHandler(authorizationService services.AuthorizationService) *GetUserPermissionsQueryHandler {
+func NewGetUserPermissionsQueryHandler(authorizationService contracts.AuthorizationService) *GetUserPermissionsQueryHandler {
 	return &GetUserPermissionsQueryHandler{
 		authorizationService: authorizationService,
 	}

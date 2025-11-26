@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +14,7 @@ type gormMessageDeduplicationRepository struct {
 }
 
 // NewMessageDeduplicationRepository creates a new message deduplication repository using GORM
-func NewMessageDeduplicationRepository(db *gorm.DB) messagingPorts.MessageDeduplicationRepository {
+func NewMessageDeduplicationRepository(db *gorm.DB) messaging.MessageDeduplicationRepository {
 	return &gormMessageDeduplicationRepository{
 		db: db,
 	}

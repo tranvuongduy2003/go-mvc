@@ -13,15 +13,15 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
 )
 
 // Compile-time check to ensure FileStorageService implements the port interface
-var _ services.FileStorageService = (*FileStorageService)(nil)
+var _ contracts.FileStorageService = (*FileStorageService)(nil)
 
 // FileStorageService handles MinIO S3 file storage
-// Implements services.FileStorageService port interface
+// Implements contracts.FileStorageService port interface
 type FileStorageService struct {
 	client     *minio.Client
 	bucketName string
@@ -108,7 +108,7 @@ func (s *FileStorageService) ensureBucketExists(ctx context.Context) error {
 	return nil
 }
 
-// Upload implements services.FileStorageService.Upload
+// Upload implements contracts.FileStorageService.Upload
 // Uploads a file to storage and returns the file key and CDN URL
 func (s *FileStorageService) Upload(ctx context.Context, file io.Reader, filename string, contentType string, size int64) (fileKey string, cdnURL string, err error) {
 	// Validate file type for images
@@ -140,7 +140,7 @@ func (s *FileStorageService) Upload(ctx context.Context, file io.Reader, filenam
 	return fileKey, cdnURL, nil
 }
 
-// Delete implements services.FileStorageService.Delete
+// Delete implements contracts.FileStorageService.Delete
 // Removes a file from storage
 func (s *FileStorageService) Delete(ctx context.Context, fileKey string) error {
 	s.logger.Infof("Deleting file: %s", fileKey)
@@ -155,14 +155,14 @@ func (s *FileStorageService) Delete(ctx context.Context, fileKey string) error {
 	return nil
 }
 
-// GetURL implements services.FileStorageService.GetURL
+// GetURL implements contracts.FileStorageService.GetURL
 // Returns a presigned/public URL for a file
 func (s *FileStorageService) GetURL(ctx context.Context, fileKey string) (string, error) {
 	// For public buckets, return the CDN URL directly
 	return fmt.Sprintf("%s/%s/%s", s.cdnURL, s.bucketName, fileKey), nil
 }
 
-// Exists implements services.FileStorageService.Exists
+// Exists implements contracts.FileStorageService.Exists
 // Checks if a file exists in storage
 func (s *FileStorageService) Exists(ctx context.Context, fileKey string) (bool, error) {
 	_, err := s.client.StatObject(ctx, s.bucketName, fileKey, minio.StatObjectOptions{})

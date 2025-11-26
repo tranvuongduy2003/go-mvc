@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // ResendVerificationEmailCommand represents the resend verification email command
@@ -14,11 +14,11 @@ type ResendVerificationEmailCommand struct {
 
 // ResendVerificationEmailCommandHandler handles the ResendVerificationEmailCommand
 type ResendVerificationEmailCommandHandler struct {
-	emailVerificationService services.EmailVerificationService
+	emailVerificationService contracts.EmailVerificationService
 }
 
 // NewResendVerificationEmailCommandHandler creates a new ResendVerificationEmailCommandHandler
-func NewResendVerificationEmailCommandHandler(emailVerificationService services.EmailVerificationService) *ResendVerificationEmailCommandHandler {
+func NewResendVerificationEmailCommandHandler(emailVerificationService contracts.EmailVerificationService) *ResendVerificationEmailCommandHandler {
 	return &ResendVerificationEmailCommandHandler{
 		emailVerificationService: emailVerificationService,
 	}

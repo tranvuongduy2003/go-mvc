@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // RegisterCommand represents the register command
@@ -17,11 +17,11 @@ type RegisterCommand struct {
 
 // RegisterCommandHandler handles the RegisterCommand
 type RegisterCommandHandler struct {
-	authService services.AuthService
+	authService contracts.AuthService
 }
 
 // NewRegisterCommandHandler creates a new RegisterCommandHandler
-func NewRegisterCommandHandler(authService services.AuthService) *RegisterCommandHandler {
+func NewRegisterCommandHandler(authService contracts.AuthService) *RegisterCommandHandler {
 	return &RegisterCommandHandler{
 		authService: authService,
 	}
@@ -30,7 +30,7 @@ func NewRegisterCommandHandler(authService services.AuthService) *RegisterComman
 // Handle executes the RegisterCommand
 func (h *RegisterCommandHandler) Handle(ctx context.Context, cmd RegisterCommand) (*dto.RegisterResponse, error) {
 	// Create register request
-	registerReq := &services.RegisterRequest{
+	registerReq := &contracts.RegisterRequest{
 		Email:    cmd.Email,
 		Name:     cmd.Name,
 		Phone:    cmd.Phone,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 )
 
@@ -17,11 +16,11 @@ type UpdateUserCommand struct {
 
 // UpdateUserCommandHandler handles the UpdateUserCommand
 type UpdateUserCommandHandler struct {
-	userRepo repositories.UserRepository
+	userRepo user.UserRepository
 }
 
 // NewUpdateUserCommandHandler creates a new UpdateUserCommandHandler
-func NewUpdateUserCommandHandler(userRepo repositories.UserRepository) *UpdateUserCommandHandler {
+func NewUpdateUserCommandHandler(userRepo user.UserRepository) *UpdateUserCommandHandler {
 	return &UpdateUserCommandHandler{
 		userRepo: userRepo,
 	}

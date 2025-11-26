@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // ChangePasswordCommand represents the change password command
@@ -16,11 +16,11 @@ type ChangePasswordCommand struct {
 
 // ChangePasswordCommandHandler handles the ChangePasswordCommand
 type ChangePasswordCommandHandler struct {
-	passwordService services.PasswordManagementService
+	passwordService contracts.PasswordManagementService
 }
 
 // NewChangePasswordCommandHandler creates a new ChangePasswordCommandHandler
-func NewChangePasswordCommandHandler(passwordService services.PasswordManagementService) *ChangePasswordCommandHandler {
+func NewChangePasswordCommandHandler(passwordService contracts.PasswordManagementService) *ChangePasswordCommandHandler {
 	return &ChangePasswordCommandHandler{
 		passwordService: passwordService,
 	}

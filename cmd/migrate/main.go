@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	di "github.com/tranvuongduy2003/go-mvc/internal/di"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure"
 )
 
 var rootCmd = &cobra.Command{
@@ -56,7 +56,7 @@ func upCommand() *cobra.Command {
 			fmt.Println("Running database migrations...")
 
 			app := fx.New(
-				di.InfrastructureModule,
+				infrastructure.InfrastructureModule,
 				fx.Provide(func() *zap.Logger {
 					logger, _ := zap.NewDevelopment()
 					return logger
@@ -108,7 +108,7 @@ func downCommand() *cobra.Command {
 			fmt.Printf("Rolling back %d migration step(s)...\n", steps)
 
 			app := fx.New(
-				di.InfrastructureModule,
+				infrastructure.InfrastructureModule,
 				fx.Invoke(func(db *gorm.DB, logger *zap.Logger) {
 					if err := runMigrationsDown(db, steps); err != nil {
 						logger.Error("Migration rollback failed", zap.Error(err))
@@ -143,7 +143,7 @@ func statusCommand() *cobra.Command {
 			fmt.Println("Checking migration status...")
 
 			app := fx.New(
-				di.InfrastructureModule,
+				infrastructure.InfrastructureModule,
 				fx.Provide(func() *zap.Logger {
 					logger, _ := zap.NewDevelopment()
 					return logger
@@ -181,7 +181,7 @@ func resetCommand() *cobra.Command {
 			fmt.Println("Resetting all migrations...")
 
 			app := fx.New(
-				di.InfrastructureModule,
+				infrastructure.InfrastructureModule,
 				fx.Invoke(func(db *gorm.DB, logger *zap.Logger) {
 					if err := resetAllMigrations(db); err != nil {
 						logger.Error("Migration reset failed", zap.Error(err))

@@ -4,28 +4,29 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/auth"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
 // authorizationService implements the AuthorizationService interface
 type authorizationService struct {
-	userRepo           repositories.UserRepository
-	roleRepo           repositories.RoleRepository
-	permissionRepo     repositories.PermissionRepository
-	userRoleRepo       repositories.UserRoleRepository
-	rolePermissionRepo repositories.RolePermissionRepository
+	userRepo           user.UserRepository
+	roleRepo           auth.RoleRepository
+	permissionRepo     auth.PermissionRepository
+	userRoleRepo       auth.UserRoleRepository
+	rolePermissionRepo auth.RolePermissionRepository
 }
 
 // NewAuthorizationService creates a new authorization service
 func NewAuthorizationService(
-	userRepo repositories.UserRepository,
-	roleRepo repositories.RoleRepository,
-	permissionRepo repositories.PermissionRepository,
-	userRoleRepo repositories.UserRoleRepository,
-	rolePermissionRepo repositories.RolePermissionRepository,
-) services.AuthorizationService {
+	userRepo user.UserRepository,
+	roleRepo auth.RoleRepository,
+	permissionRepo auth.PermissionRepository,
+	userRoleRepo auth.UserRoleRepository,
+	rolePermissionRepo auth.RolePermissionRepository,
+) contracts.AuthorizationService {
 	return &authorizationService{
 		userRepo:           userRepo,
 		roleRepo:           roleRepo,
@@ -230,7 +231,7 @@ func (s *authorizationService) IsModerator(ctx context.Context, userID string) (
 }
 
 // GetEffectivePermissions gets all effective permissions (through all roles)
-func (s *authorizationService) GetEffectivePermissions(ctx context.Context, userID string) ([]services.PermissionInfo, error) {
+func (s *authorizationService) GetEffectivePermissions(ctx context.Context, userID string) ([]contracts.PermissionInfo, error) {
 	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
@@ -238,10 +239,10 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 	}
 
 	if len(userRoles) == 0 {
-		return []services.PermissionInfo{}, nil
+		return []contracts.PermissionInfo{}, nil
 	}
 
-	permissionsMap := make(map[string]services.PermissionInfo)
+	permissionsMap := make(map[string]contracts.PermissionInfo)
 
 	// Get permissions for each role
 	for _, userRole := range userRoles {
@@ -271,7 +272,7 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 				// Use permission name as key to avoid duplicates
 				permissionName := permission.Name().String()
 				if _, exists := permissionsMap[permissionName]; !exists {
-					permissionsMap[permissionName] = services.PermissionInfo{
+					permissionsMap[permissionName] = contracts.PermissionInfo{
 						ID:          permission.ID().String(),
 						Name:        permission.Name().String(),
 						Resource:    permission.Resource().String(),
@@ -285,7 +286,7 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 	}
 
 	// Convert map to slice
-	permissions := make([]services.PermissionInfo, 0, len(permissionsMap))
+	permissions := make([]contracts.PermissionInfo, 0, len(permissionsMap))
 	for _, permission := range permissionsMap {
 		permissions = append(permissions, permission)
 	}

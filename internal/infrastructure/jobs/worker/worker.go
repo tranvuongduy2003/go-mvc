@@ -8,15 +8,15 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/jobs"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
 // Worker represents a single worker that processes jobs
 type Worker struct {
 	id       string
-	queue    jobs.JobQueue
-	handlers map[string]jobs.JobHandler
-	metrics  jobs.JobMetrics
+	queue    job.JobQueue
+	handlers map[string]job.JobHandler
+	metrics  job.JobMetrics
 	running  bool
 	shutdown chan struct{}
 	wg       sync.WaitGroup
@@ -24,12 +24,12 @@ type Worker struct {
 }
 
 // NewWorker creates a new worker
-func NewWorker(id string, queue jobs.JobQueue) *Worker {
+func NewWorker(id string, queue job.JobQueue) *Worker {
 	return NewWorkerWithJobMetrics(id, queue, nil)
 }
 
 // NewWorkerWithJobMetrics creates a new worker with job metrics
-func NewWorkerWithJobMetrics(id string, queue jobs.JobQueue, metrics jobs.JobMetrics) *Worker {
+func NewWorkerWithJobMetrics(id string, queue job.JobQueue, metrics job.JobMetrics) *Worker {
 	if id == "" {
 		id = uuid.New().String()
 	}
@@ -37,7 +37,7 @@ func NewWorkerWithJobMetrics(id string, queue jobs.JobQueue, metrics jobs.JobMet
 	return &Worker{
 		id:       id,
 		queue:    queue,
-		handlers: make(map[string]jobs.JobHandler),
+		handlers: make(map[string]job.JobHandler),
 		metrics:  metrics,
 		shutdown: make(chan struct{}),
 	}
@@ -56,7 +56,7 @@ func (w *Worker) IsRunning() bool {
 }
 
 // RegisterHandler registers a job handler for a specific job type
-func (w *Worker) RegisterHandler(handler jobs.JobHandler) {
+func (w *Worker) RegisterHandler(handler job.JobHandler) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.handlers[handler.GetJobType()] = handler
@@ -182,7 +182,7 @@ func (w *Worker) processJob(ctx context.Context) {
 // WorkerPool manages multiple workers
 type WorkerPool struct {
 	workers     map[string]*Worker
-	queue       jobs.JobQueue
+	queue       job.JobQueue
 	workerCount int
 	mu          sync.RWMutex
 	running     bool
@@ -203,7 +203,7 @@ type WorkerPoolStats struct {
 }
 
 // NewWorkerPool creates a new worker pool
-func NewWorkerPool(queue jobs.JobQueue, workerCount int) *WorkerPool {
+func NewWorkerPool(queue job.JobQueue, workerCount int) *WorkerPool {
 	if workerCount <= 0 {
 		workerCount = 1
 	}
@@ -332,7 +332,7 @@ func (wp *WorkerPool) RemoveWorker(workerID string) {
 }
 
 // RegisterHandler registers a handler with all workers
-func (wp *WorkerPool) RegisterHandler(handler jobs.JobHandler) {
+func (wp *WorkerPool) RegisterHandler(handler job.JobHandler) {
 	wp.mu.RLock()
 	defer wp.mu.RUnlock()
 
@@ -395,7 +395,7 @@ type WorkerWithMetrics struct {
 }
 
 // NewWorkerWithMetrics creates a new worker with metrics collection
-func NewWorkerWithMetrics(id string, queue jobs.JobQueue, pool *WorkerPool) *WorkerWithMetrics {
+func NewWorkerWithMetrics(id string, queue job.JobQueue, pool *WorkerPool) *WorkerWithMetrics {
 	worker := NewWorker(id, queue)
 	return &WorkerWithMetrics{
 		Worker: worker,

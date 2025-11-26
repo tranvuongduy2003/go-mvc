@@ -1,0 +1,17 @@
+package auth
+
+import "time"
+
+// UserRole represents a user-role assignment
+type UserRole struct {
+	ID         string
+	UserID     string
+	RoleID     string
+	AssignedBy *string
+	AssignedAt time.Time
+	ExpiresAt  *time.Time
+	IsActive   bool
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int64
+}

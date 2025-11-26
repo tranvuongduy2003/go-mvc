@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
 	"gorm.io/gorm"
 )
 
@@ -15,7 +14,7 @@ type gormInboxRepository struct {
 }
 
 // NewInboxRepository creates a new inbox repository using GORM
-func NewInboxRepository(db *gorm.DB) messagingPorts.InboxRepository {
+func NewInboxRepository(db *gorm.DB) messaging.InboxRepository {
 	return &gormInboxRepository{
 		db: db,
 	}

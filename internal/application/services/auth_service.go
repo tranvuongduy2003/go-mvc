@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/cache"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/external"
@@ -20,7 +19,7 @@ import (
 // AuthService is the concrete implementation
 // It implements AuthService, TokenManagementService, PasswordManagementService, and EmailVerificationService
 type AuthService struct {
-	userRepo        repositories.UserRepository
+	userRepo        user.UserRepository
 	jwtService      jwt.JWTService
 	passwordHasher  *security.PasswordHasher
 	tokenGenerator  *security.TokenGenerator
@@ -33,14 +32,14 @@ type AuthService struct {
 }
 
 // Compile-time interface checks
-var _ services.AuthService = (*AuthService)(nil)
-var _ services.TokenManagementService = (*AuthService)(nil)
-var _ services.PasswordManagementService = (*AuthService)(nil)
-var _ services.EmailVerificationService = (*AuthService)(nil)
+var _ contracts.AuthService = (*AuthService)(nil)
+var _ contracts.TokenManagementService = (*AuthService)(nil)
+var _ contracts.PasswordManagementService = (*AuthService)(nil)
+var _ contracts.EmailVerificationService = (*AuthService)(nil)
 
 // NewAuthService creates a new authentication service
 func NewAuthService(
-	userRepo repositories.UserRepository,
+	userRepo user.UserRepository,
 	jwtService jwt.JWTService,
 	passwordHasher *security.PasswordHasher,
 	cacheService *cache.Service,
@@ -62,7 +61,7 @@ func NewAuthService(
 }
 
 // Register creates a new user account
-func (s *AuthService) Register(ctx context.Context, req *services.RegisterRequest) (*services.AuthenticatedUser, error) {
+func (s *AuthService) Register(ctx context.Context, req *contracts.RegisterRequest) (*contracts.AuthenticatedUser, error) {
 	// Validate request
 	if err := s.validateRegisterRequest(req); err != nil {
 		return nil, fmt.Errorf("invalid registration data: %w", err)
@@ -105,14 +104,14 @@ func (s *AuthService) Register(ctx context.Context, req *services.RegisterReques
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
 	}
 
-	return &services.AuthenticatedUser{
+	return &contracts.AuthenticatedUser{
 		User:   userEntity,
 		Tokens: tokens,
 	}, nil
 }
 
 // Login authenticates a user with email and password
-func (s *AuthService) Login(ctx context.Context, credentials *services.LoginCredentials) (*services.AuthenticatedUser, error) {
+func (s *AuthService) Login(ctx context.Context, credentials *contracts.LoginCredentials) (*contracts.AuthenticatedUser, error) {
 	// Validate credentials
 	if err := s.validateLoginCredentials(credentials); err != nil {
 		return nil, apperrors.NewValidationError("invalid credentials", err)
@@ -149,14 +148,14 @@ func (s *AuthService) Login(ctx context.Context, credentials *services.LoginCred
 		return nil, apperrors.NewInternalError("failed to generate tokens", err)
 	}
 
-	return &services.AuthenticatedUser{
+	return &contracts.AuthenticatedUser{
 		User:   userEntity,
 		Tokens: tokens,
 	}, nil
 }
 
 // RefreshToken generates new access token using refresh token
-func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*services.AuthTokens, error) {
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*contracts.AuthTokens, error) {
 	// Check if token is blacklisted
 	if blacklisted, err := s.IsTokenBlacklisted(ctx, refreshToken); err != nil {
 		return nil, apperrors.NewInternalError("failed to check token blacklist", err)
@@ -176,7 +175,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*s
 		return nil, err // Already an AppError from jwt service
 	}
 
-	return &services.AuthTokens{
+	return &contracts.AuthTokens{
 		AccessToken:           newAccessToken,
 		RefreshToken:          refreshToken,
 		AccessTokenExpiresAt:  time.Unix(s.jwtService.GetAccessTokenExpirationTime(), 0),
@@ -459,7 +458,7 @@ func (s *AuthService) BlacklistToken(ctx context.Context, token string) error {
 }
 
 // generateTokens generates both access and refresh tokens
-func (s *AuthService) generateTokens(userID uuid.UUID, email string) (*services.AuthTokens, error) {
+func (s *AuthService) generateTokens(userID uuid.UUID, email string) (*contracts.AuthTokens, error) {
 	// Generate access token
 	accessToken, err := s.jwtService.GenerateAccessToken(userID, email)
 	if err != nil {
@@ -472,7 +471,7 @@ func (s *AuthService) generateTokens(userID uuid.UUID, email string) (*services.
 		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	return &services.AuthTokens{
+	return &contracts.AuthTokens{
 		AccessToken:           accessToken,
 		RefreshToken:          refreshToken,
 		AccessTokenExpiresAt:  time.Unix(s.jwtService.GetAccessTokenExpirationTime(), 0),
@@ -483,7 +482,7 @@ func (s *AuthService) generateTokens(userID uuid.UUID, email string) (*services.
 
 // Validation methods
 
-func (s *AuthService) validateRegisterRequest(req *services.RegisterRequest) error {
+func (s *AuthService) validateRegisterRequest(req *contracts.RegisterRequest) error {
 	if req.Email == "" {
 		return fmt.Errorf("email is required")
 	}
@@ -497,7 +496,7 @@ func (s *AuthService) validateRegisterRequest(req *services.RegisterRequest) err
 	return s.validatePassword(req.Password)
 }
 
-func (s *AuthService) validateLoginCredentials(credentials *services.LoginCredentials) error {
+func (s *AuthService) validateLoginCredentials(credentials *contracts.LoginCredentials) error {
 	if credentials.Email == "" {
 		return fmt.Errorf("email is required")
 	}

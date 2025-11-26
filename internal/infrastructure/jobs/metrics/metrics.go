@@ -6,8 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/jobs"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
 // JobMetricsCollector implements the JobMetrics interface using Prometheus
@@ -115,7 +114,7 @@ func (m *JobMetricsCollector) IncrementJobsEnqueued(jobType string) {
 }
 
 // IncrementJobsEnqueuedWithLabels increments the counter with custom labels
-func (m *JobMetricsCollector) IncrementJobsEnqueuedWithLabels(jobType, queue string, priority jobs.JobPriority) {
+func (m *JobMetricsCollector) IncrementJobsEnqueuedWithLabels(jobType, queue string, priority job.JobPriority) {
 	priorityStr := m.priorityToString(priority)
 	m.jobsEnqueued.WithLabelValues(jobType, queue, priorityStr).Inc()
 }
@@ -158,7 +157,7 @@ func (m *JobMetricsCollector) SetQueueSize(queue string, size int64) {
 }
 
 // SetQueueSizeWithPriority sets the queue size for a specific priority
-func (m *JobMetricsCollector) SetQueueSizeWithPriority(queue string, priority jobs.JobPriority, size int64) {
+func (m *JobMetricsCollector) SetQueueSizeWithPriority(queue string, priority job.JobPriority, size int64) {
 	priorityStr := m.priorityToString(priority)
 	m.queueSize.WithLabelValues(queue, priorityStr).Set(float64(size))
 }
@@ -180,15 +179,15 @@ func (m *JobMetricsCollector) SetActiveWorkers(count int) {
 
 // Helper methods
 
-func (m *JobMetricsCollector) priorityToString(priority jobs.JobPriority) string {
+func (m *JobMetricsCollector) priorityToString(priority job.JobPriority) string {
 	switch priority {
-	case jobs.PriorityLow:
+	case job.PriorityLow:
 		return "low"
-	case jobs.PriorityNormal:
+	case job.PriorityNormal:
 		return "normal"
-	case jobs.PriorityHigh:
+	case job.PriorityHigh:
 		return "high"
-	case jobs.PriorityCritical:
+	case job.PriorityCritical:
 		return "critical"
 	default:
 		return "unknown"
@@ -197,12 +196,12 @@ func (m *JobMetricsCollector) priorityToString(priority jobs.JobPriority) string
 
 // JobMetricsMiddleware wraps job handlers to automatically collect metrics
 type JobMetricsMiddleware struct {
-	next    jobs.JobHandler
+	next    job.JobHandler
 	metrics *JobMetricsCollector
 }
 
 // NewJobMetricsMiddleware creates a new metrics middleware
-func NewJobMetricsMiddleware(handler jobs.JobHandler, metrics *JobMetricsCollector) *JobMetricsMiddleware {
+func NewJobMetricsMiddleware(handler job.JobHandler, metrics *JobMetricsCollector) *JobMetricsMiddleware {
 	return &JobMetricsMiddleware{
 		next:    handler,
 		metrics: metrics,
@@ -210,7 +209,7 @@ func NewJobMetricsMiddleware(handler jobs.JobHandler, metrics *JobMetricsCollect
 }
 
 // Execute executes the job and collects metrics
-func (m *JobMetricsMiddleware) Execute(ctx context.Context, job jobs.Job) error {
+func (m *JobMetricsMiddleware) Execute(ctx context.Context, job job.Job) error {
 	start := time.Now()
 
 	// Execute the job
@@ -237,13 +236,13 @@ func (m *JobMetricsMiddleware) GetJobType() string {
 
 // JobQueueMetricsCollector periodically collects queue metrics
 type JobQueueMetricsCollector struct {
-	queue   jobs.JobQueue
+	queue   job.JobQueue
 	metrics *JobMetricsCollector
 	queues  []string
 }
 
 // NewJobQueueMetricsCollector creates a new queue metrics collector
-func NewJobQueueMetricsCollector(queue jobs.JobQueue, metrics *JobMetricsCollector, queues []string) *JobQueueMetricsCollector {
+func NewJobQueueMetricsCollector(queue job.JobQueue, metrics *JobMetricsCollector, queues []string) *JobQueueMetricsCollector {
 	if len(queues) == 0 {
 		queues = []string{"default"}
 	}

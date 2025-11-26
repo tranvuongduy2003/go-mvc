@@ -7,15 +7,14 @@ import (
 	"strings"
 	"time"
 
-	domainjobs "github.com/tranvuongduy2003/go-mvc/internal/domain/jobs"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/jobs"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
 // FileProcessingJobHandler handles file processing jobs
 type FileProcessingJobHandler struct {
 	fileService    FileProcessingService
 	storageService StorageService
-	metrics        jobs.JobMetrics
+	metrics        job.JobMetrics
 }
 
 // FileProcessingService defines the interface for file processing operations
@@ -67,7 +66,7 @@ type FileInfo struct {
 }
 
 // NewFileProcessingJobHandler creates a new file processing job handler
-func NewFileProcessingJobHandler(fileService FileProcessingService, storageService StorageService, metrics jobs.JobMetrics) *FileProcessingJobHandler {
+func NewFileProcessingJobHandler(fileService FileProcessingService, storageService StorageService, metrics job.JobMetrics) *FileProcessingJobHandler {
 	return &FileProcessingJobHandler{
 		fileService:    fileService,
 		storageService: storageService,
@@ -76,20 +75,20 @@ func NewFileProcessingJobHandler(fileService FileProcessingService, storageServi
 }
 
 // Execute processes a file processing job
-func (h *FileProcessingJobHandler) Execute(ctx context.Context, job jobs.Job) error {
+func (h *FileProcessingJobHandler) Execute(ctx context.Context, excutedJob job.Job) error {
 	start := time.Now()
 	defer func() {
 		if h.metrics != nil {
-			h.metrics.ObserveJobDuration(job.GetType(), time.Since(start))
+			h.metrics.ObserveJobDuration(excutedJob.GetType(), time.Since(start))
 		}
 	}()
 
 	// Cast to FileProcessingJob
-	fileJob, ok := job.(*domainjobs.FileProcessingJob)
+	fileJob, ok := excutedJob.(*job.FileProcessingJob)
 	if !ok {
-		err := fmt.Errorf("expected FileProcessingJob, got %T", job)
+		err := fmt.Errorf("expected FileProcessingJob, got %T", excutedJob)
 		if h.metrics != nil {
-			h.metrics.IncrementJobsProcessed(job.GetType(), false)
+			h.metrics.IncrementJobsProcessed(excutedJob.GetType(), false)
 		}
 		return err
 	}
@@ -104,7 +103,7 @@ func (h *FileProcessingJobHandler) Execute(ctx context.Context, job jobs.Job) er
 	if inputPath == "" {
 		err := fmt.Errorf("input_path is required")
 		if h.metrics != nil {
-			h.metrics.IncrementJobsProcessed(job.GetType(), false)
+			h.metrics.IncrementJobsProcessed(excutedJob.GetType(), false)
 		}
 		return err
 	}
@@ -132,7 +131,7 @@ func (h *FileProcessingJobHandler) Execute(ctx context.Context, job jobs.Job) er
 	// Record metrics
 	if h.metrics != nil {
 		success := err == nil
-		h.metrics.IncrementJobsProcessed(job.GetType(), success)
+		h.metrics.IncrementJobsProcessed(excutedJob.GetType(), success)
 
 		// Custom business metrics
 		if businessMetrics, ok := h.metrics.(*BusinessFileMetrics); ok {
@@ -154,7 +153,7 @@ func (h *FileProcessingJobHandler) GetJobType() string {
 
 // Private helper methods for different processing types
 
-func (h *FileProcessingJobHandler) processImage(ctx context.Context, inputPath, outputPath string, payload jobs.JobPayload) error {
+func (h *FileProcessingJobHandler) processImage(ctx context.Context, inputPath, outputPath string, payload job.JobPayload) error {
 	// Parse image processing options
 	options := ImageProcessingOptions{
 		Width:    getIntFromPayload(payload, "width", 0),
@@ -173,7 +172,7 @@ func (h *FileProcessingJobHandler) processImage(ctx context.Context, inputPath, 
 	return h.fileService.ProcessImage(ctx, inputPath, outputPath, options)
 }
 
-func (h *FileProcessingJobHandler) processVideo(ctx context.Context, inputPath, outputPath string, payload jobs.JobPayload) error {
+func (h *FileProcessingJobHandler) processVideo(ctx context.Context, inputPath, outputPath string, payload job.JobPayload) error {
 	// Parse video processing options
 	options := VideoProcessingOptions{
 		Resolution: getStringFromPayload(payload, "resolution", "720p"),
@@ -191,7 +190,7 @@ func (h *FileProcessingJobHandler) processVideo(ctx context.Context, inputPath, 
 	return h.fileService.ProcessVideo(ctx, inputPath, outputPath, options)
 }
 
-func (h *FileProcessingJobHandler) processDocument(ctx context.Context, inputPath, outputPath string, payload jobs.JobPayload) error {
+func (h *FileProcessingJobHandler) processDocument(ctx context.Context, inputPath, outputPath string, payload job.JobPayload) error {
 	// Parse document processing options
 	options := DocumentProcessingOptions{
 		ConvertTo:   getStringFromPayload(payload, "convert_to", "pdf"),
@@ -209,7 +208,7 @@ func (h *FileProcessingJobHandler) processDocument(ctx context.Context, inputPat
 	return h.fileService.ProcessDocument(ctx, inputPath, outputPath, options)
 }
 
-func (h *FileProcessingJobHandler) handleUpload(ctx context.Context, inputPath string, payload jobs.JobPayload) error {
+func (h *FileProcessingJobHandler) handleUpload(ctx context.Context, inputPath string, payload job.JobPayload) error {
 	destination, _ := payload["destination"].(string)
 	if destination == "" {
 		return fmt.Errorf("destination is required for upload")
@@ -222,7 +221,7 @@ func (h *FileProcessingJobHandler) handleValidation(ctx context.Context, inputPa
 	return h.fileService.ValidateFile(ctx, inputPath, fileType)
 }
 
-func (h *FileProcessingJobHandler) handleBatchProcessing(ctx context.Context, payload jobs.JobPayload) error {
+func (h *FileProcessingJobHandler) handleBatchProcessing(ctx context.Context, payload job.JobPayload) error {
 	inputPaths, ok := payload["input_paths"].([]string)
 	if !ok {
 		return fmt.Errorf("input_paths must be a string array for batch processing")
@@ -257,14 +256,14 @@ func (h *FileProcessingJobHandler) handleBatchProcessing(ctx context.Context, pa
 
 // Helper functions to extract typed values from payload
 
-func getStringFromPayload(payload jobs.JobPayload, key, defaultValue string) string {
+func getStringFromPayload(payload job.JobPayload, key, defaultValue string) string {
 	if val, ok := payload[key].(string); ok {
 		return val
 	}
 	return defaultValue
 }
 
-func getIntFromPayload(payload jobs.JobPayload, key string, defaultValue int) int {
+func getIntFromPayload(payload job.JobPayload, key string, defaultValue int) int {
 	if val, ok := payload[key].(int); ok {
 		return val
 	}
@@ -274,7 +273,7 @@ func getIntFromPayload(payload jobs.JobPayload, key string, defaultValue int) in
 	return defaultValue
 }
 
-func getBoolFromPayload(payload jobs.JobPayload, key string, defaultValue bool) bool {
+func getBoolFromPayload(payload job.JobPayload, key string, defaultValue bool) bool {
 	if val, ok := payload[key].(bool); ok {
 		return val
 	}
@@ -290,8 +289,8 @@ func NewFileProcessingJobFactory() *FileProcessingJobFactory {
 }
 
 // CreateImageProcessingJob creates an image processing job
-func (f *FileProcessingJobFactory) CreateImageProcessingJob(inputPath, outputPath string, options ImageProcessingOptions) (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *FileProcessingJobFactory) CreateImageProcessingJob(inputPath, outputPath string, options ImageProcessingOptions) (job.Job, error) {
+	payload := job.JobPayload{
 		"processing_type": "image",
 		"input_path":      inputPath,
 		"output_path":     outputPath,
@@ -302,30 +301,30 @@ func (f *FileProcessingJobFactory) CreateImageProcessingJob(inputPath, outputPat
 		"optimize":        options.Optimize,
 	}
 
-	opts := jobs.JobOptions{
-		Priority: jobs.PriorityNormal,
+	opts := job.JobOptions{
+		Priority: job.PriorityNormal,
 		Queue:    "file_processing",
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJobWithOptions("file_processing", payload, opts)
 }
 
 // CreateBatchProcessingJob creates a batch file processing job
-func (f *FileProcessingJobFactory) CreateBatchProcessingJob(inputPaths []string, outputDir, processingType string) (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *FileProcessingJobFactory) CreateBatchProcessingJob(inputPaths []string, outputDir, processingType string) (job.Job, error) {
+	payload := job.JobPayload{
 		"processing_type":       "batch",
 		"input_paths":           inputPaths,
 		"output_directory":      outputDir,
 		"batch_processing_type": processingType,
 	}
 
-	opts := jobs.JobOptions{
-		Priority: jobs.PriorityLow, // Batch jobs have lower priority
+	opts := job.JobOptions{
+		Priority: job.PriorityLow, // Batch jobs have lower priority
 		Queue:    "batch_processing",
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJobWithOptions("file_processing", payload, opts)
 }
 
@@ -459,12 +458,12 @@ func (m *MockStorageService) GetFileInfo(ctx context.Context, filePath string) (
 
 // BusinessFileMetrics extends the basic metrics with file-specific metrics
 type BusinessFileMetrics struct {
-	jobs.JobMetrics
+	job.JobMetrics
 	fileProcessingCounts map[string]map[string]int64 // processing_type -> file_type -> count
 }
 
 // NewBusinessFileMetrics creates enhanced file processing metrics
-func NewBusinessFileMetrics(baseMetrics jobs.JobMetrics) *BusinessFileMetrics {
+func NewBusinessFileMetrics(baseMetrics job.JobMetrics) *BusinessFileMetrics {
 	return &BusinessFileMetrics{
 		JobMetrics:           baseMetrics,
 		fileProcessingCounts: make(map[string]map[string]int64),

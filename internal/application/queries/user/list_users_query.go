@@ -1,9 +1,8 @@
-package queries
+package user
 
 import (
 	"context"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	"github.com/tranvuongduy2003/go-mvc/pkg/pagination"
 )
@@ -20,11 +19,11 @@ type ListUsersQuery struct {
 
 // ListUsersQueryHandler handles the ListUsersQuery
 type ListUsersQueryHandler struct {
-	userRepo repositories.UserRepository
+	userRepo user.UserRepository
 }
 
 // NewListUsersQueryHandler creates a new ListUsersQueryHandler
-func NewListUsersQueryHandler(userRepo repositories.UserRepository) *ListUsersQueryHandler {
+func NewListUsersQueryHandler(userRepo user.UserRepository) *ListUsersQueryHandler {
 	return &ListUsersQueryHandler{
 		userRepo: userRepo,
 	}
@@ -46,7 +45,7 @@ func (h *ListUsersQueryHandler) Handle(ctx context.Context, query ListUsersQuery
 		query.SortDir = "desc"
 	}
 
-	params := repositories.ListUsersParams{
+	params := user.ListUsersParams{
 		Page:     query.Page,
 		Limit:    query.Limit,
 		Search:   query.Search,

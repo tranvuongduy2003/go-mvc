@@ -4,8 +4,9 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/auth"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
@@ -16,16 +17,16 @@ type GetUserProfileQuery struct {
 
 // GetUserProfileQueryHandler handles the GetUserProfileQuery
 type GetUserProfileQueryHandler struct {
-	userRepo             repositories.UserRepository
-	roleRepo             repositories.RoleRepository
-	authorizationService services.AuthorizationService
+	userRepo             user.UserRepository
+	roleRepo             auth.RoleRepository
+	authorizationService contracts.AuthorizationService
 }
 
 // NewGetUserProfileQueryHandler creates a new GetUserProfileQueryHandler
 func NewGetUserProfileQueryHandler(
-	userRepo repositories.UserRepository,
-	roleRepo repositories.RoleRepository,
-	authorizationService services.AuthorizationService,
+	userRepo user.UserRepository,
+	roleRepo auth.RoleRepository,
+	authorizationService contracts.AuthorizationService,
 ) *GetUserProfileQueryHandler {
 	return &GetUserProfileQueryHandler{
 		userRepo:             userRepo,

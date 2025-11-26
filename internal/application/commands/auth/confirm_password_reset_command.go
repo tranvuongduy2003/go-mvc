@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // ConfirmPasswordResetCommand represents the password reset confirmation command
@@ -15,11 +15,11 @@ type ConfirmPasswordResetCommand struct {
 
 // ConfirmPasswordResetCommandHandler handles the ConfirmPasswordResetCommand
 type ConfirmPasswordResetCommandHandler struct {
-	passwordService services.PasswordManagementService
+	passwordService contracts.PasswordManagementService
 }
 
 // NewConfirmPasswordResetCommandHandler creates a new ConfirmPasswordResetCommandHandler
-func NewConfirmPasswordResetCommandHandler(passwordService services.PasswordManagementService) *ConfirmPasswordResetCommandHandler {
+func NewConfirmPasswordResetCommandHandler(passwordService contracts.PasswordManagementService) *ConfirmPasswordResetCommandHandler {
 	return &ConfirmPasswordResetCommandHandler{
 		passwordService: passwordService,
 	}

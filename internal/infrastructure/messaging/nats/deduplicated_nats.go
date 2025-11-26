@@ -11,7 +11,6 @@ import (
 
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services/messaging"
 	domainMessaging "github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
 )
 
 // DeduplicatedNATSBroker extends NATS broker with message deduplication capabilities
@@ -44,11 +43,11 @@ type MessageWithDeduplication struct {
 // SubscribeWithDeduplication creates a subscription with automatic deduplication
 func (d *DeduplicatedNATSBroker) SubscribeWithDeduplication(
 	subject string,
-	handler messagingPorts.MessageHandler,
+	handler domainMessaging.MessageHandler,
 	ttl time.Duration,
-) (messagingPorts.Subscription, error) {
+) (domainMessaging.Subscription, error) {
 	// Wrap the original handler with deduplication logic
-	deduplicatedHandler := func(msg messagingPorts.Message) error {
+	deduplicatedHandler := func(msg domainMessaging.BrokerMessage) error {
 		return d.handleWithDeduplication(msg, handler, ttl)
 	}
 
@@ -58,10 +57,10 @@ func (d *DeduplicatedNATSBroker) SubscribeWithDeduplication(
 // SubscribeWithInbox creates a subscription with full inbox pattern
 func (d *DeduplicatedNATSBroker) SubscribeWithInbox(
 	subject string,
-	handler messagingPorts.MessageHandler,
-) (messagingPorts.Subscription, error) {
+	handler domainMessaging.MessageHandler,
+) (domainMessaging.Subscription, error) {
 	// Wrap the original handler with inbox pattern
-	inboxHandler := func(msg messagingPorts.Message) error {
+	inboxHandler := func(msg domainMessaging.BrokerMessage) error {
 		return d.handleWithInbox(msg, handler)
 	}
 
@@ -94,8 +93,8 @@ func (d *DeduplicatedNATSBroker) PublishWithMessageID(
 
 // handleWithDeduplication processes a message with lightweight deduplication
 func (d *DeduplicatedNATSBroker) handleWithDeduplication(
-	msg messagingPorts.Message,
-	handler messagingPorts.MessageHandler,
+	msg domainMessaging.BrokerMessage,
+	handler domainMessaging.MessageHandler,
 	ttl time.Duration,
 ) error {
 	// Parse message to extract ID and event type
@@ -139,8 +138,8 @@ func (d *DeduplicatedNATSBroker) handleWithDeduplication(
 
 // handleWithInbox processes a message using the full inbox pattern
 func (d *DeduplicatedNATSBroker) handleWithInbox(
-	msg messagingPorts.Message,
-	handler messagingPorts.MessageHandler,
+	msg domainMessaging.BrokerMessage,
+	handler domainMessaging.MessageHandler,
 ) error {
 	// Parse message to extract ID and event type
 	var domainMsg domainMessaging.Message
@@ -182,7 +181,7 @@ func (d *DeduplicatedNATSBroker) handleWithInbox(
 }
 
 // GetMessageMetadata extracts metadata from a NATS message
-func (d *DeduplicatedNATSBroker) GetMessageMetadata(msg messagingPorts.Message) (*domainMessaging.Message, error) {
+func (d *DeduplicatedNATSBroker) GetMessageMetadata(msg domainMessaging.BrokerMessage) (*domainMessaging.Message, error) {
 	var domainMsg domainMessaging.Message
 	err := json.Unmarshal(msg.Data(), &domainMsg)
 	if err != nil {
@@ -194,9 +193,9 @@ func (d *DeduplicatedNATSBroker) GetMessageMetadata(msg messagingPorts.Message) 
 // CreateIdempotentSubscription is a convenience method for creating idempotent subscriptions
 func (d *DeduplicatedNATSBroker) CreateIdempotentSubscription(
 	subject string,
-	handler messagingPorts.MessageHandler,
+	handler domainMessaging.MessageHandler,
 	options IdempotencyOptions,
-) (messagingPorts.Subscription, error) {
+) (domainMessaging.Subscription, error) {
 	if options.UseInboxPattern {
 		return d.SubscribeWithInbox(subject, handler)
 	}

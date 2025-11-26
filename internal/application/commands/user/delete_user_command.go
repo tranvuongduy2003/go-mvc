@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 )
 
 // DeleteUserCommand represents the command to delete a user
@@ -14,11 +14,11 @@ type DeleteUserCommand struct {
 
 // DeleteUserCommandHandler handles the DeleteUserCommand
 type DeleteUserCommandHandler struct {
-	userRepo repositories.UserRepository
+	userRepo user.UserRepository
 }
 
 // NewDeleteUserCommandHandler creates a new DeleteUserCommandHandler
-func NewDeleteUserCommandHandler(userRepo repositories.UserRepository) *DeleteUserCommandHandler {
+func NewDeleteUserCommandHandler(userRepo user.UserRepository) *DeleteUserCommandHandler {
 	return &DeleteUserCommandHandler{
 		userRepo: userRepo,
 	}

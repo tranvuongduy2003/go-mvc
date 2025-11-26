@@ -7,19 +7,18 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
 )
 
 // InboxService handles the inbox pattern for message deduplication on consumer side
 type InboxService struct {
-	inboxRepo                messagingPorts.InboxRepository
-	messageDeduplicationRepo messagingPorts.MessageDeduplicationRepository
+	inboxRepo                messaging.InboxRepository
+	messageDeduplicationRepo messaging.MessageDeduplicationRepository
 }
 
 // NewInboxService creates a new inbox service
 func NewInboxService(
-	inboxRepo messagingPorts.InboxRepository,
-	messageDeduplicationRepo messagingPorts.MessageDeduplicationRepository,
+	inboxRepo messaging.InboxRepository,
+	messageDeduplicationRepo messaging.MessageDeduplicationRepository,
 ) *InboxService {
 	return &InboxService{
 		inboxRepo:                inboxRepo,

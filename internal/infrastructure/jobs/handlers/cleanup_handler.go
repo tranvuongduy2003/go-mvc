@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	domainjobs "github.com/tranvuongduy2003/go-mvc/internal/domain/jobs"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/jobs"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
 // DataCleanupJobHandler handles data cleanup and maintenance jobs
@@ -15,7 +14,7 @@ type DataCleanupJobHandler struct {
 	sessionService SessionCleanupService
 	fileService    FileCleanupService
 	logService     LogCleanupService
-	metrics        jobs.JobMetrics
+	metrics        job.JobMetrics
 }
 
 // Cleanup service interfaces
@@ -48,7 +47,7 @@ func NewDataCleanupJobHandler(
 	sessionService SessionCleanupService,
 	fileService FileCleanupService,
 	logService LogCleanupService,
-	metrics jobs.JobMetrics,
+	metrics job.JobMetrics,
 ) *DataCleanupJobHandler {
 	return &DataCleanupJobHandler{
 		userService:    userService,
@@ -60,20 +59,20 @@ func NewDataCleanupJobHandler(
 }
 
 // Execute processes a data cleanup job
-func (h *DataCleanupJobHandler) Execute(ctx context.Context, job jobs.Job) error {
+func (h *DataCleanupJobHandler) Execute(ctx context.Context, excutedJob job.Job) error {
 	start := time.Now()
 	defer func() {
 		if h.metrics != nil {
-			h.metrics.ObserveJobDuration(job.GetType(), time.Since(start))
+			h.metrics.ObserveJobDuration(excutedJob.GetType(), time.Since(start))
 		}
 	}()
 
 	// Cast to DataCleanupJob
-	cleanupJob, ok := job.(*domainjobs.DataCleanupJob)
+	cleanupJob, ok := excutedJob.(*job.DataCleanupJob)
 	if !ok {
-		err := fmt.Errorf("expected DataCleanupJob, got %T", job)
+		err := fmt.Errorf("expected DataCleanupJob, got %T", excutedJob)
 		if h.metrics != nil {
-			h.metrics.IncrementJobsProcessed(job.GetType(), false)
+			h.metrics.IncrementJobsProcessed(excutedJob.GetType(), false)
 		}
 		return err
 	}
@@ -106,7 +105,7 @@ func (h *DataCleanupJobHandler) Execute(ctx context.Context, job jobs.Job) error
 	// Record metrics
 	if h.metrics != nil {
 		success := err == nil
-		h.metrics.IncrementJobsProcessed(job.GetType(), success)
+		h.metrics.IncrementJobsProcessed(excutedJob.GetType(), success)
 
 		// Custom business metrics
 		if businessMetrics, ok := h.metrics.(*BusinessCleanupMetrics); ok {
@@ -129,7 +128,7 @@ func (h *DataCleanupJobHandler) GetJobType() string {
 
 // Private helper methods for different cleanup types
 
-func (h *DataCleanupJobHandler) cleanupUsers(ctx context.Context, payload jobs.JobPayload) (int, error) {
+func (h *DataCleanupJobHandler) cleanupUsers(ctx context.Context, payload job.JobPayload) (int, error) {
 	userCleanupType, _ := payload["user_cleanup_type"].(string)
 
 	switch userCleanupType {
@@ -170,7 +169,7 @@ func (h *DataCleanupJobHandler) cleanupUsers(ctx context.Context, payload jobs.J
 	}
 }
 
-func (h *DataCleanupJobHandler) cleanupSessions(ctx context.Context, payload jobs.JobPayload) (int, error) {
+func (h *DataCleanupJobHandler) cleanupSessions(ctx context.Context, payload job.JobPayload) (int, error) {
 	sessionCleanupType, _ := payload["session_cleanup_type"].(string)
 
 	switch sessionCleanupType {
@@ -200,7 +199,7 @@ func (h *DataCleanupJobHandler) cleanupSessions(ctx context.Context, payload job
 	}
 }
 
-func (h *DataCleanupJobHandler) cleanupFiles(ctx context.Context, payload jobs.JobPayload) (int, error) {
+func (h *DataCleanupJobHandler) cleanupFiles(ctx context.Context, payload job.JobPayload) (int, error) {
 	fileCleanupType, _ := payload["file_cleanup_type"].(string)
 
 	switch fileCleanupType {
@@ -234,7 +233,7 @@ func (h *DataCleanupJobHandler) cleanupFiles(ctx context.Context, payload jobs.J
 	}
 }
 
-func (h *DataCleanupJobHandler) cleanupLogs(ctx context.Context, payload jobs.JobPayload) (int, error) {
+func (h *DataCleanupJobHandler) cleanupLogs(ctx context.Context, payload job.JobPayload) (int, error) {
 	logCleanupType, _ := payload["log_cleanup_type"].(string)
 
 	switch logCleanupType {
@@ -276,7 +275,7 @@ func (h *DataCleanupJobHandler) cleanupLogs(ctx context.Context, payload jobs.Jo
 	}
 }
 
-func (h *DataCleanupJobHandler) performFullSystemCleanup(ctx context.Context, payload jobs.JobPayload) (int, error) {
+func (h *DataCleanupJobHandler) performFullSystemCleanup(ctx context.Context, payload job.JobPayload) (int, error) {
 	total := 0
 
 	// User cleanup
@@ -310,7 +309,7 @@ func (h *DataCleanupJobHandler) performFullSystemCleanup(ctx context.Context, pa
 	return total, nil
 }
 
-func (h *DataCleanupJobHandler) cleanupDatabase(ctx context.Context, payload jobs.JobPayload) (int, error) {
+func (h *DataCleanupJobHandler) cleanupDatabase(ctx context.Context, payload job.JobPayload) (int, error) {
 	// This could include database-specific cleanup operations
 	// like optimizing tables, updating statistics, etc.
 
@@ -335,8 +334,8 @@ func NewDataCleanupJobFactory() *DataCleanupJobFactory {
 }
 
 // CreateUserCleanupJob creates a user cleanup job
-func (f *DataCleanupJobFactory) CreateUserCleanupJob(cleanupType string, params map[string]interface{}) (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *DataCleanupJobFactory) CreateUserCleanupJob(cleanupType string, params map[string]interface{}) (job.Job, error) {
+	payload := job.JobPayload{
 		"cleanup_type":      "users",
 		"user_cleanup_type": cleanupType,
 	}
@@ -346,42 +345,42 @@ func (f *DataCleanupJobFactory) CreateUserCleanupJob(cleanupType string, params 
 		payload[key] = value
 	}
 
-	opts := jobs.JobOptions{
-		Priority: jobs.PriorityLow, // Cleanup jobs typically have lower priority
+	opts := job.JobOptions{
+		Priority: job.PriorityLow, // Cleanup jobs typically have lower priority
 		Queue:    "cleanup",
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJobWithOptions("data_cleanup", payload, opts)
 }
 
 // CreateScheduledCleanupJob creates a recurring cleanup job
-func (f *DataCleanupJobFactory) CreateScheduledCleanupJob(cleanupType string) (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *DataCleanupJobFactory) CreateScheduledCleanupJob(cleanupType string) (job.Job, error) {
+	payload := job.JobPayload{
 		"cleanup_type": cleanupType,
 	}
 
-	opts := jobs.JobOptions{
-		Priority: jobs.PriorityLow,
+	opts := job.JobOptions{
+		Priority: job.PriorityLow,
 		Queue:    "scheduled_cleanup",
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJobWithOptions("data_cleanup", payload, opts)
 }
 
 // CreateFullSystemCleanupJob creates a comprehensive system cleanup job
-func (f *DataCleanupJobFactory) CreateFullSystemCleanupJob() (jobs.Job, error) {
-	payload := jobs.JobPayload{
+func (f *DataCleanupJobFactory) CreateFullSystemCleanupJob() (job.Job, error) {
+	payload := job.JobPayload{
 		"cleanup_type": "full_system",
 	}
 
-	opts := jobs.JobOptions{
-		Priority: jobs.PriorityLow,
+	opts := job.JobOptions{
+		Priority: job.PriorityLow,
 		Queue:    "system_maintenance",
 	}
 
-	factory := domainjobs.NewJobFactory()
+	factory := job.NewJobFactory()
 	return factory.CreateJobWithOptions("data_cleanup", payload, opts)
 }
 
@@ -493,13 +492,13 @@ func (m *MockLogCleanupService) RotateLogs(ctx context.Context) error {
 
 // BusinessCleanupMetrics extends the basic metrics with cleanup-specific metrics
 type BusinessCleanupMetrics struct {
-	jobs.JobMetrics
+	job.JobMetrics
 	cleanupCounts  map[string]int64 // cleanup_type -> count
 	itemsProcessed map[string]int64 // cleanup_type -> total items processed
 }
 
 // NewBusinessCleanupMetrics creates enhanced cleanup metrics
-func NewBusinessCleanupMetrics(baseMetrics jobs.JobMetrics) *BusinessCleanupMetrics {
+func NewBusinessCleanupMetrics(baseMetrics job.JobMetrics) *BusinessCleanupMetrics {
 	return &BusinessCleanupMetrics{
 		JobMetrics:     baseMetrics,
 		cleanupCounts:  make(map[string]int64),

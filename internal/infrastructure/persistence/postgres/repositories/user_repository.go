@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/persistence/postgres/models"
 	"github.com/tranvuongduy2003/go-mvc/pkg/pagination"
@@ -17,7 +16,7 @@ type userRepository struct {
 }
 
 // NewUserRepository creates a new UserRepository instance
-func NewUserRepository(db *gorm.DB) repositories.UserRepository {
+func NewUserRepository(db *gorm.DB) user.UserRepository {
 	return &userRepository{
 		db: db,
 	}
@@ -74,7 +73,7 @@ func (r *userRepository) Delete(ctx context.Context, id string) error {
 }
 
 // List retrieves users with pagination
-func (r *userRepository) List(ctx context.Context, params repositories.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {
+func (r *userRepository) List(ctx context.Context, params user.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {
 	var userModels []models.UserModel
 	var total int64
 

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // LoginCommand represents the login command
@@ -15,11 +15,11 @@ type LoginCommand struct {
 
 // LoginCommandHandler handles the LoginCommand
 type LoginCommandHandler struct {
-	authService services.AuthService
+	authService contracts.AuthService
 }
 
 // NewLoginCommandHandler creates a new LoginCommandHandler
-func NewLoginCommandHandler(authService services.AuthService) *LoginCommandHandler {
+func NewLoginCommandHandler(authService contracts.AuthService) *LoginCommandHandler {
 	return &LoginCommandHandler{
 		authService: authService,
 	}
@@ -28,7 +28,7 @@ func NewLoginCommandHandler(authService services.AuthService) *LoginCommandHandl
 // Handle executes the LoginCommand
 func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*dto.LoginResponse, error) {
 	// Create login credentials
-	credentials := &services.LoginCredentials{
+	credentials := &contracts.LoginCredentials{
 		Email:    cmd.Email,
 		Password: cmd.Password,
 	}

@@ -9,13 +9,12 @@ import (
 
 	"github.com/tranvuongduy2003/go-mvc/internal/application/services/messaging"
 	domainMessaging "github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
 )
 
 // OutboxProcessorJob handles processing of outbox messages
 type OutboxProcessorJob struct {
 	outboxService    *messaging.OutboxService
-	messagePublisher messagingPorts.Publisher // Interface for publishing messages (NATS, etc.)
+	messagePublisher domainMessaging.Publisher // Interface for publishing messages (NATS, etc.)
 	batchSize        int
 	retryDelay       time.Duration
 }
@@ -23,7 +22,7 @@ type OutboxProcessorJob struct {
 // NewOutboxProcessorJob creates a new outbox processor job
 func NewOutboxProcessorJob(
 	outboxService *messaging.OutboxService,
-	messagePublisher messagingPorts.Publisher,
+	messagePublisher domainMessaging.Publisher,
 	batchSize int,
 	retryDelay time.Duration,
 ) *OutboxProcessorJob {

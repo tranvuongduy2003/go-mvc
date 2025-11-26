@@ -1,9 +1,8 @@
-package queries
+package user
 
 import (
 	"context"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
@@ -15,11 +14,11 @@ type GetUserByIDQuery struct {
 
 // GetUserByIDQueryHandler handles the GetUserByIDQuery
 type GetUserByIDQueryHandler struct {
-	userRepo repositories.UserRepository
+	userRepo user.UserRepository
 }
 
 // NewGetUserByIDQueryHandler creates a new GetUserByIDQueryHandler
-func NewGetUserByIDQueryHandler(userRepo repositories.UserRepository) *GetUserByIDQueryHandler {
+func NewGetUserByIDQueryHandler(userRepo user.UserRepository) *GetUserByIDQueryHandler {
 	return &GetUserByIDQueryHandler{
 		userRepo: userRepo,
 	}

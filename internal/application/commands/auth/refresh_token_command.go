@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // RefreshTokenCommand represents the refresh token command
@@ -14,11 +14,11 @@ type RefreshTokenCommand struct {
 
 // RefreshTokenCommandHandler handles the RefreshTokenCommand
 type RefreshTokenCommandHandler struct {
-	authService services.AuthService
+	authService contracts.AuthService
 }
 
 // NewRefreshTokenCommandHandler creates a new RefreshTokenCommandHandler
-func NewRefreshTokenCommandHandler(authService services.AuthService) *RefreshTokenCommandHandler {
+func NewRefreshTokenCommandHandler(authService contracts.AuthService) *RefreshTokenCommandHandler {
 	return &RefreshTokenCommandHandler{
 		authService: authService,
 	}

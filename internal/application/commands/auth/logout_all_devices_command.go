@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // LogoutAllDevicesCommand represents the logout from all devices command
@@ -14,11 +14,11 @@ type LogoutAllDevicesCommand struct {
 
 // LogoutAllDevicesCommandHandler handles the LogoutAllDevicesCommand
 type LogoutAllDevicesCommandHandler struct {
-	tokenService services.TokenManagementService
+	tokenService contracts.TokenManagementService
 }
 
 // NewLogoutAllDevicesCommandHandler creates a new LogoutAllDevicesCommandHandler
-func NewLogoutAllDevicesCommandHandler(tokenService services.TokenManagementService) *LogoutAllDevicesCommandHandler {
+func NewLogoutAllDevicesCommandHandler(tokenService contracts.TokenManagementService) *LogoutAllDevicesCommandHandler {
 	return &LogoutAllDevicesCommandHandler{
 		tokenService: tokenService,
 	}

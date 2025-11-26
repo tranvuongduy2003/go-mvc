@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/auth"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/persistence/postgres/models"
 	"github.com/tranvuongduy2003/go-mvc/pkg/pagination"
 	"gorm.io/gorm"
@@ -16,7 +16,7 @@ type rolePermissionRepository struct {
 }
 
 // NewRolePermissionRepository creates a new RolePermissionRepository instance
-func NewRolePermissionRepository(db *gorm.DB) repositories.RolePermissionRepository {
+func NewRolePermissionRepository(db *gorm.DB) auth.RolePermissionRepository {
 	return &rolePermissionRepository{
 		db: db,
 	}
@@ -49,7 +49,7 @@ func (r *rolePermissionRepository) RevokePermissionFromRole(ctx context.Context,
 }
 
 // GetRolePermission retrieves a specific role-permission assignment
-func (r *rolePermissionRepository) GetRolePermission(ctx context.Context, roleID, permissionID string) (*repositories.RolePermission, error) {
+func (r *rolePermissionRepository) GetRolePermission(ctx context.Context, roleID, permissionID string) (*auth.RolePermission, error) {
 	var rolePermModel models.RolePermissionModel
 	if err := r.db.WithContext(ctx).
 		Where("role_id = ? AND permission_id = ?", roleID, permissionID).
@@ -63,7 +63,7 @@ func (r *rolePermissionRepository) GetRolePermission(ctx context.Context, roleID
 }
 
 // GetRolePermissionByID retrieves a role-permission assignment by ID
-func (r *rolePermissionRepository) GetRolePermissionByID(ctx context.Context, id string) (*repositories.RolePermission, error) {
+func (r *rolePermissionRepository) GetRolePermissionByID(ctx context.Context, id string) (*auth.RolePermission, error) {
 	var rolePermModel models.RolePermissionModel
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&rolePermModel).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -75,13 +75,13 @@ func (r *rolePermissionRepository) GetRolePermissionByID(ctx context.Context, id
 }
 
 // GetRolePermissions retrieves all permission assignments for a role
-func (r *rolePermissionRepository) GetRolePermissions(ctx context.Context, roleID string) ([]*repositories.RolePermission, error) {
+func (r *rolePermissionRepository) GetRolePermissions(ctx context.Context, roleID string) ([]*auth.RolePermission, error) {
 	var rolePermModels []models.RolePermissionModel
 	if err := r.db.WithContext(ctx).Where("role_id = ?", roleID).Find(&rolePermModels).Error; err != nil {
 		return nil, err
 	}
 
-	rolePermissions := make([]*repositories.RolePermission, 0, len(rolePermModels))
+	rolePermissions := make([]*auth.RolePermission, 0, len(rolePermModels))
 	for _, model := range rolePermModels {
 		rolePermissions = append(rolePermissions, r.modelToDomain(&model))
 	}
@@ -90,7 +90,7 @@ func (r *rolePermissionRepository) GetRolePermissions(ctx context.Context, roleI
 }
 
 // GetActiveRolePermissions retrieves all active permission assignments for a role
-func (r *rolePermissionRepository) GetActiveRolePermissions(ctx context.Context, roleID string) ([]*repositories.RolePermission, error) {
+func (r *rolePermissionRepository) GetActiveRolePermissions(ctx context.Context, roleID string) ([]*auth.RolePermission, error) {
 	var rolePermModels []models.RolePermissionModel
 
 	query := r.db.WithContext(ctx).Where("role_id = ? AND is_active = ?", roleID, true)
@@ -99,7 +99,7 @@ func (r *rolePermissionRepository) GetActiveRolePermissions(ctx context.Context,
 		return nil, err
 	}
 
-	rolePermissions := make([]*repositories.RolePermission, 0, len(rolePermModels))
+	rolePermissions := make([]*auth.RolePermission, 0, len(rolePermModels))
 	for _, model := range rolePermModels {
 		rolePermissions = append(rolePermissions, r.modelToDomain(&model))
 	}
@@ -108,13 +108,13 @@ func (r *rolePermissionRepository) GetActiveRolePermissions(ctx context.Context,
 }
 
 // GetPermissionRoles retrieves all role assignments for a permission
-func (r *rolePermissionRepository) GetPermissionRoles(ctx context.Context, permissionID string) ([]*repositories.RolePermission, error) {
+func (r *rolePermissionRepository) GetPermissionRoles(ctx context.Context, permissionID string) ([]*auth.RolePermission, error) {
 	var rolePermModels []models.RolePermissionModel
 	if err := r.db.WithContext(ctx).Where("permission_id = ?", permissionID).Find(&rolePermModels).Error; err != nil {
 		return nil, err
 	}
 
-	rolePermissions := make([]*repositories.RolePermission, 0, len(rolePermModels))
+	rolePermissions := make([]*auth.RolePermission, 0, len(rolePermModels))
 	for _, model := range rolePermModels {
 		rolePermissions = append(rolePermissions, r.modelToDomain(&model))
 	}
@@ -123,7 +123,7 @@ func (r *rolePermissionRepository) GetPermissionRoles(ctx context.Context, permi
 }
 
 // GetActivePermissionRoles retrieves all active role assignments for a permission
-func (r *rolePermissionRepository) GetActivePermissionRoles(ctx context.Context, permissionID string) ([]*repositories.RolePermission, error) {
+func (r *rolePermissionRepository) GetActivePermissionRoles(ctx context.Context, permissionID string) ([]*auth.RolePermission, error) {
 	var rolePermModels []models.RolePermissionModel
 
 	query := r.db.WithContext(ctx).Where("permission_id = ? AND is_active = ?", permissionID, true)
@@ -132,7 +132,7 @@ func (r *rolePermissionRepository) GetActivePermissionRoles(ctx context.Context,
 		return nil, err
 	}
 
-	rolePermissions := make([]*repositories.RolePermission, 0, len(rolePermModels))
+	rolePermissions := make([]*auth.RolePermission, 0, len(rolePermModels))
 	for _, model := range rolePermModels {
 		rolePermissions = append(rolePermissions, r.modelToDomain(&model))
 	}
@@ -141,7 +141,7 @@ func (r *rolePermissionRepository) GetActivePermissionRoles(ctx context.Context,
 }
 
 // List retrieves a paginated list of role-permission assignments
-func (r *rolePermissionRepository) List(ctx context.Context, params repositories.ListRolePermissionsParams) ([]*repositories.RolePermission, *pagination.Pagination, error) {
+func (r *rolePermissionRepository) List(ctx context.Context, params auth.ListRolePermissionsParams) ([]*auth.RolePermission, *pagination.Pagination, error) {
 	var rolePermModels []models.RolePermissionModel
 	var total int64
 
@@ -206,7 +206,7 @@ func (r *rolePermissionRepository) List(ctx context.Context, params repositories
 	}
 
 	// Convert models to domain entities
-	rolePermissions := make([]*repositories.RolePermission, 0, len(rolePermModels))
+	rolePermissions := make([]*auth.RolePermission, 0, len(rolePermModels))
 	for _, model := range rolePermModels {
 		rolePermissions = append(rolePermissions, r.modelToDomain(&model))
 	}
@@ -215,7 +215,7 @@ func (r *rolePermissionRepository) List(ctx context.Context, params repositories
 }
 
 // UpdateRolePermission updates a role-permission assignment
-func (r *rolePermissionRepository) UpdateRolePermission(ctx context.Context, rolePermission *repositories.RolePermission) error {
+func (r *rolePermissionRepository) UpdateRolePermission(ctx context.Context, rolePermission *auth.RolePermission) error {
 	rolePermModel := r.domainToModel(rolePermission)
 	if err := r.db.WithContext(ctx).Model(&rolePermModel).Where("id = ?", rolePermModel.ID).Updates(rolePermModel).Error; err != nil {
 		return err
@@ -419,7 +419,7 @@ func (r *rolePermissionRepository) SyncRolePermissions(ctx context.Context, role
 }
 
 // GetRolePermissionsByResource gets all role-permission assignments for a specific resource
-func (r *rolePermissionRepository) GetRolePermissionsByResource(ctx context.Context, roleID, resource string) ([]*repositories.RolePermission, error) {
+func (r *rolePermissionRepository) GetRolePermissionsByResource(ctx context.Context, roleID, resource string) ([]*auth.RolePermission, error) {
 	var rolePermModels []models.RolePermissionModel
 
 	query := r.db.WithContext(ctx).Model(&models.RolePermissionModel{}).
@@ -431,7 +431,7 @@ func (r *rolePermissionRepository) GetRolePermissionsByResource(ctx context.Cont
 		return nil, err
 	}
 
-	rolePermissions := make([]*repositories.RolePermission, 0, len(rolePermModels))
+	rolePermissions := make([]*auth.RolePermission, 0, len(rolePermModels))
 	for _, model := range rolePermModels {
 		rolePermissions = append(rolePermissions, r.modelToDomain(&model))
 	}
@@ -440,7 +440,7 @@ func (r *rolePermissionRepository) GetRolePermissionsByResource(ctx context.Cont
 }
 
 // GetRolePermissionsByAction gets all role-permission assignments for a specific action
-func (r *rolePermissionRepository) GetRolePermissionsByAction(ctx context.Context, roleID, action string) ([]*repositories.RolePermission, error) {
+func (r *rolePermissionRepository) GetRolePermissionsByAction(ctx context.Context, roleID, action string) ([]*auth.RolePermission, error) {
 	var rolePermModels []models.RolePermissionModel
 
 	query := r.db.WithContext(ctx).Model(&models.RolePermissionModel{}).
@@ -452,7 +452,7 @@ func (r *rolePermissionRepository) GetRolePermissionsByAction(ctx context.Contex
 		return nil, err
 	}
 
-	rolePermissions := make([]*repositories.RolePermission, 0, len(rolePermModels))
+	rolePermissions := make([]*auth.RolePermission, 0, len(rolePermModels))
 	for _, model := range rolePermModels {
 		rolePermissions = append(rolePermissions, r.modelToDomain(&model))
 	}
@@ -461,7 +461,7 @@ func (r *rolePermissionRepository) GetRolePermissionsByAction(ctx context.Contex
 }
 
 // domainToModel converts domain entity to GORM model
-func (r *rolePermissionRepository) domainToModel(rolePerm *repositories.RolePermission) *models.RolePermissionModel {
+func (r *rolePermissionRepository) domainToModel(rolePerm *auth.RolePermission) *models.RolePermissionModel {
 	return &models.RolePermissionModel{
 		ID:           rolePerm.ID,
 		RoleID:       rolePerm.RoleID,
@@ -476,8 +476,8 @@ func (r *rolePermissionRepository) domainToModel(rolePerm *repositories.RolePerm
 }
 
 // modelToDomain converts GORM model to domain entity
-func (r *rolePermissionRepository) modelToDomain(rolePermModel *models.RolePermissionModel) *repositories.RolePermission {
-	return &repositories.RolePermission{
+func (r *rolePermissionRepository) modelToDomain(rolePermModel *models.RolePermissionModel) *auth.RolePermission {
+	return &auth.RolePermission{
 		ID:           rolePermModel.ID,
 		RoleID:       rolePermModel.RoleID,
 		PermissionID: rolePermModel.PermissionID,

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/auth"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/persistence/postgres/models"
 	"github.com/tranvuongduy2003/go-mvc/pkg/pagination"
 	"gorm.io/gorm"
@@ -16,7 +16,7 @@ type userRoleRepository struct {
 }
 
 // NewUserRoleRepository creates a new UserRoleRepository instance
-func NewUserRoleRepository(db *gorm.DB) repositories.UserRoleRepository {
+func NewUserRoleRepository(db *gorm.DB) auth.UserRoleRepository {
 	return &userRoleRepository{
 		db: db,
 	}
@@ -50,7 +50,7 @@ func (r *userRoleRepository) RevokeRoleFromUser(ctx context.Context, userID, rol
 }
 
 // GetUserRole retrieves a specific user-role assignment
-func (r *userRoleRepository) GetUserRole(ctx context.Context, userID, roleID string) (*repositories.UserRole, error) {
+func (r *userRoleRepository) GetUserRole(ctx context.Context, userID, roleID string) (*auth.UserRole, error) {
 	var userRoleModel models.UserRoleModel
 	if err := r.db.WithContext(ctx).
 		Where("user_id = ? AND role_id = ?", userID, roleID).
@@ -64,7 +64,7 @@ func (r *userRoleRepository) GetUserRole(ctx context.Context, userID, roleID str
 }
 
 // GetUserRoleByID retrieves a user-role assignment by ID
-func (r *userRoleRepository) GetUserRoleByID(ctx context.Context, id string) (*repositories.UserRole, error) {
+func (r *userRoleRepository) GetUserRoleByID(ctx context.Context, id string) (*auth.UserRole, error) {
 	var userRoleModel models.UserRoleModel
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&userRoleModel).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -76,13 +76,13 @@ func (r *userRoleRepository) GetUserRoleByID(ctx context.Context, id string) (*r
 }
 
 // GetUserRoles retrieves all role assignments for a user
-func (r *userRoleRepository) GetUserRoles(ctx context.Context, userID string) ([]*repositories.UserRole, error) {
+func (r *userRoleRepository) GetUserRoles(ctx context.Context, userID string) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&userRoleModels).Error; err != nil {
 		return nil, err
 	}
 
-	userRoles := make([]*repositories.UserRole, 0, len(userRoleModels))
+	userRoles := make([]*auth.UserRole, 0, len(userRoleModels))
 	for _, model := range userRoleModels {
 		userRoles = append(userRoles, r.modelToDomain(&model))
 	}
@@ -91,7 +91,7 @@ func (r *userRoleRepository) GetUserRoles(ctx context.Context, userID string) ([
 }
 
 // GetActiveUserRoles retrieves all active role assignments for a user
-func (r *userRoleRepository) GetActiveUserRoles(ctx context.Context, userID string) ([]*repositories.UserRole, error) {
+func (r *userRoleRepository) GetActiveUserRoles(ctx context.Context, userID string) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 
 	query := r.db.WithContext(ctx).
@@ -102,7 +102,7 @@ func (r *userRoleRepository) GetActiveUserRoles(ctx context.Context, userID stri
 		return nil, err
 	}
 
-	userRoles := make([]*repositories.UserRole, 0, len(userRoleModels))
+	userRoles := make([]*auth.UserRole, 0, len(userRoleModels))
 	for _, model := range userRoleModels {
 		userRoles = append(userRoles, r.modelToDomain(&model))
 	}
@@ -111,13 +111,13 @@ func (r *userRoleRepository) GetActiveUserRoles(ctx context.Context, userID stri
 }
 
 // GetRoleUsers retrieves all user assignments for a role
-func (r *userRoleRepository) GetRoleUsers(ctx context.Context, roleID string) ([]*repositories.UserRole, error) {
+func (r *userRoleRepository) GetRoleUsers(ctx context.Context, roleID string) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 	if err := r.db.WithContext(ctx).Where("role_id = ?", roleID).Find(&userRoleModels).Error; err != nil {
 		return nil, err
 	}
 
-	userRoles := make([]*repositories.UserRole, 0, len(userRoleModels))
+	userRoles := make([]*auth.UserRole, 0, len(userRoleModels))
 	for _, model := range userRoleModels {
 		userRoles = append(userRoles, r.modelToDomain(&model))
 	}
@@ -126,7 +126,7 @@ func (r *userRoleRepository) GetRoleUsers(ctx context.Context, roleID string) ([
 }
 
 // GetActiveRoleUsers retrieves all active user assignments for a role
-func (r *userRoleRepository) GetActiveRoleUsers(ctx context.Context, roleID string) ([]*repositories.UserRole, error) {
+func (r *userRoleRepository) GetActiveRoleUsers(ctx context.Context, roleID string) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 
 	query := r.db.WithContext(ctx).
@@ -137,7 +137,7 @@ func (r *userRoleRepository) GetActiveRoleUsers(ctx context.Context, roleID stri
 		return nil, err
 	}
 
-	userRoles := make([]*repositories.UserRole, 0, len(userRoleModels))
+	userRoles := make([]*auth.UserRole, 0, len(userRoleModels))
 	for _, model := range userRoleModels {
 		userRoles = append(userRoles, r.modelToDomain(&model))
 	}
@@ -146,7 +146,7 @@ func (r *userRoleRepository) GetActiveRoleUsers(ctx context.Context, roleID stri
 }
 
 // List retrieves a paginated list of user-role assignments
-func (r *userRoleRepository) List(ctx context.Context, params repositories.ListUserRolesParams) ([]*repositories.UserRole, *pagination.Pagination, error) {
+func (r *userRoleRepository) List(ctx context.Context, params auth.ListUserRolesParams) ([]*auth.UserRole, *pagination.Pagination, error) {
 	var userRoleModels []models.UserRoleModel
 	var total int64
 
@@ -206,7 +206,7 @@ func (r *userRoleRepository) List(ctx context.Context, params repositories.ListU
 	}
 
 	// Convert models to domain entities
-	userRoles := make([]*repositories.UserRole, 0, len(userRoleModels))
+	userRoles := make([]*auth.UserRole, 0, len(userRoleModels))
 	for _, model := range userRoleModels {
 		userRoles = append(userRoles, r.modelToDomain(&model))
 	}
@@ -215,7 +215,7 @@ func (r *userRoleRepository) List(ctx context.Context, params repositories.ListU
 }
 
 // UpdateUserRole updates a user-role assignment
-func (r *userRoleRepository) UpdateUserRole(ctx context.Context, userRole *repositories.UserRole) error {
+func (r *userRoleRepository) UpdateUserRole(ctx context.Context, userRole *auth.UserRole) error {
 	userRoleModel := r.domainToModel(userRole)
 	if err := r.db.WithContext(ctx).Model(&userRoleModel).Where("id = ?", userRoleModel.ID).Updates(userRoleModel).Error; err != nil {
 		return err
@@ -269,7 +269,7 @@ func (r *userRoleRepository) IsUserRoleExpired(ctx context.Context, userID, role
 }
 
 // GetExpiredUserRoles retrieves all expired user-role assignments
-func (r *userRoleRepository) GetExpiredUserRoles(ctx context.Context) ([]*repositories.UserRole, error) {
+func (r *userRoleRepository) GetExpiredUserRoles(ctx context.Context) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 
 	query := r.db.WithContext(ctx).
@@ -279,7 +279,7 @@ func (r *userRoleRepository) GetExpiredUserRoles(ctx context.Context) ([]*reposi
 		return nil, err
 	}
 
-	userRoles := make([]*repositories.UserRole, 0, len(userRoleModels))
+	userRoles := make([]*auth.UserRole, 0, len(userRoleModels))
 	for _, model := range userRoleModels {
 		userRoles = append(userRoles, r.modelToDomain(&model))
 	}
@@ -368,7 +368,7 @@ func (r *userRoleRepository) Exists(ctx context.Context, userID, roleID string) 
 }
 
 // domainToModel converts domain entity to GORM model
-func (r *userRoleRepository) domainToModel(userRole *repositories.UserRole) *models.UserRoleModel {
+func (r *userRoleRepository) domainToModel(userRole *auth.UserRole) *models.UserRoleModel {
 	return &models.UserRoleModel{
 		ID:         userRole.ID,
 		UserID:     userRole.UserID,
@@ -384,8 +384,8 @@ func (r *userRoleRepository) domainToModel(userRole *repositories.UserRole) *mod
 }
 
 // modelToDomain converts GORM model to domain entity
-func (r *userRoleRepository) modelToDomain(userRoleModel *models.UserRoleModel) *repositories.UserRole {
-	return &repositories.UserRole{
+func (r *userRoleRepository) modelToDomain(userRoleModel *models.UserRoleModel) *auth.UserRole {
+	return &auth.UserRole{
 		ID:         userRoleModel.ID,
 		UserID:     userRoleModel.UserID,
 		RoleID:     userRoleModel.RoleID,

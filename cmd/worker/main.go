@@ -14,7 +14,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	di "github.com/tranvuongduy2003/go-mvc/internal/di"
+	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
 )
 
@@ -55,7 +55,7 @@ func startCommand() *cobra.Command {
 			}
 
 			app := fx.New(
-				di.InfrastructureModule,
+				infrastructure.InfrastructureModule,
 				fx.Invoke(func(config *config.AppConfig, logger *zap.Logger, lc fx.Lifecycle) {
 					worker := NewWorkerService(logger, workers)
 
@@ -108,7 +108,7 @@ func statusCommand() *cobra.Command {
 			fmt.Println("Checking worker status...")
 
 			app := fx.New(
-				di.InfrastructureModule,
+				infrastructure.InfrastructureModule,
 				fx.Invoke(func(config *config.AppConfig, logger *zap.Logger) {
 					status := checkWorkerStatus()
 
@@ -165,7 +165,7 @@ func healthCommand() *cobra.Command {
 			fmt.Println("Performing worker health check...")
 
 			app := fx.New(
-				di.InfrastructureModule,
+				infrastructure.InfrastructureModule,
 				fx.Invoke(func(config *config.AppConfig, logger *zap.Logger) {
 					health := performHealthCheck()
 

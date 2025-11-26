@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // ResetPasswordCommand represents the reset password initiation command
@@ -14,11 +14,11 @@ type ResetPasswordCommand struct {
 
 // ResetPasswordCommandHandler handles the ResetPasswordCommand
 type ResetPasswordCommandHandler struct {
-	passwordService services.PasswordManagementService
+	passwordService contracts.PasswordManagementService
 }
 
 // NewResetPasswordCommandHandler creates a new ResetPasswordCommandHandler
-func NewResetPasswordCommandHandler(passwordService services.PasswordManagementService) *ResetPasswordCommandHandler {
+func NewResetPasswordCommandHandler(passwordService contracts.PasswordManagementService) *ResetPasswordCommandHandler {
 	return &ResetPasswordCommandHandler{
 		passwordService: passwordService,
 	}

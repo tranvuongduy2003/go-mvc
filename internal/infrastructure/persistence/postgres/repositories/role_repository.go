@@ -4,8 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/role"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/auth"
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/persistence/postgres/models"
 	"github.com/tranvuongduy2003/go-mvc/pkg/pagination"
 	"gorm.io/gorm"
@@ -17,14 +16,14 @@ type roleRepository struct {
 }
 
 // NewRoleRepository creates a new RoleRepository instance
-func NewRoleRepository(db *gorm.DB) repositories.RoleRepository {
+func NewRoleRepository(db *gorm.DB) auth.RoleRepository {
 	return &roleRepository{
 		db: db,
 	}
 }
 
 // Create saves a new role to the database
-func (r *roleRepository) Create(ctx context.Context, roleEntity *role.Role) error {
+func (r *roleRepository) Create(ctx context.Context, roleEntity *auth.Role) error {
 	roleModel := r.domainToModel(roleEntity)
 	if err := r.db.WithContext(ctx).Create(roleModel).Error; err != nil {
 		return err
@@ -33,7 +32,7 @@ func (r *roleRepository) Create(ctx context.Context, roleEntity *role.Role) erro
 }
 
 // GetByID retrieves a role by ID
-func (r *roleRepository) GetByID(ctx context.Context, id string) (*role.Role, error) {
+func (r *roleRepository) GetByID(ctx context.Context, id string) (*auth.Role, error) {
 	var roleModel models.RoleModel
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&roleModel).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -45,7 +44,7 @@ func (r *roleRepository) GetByID(ctx context.Context, id string) (*role.Role, er
 }
 
 // GetByName retrieves a role by name
-func (r *roleRepository) GetByName(ctx context.Context, name string) (*role.Role, error) {
+func (r *roleRepository) GetByName(ctx context.Context, name string) (*auth.Role, error) {
 	var roleModel models.RoleModel
 	if err := r.db.WithContext(ctx).Where("name = ?", name).First(&roleModel).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -57,7 +56,7 @@ func (r *roleRepository) GetByName(ctx context.Context, name string) (*role.Role
 }
 
 // Update updates an existing role
-func (r *roleRepository) Update(ctx context.Context, roleEntity *role.Role) error {
+func (r *roleRepository) Update(ctx context.Context, roleEntity *auth.Role) error {
 	roleModel := r.domainToModel(roleEntity)
 	if err := r.db.WithContext(ctx).Model(&roleModel).Where("id = ?", roleModel.ID).Updates(roleModel).Error; err != nil {
 		return err
@@ -74,7 +73,7 @@ func (r *roleRepository) Delete(ctx context.Context, id string) error {
 }
 
 // List retrieves roles with pagination
-func (r *roleRepository) List(ctx context.Context, params repositories.ListRolesParams) ([]*role.Role, *pagination.Pagination, error) {
+func (r *roleRepository) List(ctx context.Context, params auth.ListRolesParams) ([]*auth.Role, *pagination.Pagination, error) {
 	var roleModels []models.RoleModel
 	var total int64
 
@@ -121,7 +120,7 @@ func (r *roleRepository) List(ctx context.Context, params repositories.ListRoles
 	}
 
 	// Convert models to domain entities
-	roles := make([]*role.Role, 0, len(roleModels))
+	roles := make([]*auth.Role, 0, len(roleModels))
 	for _, roleModel := range roleModels {
 		roleEntity, err := r.modelToDomain(&roleModel)
 		if err != nil {
@@ -134,13 +133,13 @@ func (r *roleRepository) List(ctx context.Context, params repositories.ListRoles
 }
 
 // GetActiveRoles retrieves all active roles
-func (r *roleRepository) GetActiveRoles(ctx context.Context) ([]*role.Role, error) {
+func (r *roleRepository) GetActiveRoles(ctx context.Context) ([]*auth.Role, error) {
 	var roleModels []models.RoleModel
 	if err := r.db.WithContext(ctx).Where("is_active = ?", true).Find(&roleModels).Error; err != nil {
 		return nil, err
 	}
 
-	roles := make([]*role.Role, 0, len(roleModels))
+	roles := make([]*auth.Role, 0, len(roleModels))
 	for _, roleModel := range roleModels {
 		roleEntity, err := r.modelToDomain(&roleModel)
 		if err != nil {
@@ -196,7 +195,7 @@ func (r *roleRepository) Deactivate(ctx context.Context, id string) error {
 }
 
 // GetRolesByUserID retrieves all roles assigned to a user
-func (r *roleRepository) GetRolesByUserID(ctx context.Context, userID string) ([]*role.Role, error) {
+func (r *roleRepository) GetRolesByUserID(ctx context.Context, userID string) ([]*auth.Role, error) {
 	var roleModels []models.RoleModel
 
 	query := r.db.WithContext(ctx).
@@ -208,7 +207,7 @@ func (r *roleRepository) GetRolesByUserID(ctx context.Context, userID string) ([
 		return nil, err
 	}
 
-	roles := make([]*role.Role, 0, len(roleModels))
+	roles := make([]*auth.Role, 0, len(roleModels))
 	for _, roleModel := range roleModels {
 		roleEntity, err := r.modelToDomain(&roleModel)
 		if err != nil {
@@ -221,7 +220,7 @@ func (r *roleRepository) GetRolesByUserID(ctx context.Context, userID string) ([
 }
 
 // GetActiveRolesByUserID retrieves all active roles assigned to a user
-func (r *roleRepository) GetActiveRolesByUserID(ctx context.Context, userID string) ([]*role.Role, error) {
+func (r *roleRepository) GetActiveRolesByUserID(ctx context.Context, userID string) ([]*auth.Role, error) {
 	var roleModels []models.RoleModel
 
 	query := r.db.WithContext(ctx).
@@ -234,7 +233,7 @@ func (r *roleRepository) GetActiveRolesByUserID(ctx context.Context, userID stri
 		return nil, err
 	}
 
-	roles := make([]*role.Role, 0, len(roleModels))
+	roles := make([]*auth.Role, 0, len(roleModels))
 	for _, roleModel := range roleModels {
 		roleEntity, err := r.modelToDomain(&roleModel)
 		if err != nil {
@@ -247,7 +246,7 @@ func (r *roleRepository) GetActiveRolesByUserID(ctx context.Context, userID stri
 }
 
 // domainToModel converts domain entity to GORM model
-func (r *roleRepository) domainToModel(roleEntity *role.Role) *models.RoleModel {
+func (r *roleRepository) domainToModel(roleEntity *auth.Role) *models.RoleModel {
 	return &models.RoleModel{
 		ID:          roleEntity.ID().String(),
 		Name:        roleEntity.Name().String(),
@@ -260,8 +259,8 @@ func (r *roleRepository) domainToModel(roleEntity *role.Role) *models.RoleModel 
 }
 
 // modelToDomain converts GORM model to domain entity
-func (r *roleRepository) modelToDomain(roleModel *models.RoleModel) (*role.Role, error) {
-	return role.ReconstructRole(
+func (r *roleRepository) modelToDomain(roleModel *models.RoleModel) (*auth.Role, error) {
+	return auth.ReconstructRole(
 		roleModel.ID,
 		roleModel.Name,
 		roleModel.Description,

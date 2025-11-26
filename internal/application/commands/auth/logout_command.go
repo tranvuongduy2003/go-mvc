@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "github.com/tranvuongduy2003/go-mvc/internal/application/dto/auth"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/services"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
 // LogoutCommand represents the logout command
@@ -14,11 +14,11 @@ type LogoutCommand struct {
 
 // LogoutCommandHandler handles the LogoutCommand
 type LogoutCommandHandler struct {
-	tokenService services.TokenManagementService
+	tokenService contracts.TokenManagementService
 }
 
 // NewLogoutCommandHandler creates a new LogoutCommandHandler
-func NewLogoutCommandHandler(tokenService services.TokenManagementService) *LogoutCommandHandler {
+func NewLogoutCommandHandler(tokenService contracts.TokenManagementService) *LogoutCommandHandler {
 	return &LogoutCommandHandler{
 		tokenService: tokenService,
 	}

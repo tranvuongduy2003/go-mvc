@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/repositories"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/user"
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
@@ -40,11 +39,11 @@ func (c CreateUserCommand) Validate() error {
 
 // CreateUserCommandHandler handles the CreateUserCommand
 type CreateUserCommandHandler struct {
-	userRepo repositories.UserRepository
+	userRepo user.UserRepository
 }
 
 // NewCreateUserCommandHandler creates a new CreateUserCommandHandler
-func NewCreateUserCommandHandler(userRepo repositories.UserRepository) *CreateUserCommandHandler {
+func NewCreateUserCommandHandler(userRepo user.UserRepository) *CreateUserCommandHandler {
 	return &CreateUserCommandHandler{
 		userRepo: userRepo,
 	}

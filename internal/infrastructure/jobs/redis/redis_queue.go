@@ -10,8 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
-	domainjobs "github.com/tranvuongduy2003/go-mvc/internal/domain/jobs"
-	"github.com/tranvuongduy2003/go-mvc/internal/domain/ports/jobs"
+	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
 const (
@@ -50,25 +49,25 @@ func NewRedisJobQueue(client redis.UniversalClient) *RedisJobQueue {
 }
 
 // Enqueue adds a job to the queue
-func (r *RedisJobQueue) Enqueue(ctx context.Context, job jobs.Job) error {
+func (r *RedisJobQueue) Enqueue(ctx context.Context, job job.Job) error {
 	return r.enqueueJob(ctx, job, false)
 }
 
 // EnqueueDelayed adds a job to be executed after a delay
-func (r *RedisJobQueue) EnqueueDelayed(ctx context.Context, job jobs.Job, delay time.Duration) error {
+func (r *RedisJobQueue) EnqueueDelayed(ctx context.Context, job job.Job, delay time.Duration) error {
 	scheduledAt := time.Now().Add(delay)
 	job.SetScheduledAt(&scheduledAt)
 	return r.enqueueDelayedJob(ctx, job, scheduledAt)
 }
 
 // EnqueueAt adds a job to be executed at a specific time
-func (r *RedisJobQueue) EnqueueAt(ctx context.Context, job jobs.Job, at time.Time) error {
+func (r *RedisJobQueue) EnqueueAt(ctx context.Context, job job.Job, at time.Time) error {
 	job.SetScheduledAt(&at)
 	return r.enqueueDelayedJob(ctx, job, at)
 }
 
 // Dequeue retrieves the next job from the queue
-func (r *RedisJobQueue) Dequeue(ctx context.Context, queues ...string) (jobs.Job, error) {
+func (r *RedisJobQueue) Dequeue(ctx context.Context, queues ...string) (job.Job, error) {
 	if len(queues) == 0 {
 		queues = []string{"default"}
 	}
@@ -79,11 +78,11 @@ func (r *RedisJobQueue) Dequeue(ctx context.Context, queues ...string) (jobs.Job
 	}
 
 	// Try to dequeue from each priority level
-	priorities := []jobs.JobPriority{
-		jobs.PriorityCritical,
-		jobs.PriorityHigh,
-		jobs.PriorityNormal,
-		jobs.PriorityLow,
+	priorities := []job.JobPriority{
+		job.PriorityCritical,
+		job.PriorityHigh,
+		job.PriorityNormal,
+		job.PriorityLow,
 	}
 
 	for _, priority := range priorities {
@@ -102,21 +101,21 @@ func (r *RedisJobQueue) Dequeue(ctx context.Context, queues ...string) (jobs.Job
 }
 
 // AckJob acknowledges that a job has been processed successfully
-func (r *RedisJobQueue) AckJob(ctx context.Context, job jobs.Job) error {
+func (r *RedisJobQueue) AckJob(ctx context.Context, ackedJob job.Job) error {
 	pipe := r.client.Pipeline()
 
-	jobID := job.GetID().String()
+	jobID := ackedJob.GetID().String()
 
 	// Remove from processing queue
 	pipe.LRem(ctx, r.getProcessingKey("default"), 1, jobID)
 
 	// Update job status
-	job.SetStatus(jobs.JobStatusCompleted)
+	ackedJob.SetStatus(job.JobStatusCompleted)
 	now := time.Now()
-	job.SetProcessedAt(&now)
+	ackedJob.SetProcessedAt(&now)
 
 	// Store completed job data
-	jobData, err := r.serializeJob(job)
+	jobData, err := r.serializeJob(ackedJob)
 	if err != nil {
 		return fmt.Errorf("failed to serialize job: %w", err)
 	}
@@ -127,36 +126,36 @@ func (r *RedisJobQueue) AckJob(ctx context.Context, job jobs.Job) error {
 
 	// Update stats
 	pipe.HIncrBy(ctx, r.getStatsKey("default"), "completed", 1)
-	pipe.HIncrBy(ctx, r.getStatsKey("default"), fmt.Sprintf("completed:%s", job.GetType()), 1)
+	pipe.HIncrBy(ctx, r.getStatsKey("default"), fmt.Sprintf("completed:%s", ackedJob.GetType()), 1)
 
 	_, err = pipe.Exec(ctx)
 	return err
 }
 
 // NackJob marks a job as failed and potentially retry
-func (r *RedisJobQueue) NackJob(ctx context.Context, job jobs.Job, err error) error {
-	jobID := job.GetID().String()
+func (r *RedisJobQueue) NackJob(ctx context.Context, nackedJob job.Job, err error) error {
+	jobID := nackedJob.GetID().String()
 
 	// Remove from processing queue
 	r.client.LRem(ctx, r.getProcessingKey("default"), 1, jobID)
 
 	// Update job with error
-	job.SetError(err)
-	job.IncrementRetryCount()
+	nackedJob.SetError(err)
+	nackedJob.IncrementRetryCount()
 
-	if job.CanRetry() {
+	if nackedJob.CanRetry() {
 		// Requeue for retry with exponential backoff
-		job.SetStatus(jobs.JobStatusRetrying)
-		delay := r.calculateRetryDelay(job.GetRetryCount())
-		return r.EnqueueDelayed(ctx, job, delay)
+		nackedJob.SetStatus(job.JobStatusRetrying)
+		delay := r.calculateRetryDelay(nackedJob.GetRetryCount())
+		return r.EnqueueDelayed(ctx, nackedJob, delay)
 	} else {
 		// Mark as permanently failed
-		job.SetStatus(jobs.JobStatusFailed)
+		nackedJob.SetStatus(job.JobStatusFailed)
 		now := time.Now()
-		job.SetProcessedAt(&now)
+		nackedJob.SetProcessedAt(&now)
 
 		// Store failed job data
-		jobData, serialErr := r.serializeJob(job)
+		jobData, serialErr := r.serializeJob(nackedJob)
 		if serialErr != nil {
 			return fmt.Errorf("failed to serialize failed job: %w", serialErr)
 		}
@@ -168,7 +167,7 @@ func (r *RedisJobQueue) NackJob(ctx context.Context, job jobs.Job, err error) er
 
 		// Update stats
 		pipe.HIncrBy(ctx, r.getStatsKey("default"), "failed", 1)
-		pipe.HIncrBy(ctx, r.getStatsKey("default"), fmt.Sprintf("failed:%s", job.GetType()), 1)
+		pipe.HIncrBy(ctx, r.getStatsKey("default"), fmt.Sprintf("failed:%s", nackedJob.GetType()), 1)
 
 		_, execErr := pipe.Exec(ctx)
 		return execErr
@@ -179,11 +178,11 @@ func (r *RedisJobQueue) NackJob(ctx context.Context, job jobs.Job, err error) er
 func (r *RedisJobQueue) GetQueueSize(ctx context.Context, queue string) (int64, error) {
 	var total int64
 
-	priorities := []jobs.JobPriority{
-		jobs.PriorityCritical,
-		jobs.PriorityHigh,
-		jobs.PriorityNormal,
-		jobs.PriorityLow,
+	priorities := []job.JobPriority{
+		job.PriorityCritical,
+		job.PriorityHigh,
+		job.PriorityNormal,
+		job.PriorityLow,
 	}
 
 	for _, priority := range priorities {
@@ -204,14 +203,14 @@ func (r *RedisJobQueue) GetQueueSize(ctx context.Context, queue string) (int64, 
 }
 
 // GetPendingJobs returns jobs with pending status
-func (r *RedisJobQueue) GetPendingJobs(ctx context.Context, queue string, limit int) ([]jobs.Job, error) {
-	var allJobs []jobs.Job
+func (r *RedisJobQueue) GetPendingJobs(ctx context.Context, queue string, limit int) ([]job.Job, error) {
+	var allJobs []job.Job
 
-	priorities := []jobs.JobPriority{
-		jobs.PriorityCritical,
-		jobs.PriorityHigh,
-		jobs.PriorityNormal,
-		jobs.PriorityLow,
+	priorities := []job.JobPriority{
+		job.PriorityCritical,
+		job.PriorityHigh,
+		job.PriorityNormal,
+		job.PriorityLow,
 	}
 
 	remainingLimit := limit
@@ -241,13 +240,13 @@ func (r *RedisJobQueue) GetPendingJobs(ctx context.Context, queue string, limit 
 }
 
 // GetFailedJobs returns jobs with failed status
-func (r *RedisJobQueue) GetFailedJobs(ctx context.Context, queue string, limit int) ([]jobs.Job, error) {
+func (r *RedisJobQueue) GetFailedJobs(ctx context.Context, queue string, limit int) ([]job.Job, error) {
 	jobIDs, err := r.client.LRange(ctx, r.getFailedKey(queue), 0, int64(limit-1)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get failed job IDs: %w", err)
 	}
 
-	var failedJobs []jobs.Job
+	var failedJobs []job.Job
 	for _, jobID := range jobIDs {
 		job, err := r.getJobByID(ctx, jobID)
 		if err != nil {
@@ -268,11 +267,11 @@ func (r *RedisJobQueue) DeleteJob(ctx context.Context, jobID uuid.UUID) error {
 	pipe := r.client.Pipeline()
 
 	// Remove from all possible queues
-	priorities := []jobs.JobPriority{
-		jobs.PriorityCritical,
-		jobs.PriorityHigh,
-		jobs.PriorityNormal,
-		jobs.PriorityLow,
+	priorities := []job.JobPriority{
+		job.PriorityCritical,
+		job.PriorityHigh,
+		job.PriorityNormal,
+		job.PriorityLow,
 	}
 
 	for _, priority := range priorities {
@@ -293,34 +292,34 @@ func (r *RedisJobQueue) DeleteJob(ctx context.Context, jobID uuid.UUID) error {
 func (r *RedisJobQueue) RetryJob(ctx context.Context, jobID uuid.UUID) error {
 	jobIDStr := jobID.String()
 
-	job, err := r.getJobByID(ctx, jobIDStr)
+	retrievedJob, err := r.getJobByID(ctx, jobIDStr)
 	if err != nil {
 		return fmt.Errorf("failed to get job for retry: %w", err)
 	}
 
-	if job == nil {
+	if retrievedJob == nil {
 		return fmt.Errorf("job not found: %s", jobIDStr)
 	}
 
-	if job.GetStatus() != jobs.JobStatusFailed {
-		return fmt.Errorf("job is not in failed status: %s", job.GetStatus())
+	if retrievedJob.GetStatus() != job.JobStatusFailed {
+		return fmt.Errorf("job is not in failed status: %s", retrievedJob.GetStatus())
 	}
 
 	// Reset job for retry
-	job.SetStatus(jobs.JobStatusPending)
-	job.SetError(nil)
-	job.SetProcessedAt(nil)
+	retrievedJob.SetStatus(job.JobStatusPending)
+	retrievedJob.SetError(nil)
+	retrievedJob.SetProcessedAt(nil)
 
 	// Remove from failed queue
 	r.client.LRem(ctx, r.getFailedKey("default"), 1, jobIDStr)
 
 	// Requeue the job
-	return r.enqueueJob(ctx, job, true)
+	return r.enqueueJob(ctx, retrievedJob, true)
 }
 
 // Private helper methods
 
-func (r *RedisJobQueue) enqueueJob(ctx context.Context, job jobs.Job, isRetry bool) error {
+func (r *RedisJobQueue) enqueueJob(ctx context.Context, job job.Job, isRetry bool) error {
 	jobID := job.GetID().String()
 
 	// Serialize job data
@@ -349,7 +348,7 @@ func (r *RedisJobQueue) enqueueJob(ctx context.Context, job jobs.Job, isRetry bo
 	return err
 }
 
-func (r *RedisJobQueue) enqueueDelayedJob(ctx context.Context, job jobs.Job, at time.Time) error {
+func (r *RedisJobQueue) enqueueDelayedJob(ctx context.Context, job job.Job, at time.Time) error {
 	jobID := job.GetID().String()
 
 	// Serialize job data
@@ -379,7 +378,7 @@ func (r *RedisJobQueue) enqueueDelayedJob(ctx context.Context, job jobs.Job, at 
 	return err
 }
 
-func (r *RedisJobQueue) dequeueFromQueue(ctx context.Context, queue string, priority jobs.JobPriority) (jobs.Job, error) {
+func (r *RedisJobQueue) dequeueFromQueue(ctx context.Context, queue string, priority job.JobPriority) (job.Job, error) {
 	queueKey := r.getQueueKey(queue, priority)
 	processingKey := r.getProcessingKey(queue)
 
@@ -392,25 +391,25 @@ func (r *RedisJobQueue) dequeueFromQueue(ctx context.Context, queue string, prio
 		return nil, fmt.Errorf("failed to dequeue job: %w", err)
 	}
 
-	// Get job data
-	job, err := r.getJobByID(ctx, jobID)
+	// Get retrievedJob data
+	retrievedJob, err := r.getJobByID(ctx, jobID)
 	if err != nil {
 		r.client.LRem(ctx, processingKey, 1, jobID)
 		return nil, fmt.Errorf("failed to get job data: %w", err)
 	}
 
-	if job == nil {
+	if retrievedJob == nil {
 		r.client.LRem(ctx, processingKey, 1, jobID)
 		return nil, nil
 	}
 
 	// Update job status
-	job.SetStatus(jobs.JobStatusProcessing)
+	retrievedJob.SetStatus(job.JobStatusProcessing)
 
 	// Set visibility timeout for the job
 	r.client.Expire(ctx, r.getJobKey(jobID), r.visibilityTimeout)
 
-	return job, nil
+	return retrievedJob, nil
 }
 
 func (r *RedisJobQueue) processDelayedJobs(ctx context.Context, queue string) error {
@@ -433,15 +432,15 @@ func (r *RedisJobQueue) processDelayedJobs(ctx context.Context, queue string) er
 		pipe := r.client.Pipeline()
 		pipe.ZRem(ctx, r.getDelayedKey(queue), jobID)
 
-		// Get job to determine priority
-		job, err := r.getJobByID(ctx, jobID)
+		// Get retrievedJob to determine priority
+		retrievedJob, err := r.getJobByID(ctx, jobID)
 		if err != nil {
 			continue
 		}
 
-		if job != nil {
-			job.SetStatus(jobs.JobStatusPending)
-			pipe.LPush(ctx, r.getQueueKey(queue, job.GetPriority()), jobID)
+		if retrievedJob != nil {
+			retrievedJob.SetStatus(job.JobStatusPending)
+			pipe.LPush(ctx, r.getQueueKey(queue, retrievedJob.GetPriority()), jobID)
 		}
 
 		pipe.Exec(ctx)
@@ -450,7 +449,7 @@ func (r *RedisJobQueue) processDelayedJobs(ctx context.Context, queue string) er
 	return nil
 }
 
-func (r *RedisJobQueue) getJobByID(ctx context.Context, jobID string) (jobs.Job, error) {
+func (r *RedisJobQueue) getJobByID(ctx context.Context, jobID string) (job.Job, error) {
 	jobData, err := r.client.HGetAll(ctx, r.getJobKey(jobID)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get job data: %w", err)
@@ -463,40 +462,40 @@ func (r *RedisJobQueue) getJobByID(ctx context.Context, jobID string) (jobs.Job,
 	return r.deserializeJob(jobData)
 }
 
-func (r *RedisJobQueue) serializeJob(job jobs.Job) (map[string]interface{}, error) {
+func (r *RedisJobQueue) serializeJob(serializedJob job.Job) (map[string]interface{}, error) {
 	// Convert job to BaseJob for serialization
-	if baseJob, ok := job.(*domainjobs.BaseJob); ok {
+	if baseJob, ok := serializedJob.(*job.BaseJob); ok {
 		return baseJob.ToMap(), nil
 	}
 
 	// For other job types, create a map manually
 	data := map[string]interface{}{
-		"id":         job.GetID().String(),
-		"type":       job.GetType(),
-		"payload":    job.GetPayload(),
-		"priority":   int(job.GetPriority()),
-		"status":     string(job.GetStatus()),
-		"maxRetries": job.GetMaxRetries(),
-		"retryCount": job.GetRetryCount(),
-		"createdAt":  job.GetCreatedAt().Unix(),
+		"id":         serializedJob.GetID().String(),
+		"type":       serializedJob.GetType(),
+		"payload":    serializedJob.GetPayload(),
+		"priority":   int(serializedJob.GetPriority()),
+		"status":     string(serializedJob.GetStatus()),
+		"maxRetries": serializedJob.GetMaxRetries(),
+		"retryCount": serializedJob.GetRetryCount(),
+		"createdAt":  serializedJob.GetCreatedAt().Unix(),
 	}
 
-	if scheduledAt := job.GetScheduledAt(); scheduledAt != nil {
+	if scheduledAt := serializedJob.GetScheduledAt(); scheduledAt != nil {
 		data["scheduledAt"] = scheduledAt.Unix()
 	}
 
-	if processedAt := job.GetProcessedAt(); processedAt != nil {
+	if processedAt := serializedJob.GetProcessedAt(); processedAt != nil {
 		data["processedAt"] = processedAt.Unix()
 	}
 
-	if err := job.GetError(); err != nil {
+	if err := serializedJob.GetError(); err != nil {
 		data["error"] = err.Error()
 	}
 
 	return data, nil
 }
 
-func (r *RedisJobQueue) deserializeJob(data map[string]string) (jobs.Job, error) {
+func (r *RedisJobQueue) deserializeJob(data map[string]string) (job.Job, error) {
 	// Convert string map to interface map
 	jobData := make(map[string]interface{})
 	for k, v := range data {
@@ -510,7 +509,7 @@ func (r *RedisJobQueue) deserializeJob(data map[string]string) (jobs.Job, error)
 				jobData[k] = intVal
 			}
 		case "payload":
-			var payload jobs.JobPayload
+			var payload job.JobPayload
 			if err := json.Unmarshal([]byte(v), &payload); err == nil {
 				jobData[k] = payload
 			}
@@ -519,7 +518,7 @@ func (r *RedisJobQueue) deserializeJob(data map[string]string) (jobs.Job, error)
 		}
 	}
 
-	return domainjobs.FromMap(jobData)
+	return job.FromMap(jobData)
 }
 
 func (r *RedisJobQueue) calculateRetryDelay(retryCount int) time.Duration {
@@ -533,7 +532,7 @@ func (r *RedisJobQueue) calculateRetryDelay(retryCount int) time.Duration {
 
 // Redis key generation methods
 
-func (r *RedisJobQueue) getQueueKey(queue string, priority jobs.JobPriority) string {
+func (r *RedisJobQueue) getQueueKey(queue string, priority job.JobPriority) string {
 	return fmt.Sprintf("%s%s:%d", keyPrefixQueue, queue, priority)
 }
 

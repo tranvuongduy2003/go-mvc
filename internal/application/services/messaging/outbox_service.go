@@ -6,16 +6,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/messaging"
-	messagingPorts "github.com/tranvuongduy2003/go-mvc/internal/domain/ports/messaging"
 )
 
 // OutboxService handles the outbox pattern for reliable message publishing
 type OutboxService struct {
-	outboxRepo messagingPorts.OutboxRepository
+	outboxRepo messaging.OutboxRepository
 }
 
 // NewOutboxService creates a new outbox service
-func NewOutboxService(outboxRepo messagingPorts.OutboxRepository) *OutboxService {
+func NewOutboxService(outboxRepo messaging.OutboxRepository) *OutboxService {
 	return &OutboxService{
 		outboxRepo: outboxRepo,
 	}
