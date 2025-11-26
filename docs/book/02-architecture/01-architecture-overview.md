@@ -97,99 +97,274 @@ cmd/
 
 The `/internal` directory contains private application code that cannot be imported by other applications.
 
-#### `/internal/core` - Domain Layer (Clean Architecture Core)
+#### `/internal/domain` - Domain Layer (Clean Architecture Core)
 
 ```bash
-internal/core/
-├── domain/                   # 🏛️ Domain entities and business logic
-│   ├── shared/              # Common domain constructs
-│   │   ├── events/
-│   │   │   └── events.go    # Domain event definitions
-│   │   ├── specification/   # Business rule specifications
-│   │   └── valueobject/
-│   │       └── valueobject.go # Immutable value objects
-│   └── user/                # User domain aggregate
-└── ports/                   # 🔌 Interface definitions (Dependency Inversion)
-    ├── cache/               # Cache interface contracts
-    ├── messaging/           # Message bus interface contracts
-    ├── repositories/        # Data access interface contracts
-    └── services/            # External service interface contracts
+internal/domain/
+├── domain.go                 # Domain module (Fx)
+├── user/                     # User domain aggregate
+│   ├── user.go              # User entity with business logic
+│   └── user_repository.go   # User repository interface
+├── auth/                     # Authentication & Authorization domain
+│   ├── role.go              # Role entity
+│   ├── permission.go        # Permission entity
+│   ├── user_role.go         # User-Role relationship
+│   ├── role_permission.go   # Role-Permission relationship
+│   └── *_repository.go      # Repository interfaces
+├── messaging/                # Messaging domain (inbox/outbox pattern)
+│   ├── message.go           # Base message entity
+│   ├── outbox_message.go    # Outbox pattern for reliable messaging
+│   ├── inbox_message.go     # Inbox pattern for deduplication
+│   ├── message_deduplication.go
+│   └── *_repository.go      # Repository interfaces
+├── job/                      # Background job domain
+│   ├── job.go               # Job entity
+│   └── job_types.go         # Job type constants
+├── contracts/                # Service interfaces (ports)
+│   ├── auth_service.go      # Auth service interface
+│   ├── user_service.go      # User service interface
+│   └── file_storage_service.go # File storage interface
+├── repositories/             # Common repository interfaces
+└── shared/                   # Shared domain constructs
+    ├── events/              # Domain events
+    │   ├── events.go        # Event base definitions
+    │   └── user_events.go   # User-specific events
+    └── valueobject/         # Value objects
+        └── valueobject.go   # Immutable value objects
 ```
 
 **Purpose**: Contains the core business logic and domain model.
 
 **Key Files**:
-- **`events.go`**: Domain events (UserCreated, UserUpdated, etc.)
-- **`valueobject.go`**: Immutable objects (Email, UserID, Money, etc.)
-- **`ports/`**: Interfaces that define contracts for external dependencies
+- **`domain.go`**: Fx module for domain layer dependencies
+- **`user/user.go`**: User entity with business methods
+- **`auth/`**: RBAC entities (Role, Permission, relationships)
+- **`messaging/`**: Inbox/Outbox pattern for reliable messaging
+- **`contracts/`**: Service interfaces (Dependency Inversion)
+- **`shared/events/`**: Domain events (UserCreated, UserUpdated, etc.)
+- **`shared/valueobject/`**: Immutable objects (Email, UserID, etc.)
 
 #### `/internal/application` - Application Layer (Use Cases)
 
 ```bash
 internal/application/
+├── application.go            # Application module (Fx)
 ├── commands/                 # 🎯 Write operations (CQRS Commands)
-│   └── shared/              # Common command structures
-├── queries/                 # 📊 Read operations (CQRS Queries)
-│   └── shared/              # Common query structures
-├── dto/                     # 📦 Data Transfer Objects
-├── services/                # 🔧 Application services (orchestration)
-├── events/                  # 📨 Application event handlers
-└── validators/              # ✅ Input validation logic
+│   ├── command.go           # Base command interface
+│   ├── auth/                # Auth commands (10+ files)
+│   │   ├── login_command.go
+│   │   ├── register_command.go
+│   │   ├── refresh_token_command.go
+│   │   ├── change_password_command.go
+│   │   ├── reset_password_command.go
+│   │   ├── verify_email_command.go
+│   │   └── ...
+│   └── user/                # User commands
+│       ├── create_user_command.go
+│       ├── update_user_command.go
+│       ├── delete_user_command.go
+│       └── upload_avatar_command.go
+├── queries/                  # 📊 Read operations (CQRS Queries)
+│   ├── query.go             # Base query interface
+│   ├── auth/                # Auth queries
+│   │   ├── get_user_profile_query.go
+│   │   └── get_user_permissions_query.go
+│   └── user/                # User queries
+│       ├── get_user_query.go
+│       └── list_users_query.go
+├── dto/                      # 📦 Data Transfer Objects
+│   ├── auth/                # Auth DTOs
+│   │   ├── login_dto.go
+│   │   ├── register_dto.go
+│   │   └── token_dto.go
+│   └── user/                # User DTOs
+│       ├── user_dto.go
+│       └── update_user_dto.go
+├── services/                 # 🔧 Application services (orchestration)
+│   ├── auth_service.go      # Auth service implementation
+│   ├── authorization_service.go # RBAC service
+│   ├── user_service.go      # User service implementation
+│   └── messaging/           # Messaging services
+│       ├── outbox_service.go
+│       └── inbox_service.go
+├── event_handlers/           # 📨 Application event handlers
+│   └── user_event_handler.go
+└── validators/               # ✅ Input validation logic
+    └── user/
+        └── user_validator.go
 ```
 
 **Purpose**: Implements use cases and business workflows. Orchestrates domain objects.
 
 **Key Concepts**:
-- **Commands**: Handle write operations (CreateUser, UpdateProfile, etc.)
+- **Commands**: Handle write operations (CreateUser, Login, etc.)
 - **Queries**: Handle read operations (GetUser, ListUsers, etc.)
 - **DTOs**: Data structures for transferring data between layers
 - **Services**: Coordinate multiple domain objects and external services
+- **Event Handlers**: React to domain events
+- **Validators**: Input validation with go-playground/validator
 
-#### `/internal/adapters` - Infrastructure Layer (External Concerns)
+#### `/internal/infrastructure` - Infrastructure Layer (External Concerns)
 
 ```bash
-internal/adapters/
-├── cache/                    # 💾 Cache implementations
-│   ├── cache.go             # Redis cache adapter
+internal/infrastructure/
+├── infrastructure.go         # Infrastructure module (Fx)
+├── config/                   # Configuration management
+│   └── config.go            # Viper-based config loader
+├── database/                 # Database connection
+│   └── database.go          # GORM database manager with connection pooling
+├── cache/                    # Cache implementations
+│   ├── cache.go             # Redis cache service
 │   └── errors.go            # Cache-specific error types
-├── external/                # 🌐 External service clients
-│   ├── email_service.go     # API-based email service (SendGrid, etc.)
-│   ├── file_storage_service.go # File storage services (S3, etc.)
-│   ├── push_notification_service.go # Push notification services
-│   ├── sms_service.go       # SMS service integrations
-│   └── smtp_service.go      # SMTP email service implementation
-├── messaging/               # 📬 Message queue implementations
-│   └── rabbitmq/            # RabbitMQ adapter for async messaging
-├── monitoring/              # 📊 Observability implementations
-├── persistence/             # 🗄️ Data storage implementations
-│   ├── postgres/            # PostgreSQL specific implementations
-│   │   ├── migrations/      # Database schema migrations
-│   │   ├── models/          # GORM model definitions
-│   │   └── repositories/    # Repository implementations
-│   └── redis/               # Redis specific implementations
-└── repositories/            # 📚 Repository interface implementations
+├── external/                 # External service clients
+│   ├── email_service.go     # Email service client
+│   ├── smtp_service.go      # SMTP email implementation
+│   ├── file_storage_service.go # MinIO S3-compatible storage
+│   ├── push_notification_service.go # Push notifications
+│   └── sms_service.go       # SMS service integration
+├── messaging/                # Message broker implementations
+│   └── nats/                # NATS streaming
+│       ├── nats.go          # Basic NATS adapter
+│       └── deduplicated_nats.go # With inbox/outbox deduplication
+├── persistence/              # Data storage implementations
+│   └── postgres/            # PostgreSQL with GORM
+│       ├── models/          # GORM models (database schema)
+│       │   ├── user.go
+│       │   ├── role.go
+│       │   ├── permission.go
+│       │   ├── user_role.go
+│       │   └── role_permission.go
+│       ├── repositories/    # Repository implementations
+│       │   ├── user_repository.go
+│       │   ├── role_repository.go
+│       │   ├── permission_repository.go
+│       │   ├── user_role_repository.go
+│       │   └── role_permission_repository.go
+│       └── messaging/       # Messaging persistence
+│           ├── outbox_repository.go
+│           ├── inbox_repository.go
+│           └── message_deduplication_repository.go
+├── security/                 # Security utilities
+│   └── security.go          # Password hashing (bcrypt), token generation
+├── logger/                   # Logging infrastructure
+│   └── logger.go            # Zap structured logger wrapper
+├── tracing/                  # Distributed tracing
+│   └── tracing.go           # OpenTelemetry + Jaeger setup
+├── metrics/                  # Metrics collection
+│   └── metrics.go           # Prometheus metrics registration
+├── jobs/                     # Background job system
+│   ├── scheduler/           # Job scheduler
+│   ├── worker/              # Job worker pool
+│   ├── redis/               # Redis-based job queue
+│   ├── handlers/            # Job handlers (email, cleanup, etc.)
+│   └── metrics/             # Job-specific metrics
+└── utils/                    # Infrastructure utilities
+    └── utils.go
 ```
 
-**Purpose**: Implements interfaces defined in the core layer. Contains all external dependencies.
+**Purpose**: Implements external service adapters and infrastructure concerns.
 
 **Key Components**:
-- **Cache**: Redis-based caching with connection pooling
-- **External**: Email services (SMTP & API), file storage, notifications
-- **Messaging**: RabbitMQ for async communication
-- **Persistence**: Database repositories with GORM ORM
-
-**Email Service Implementation**:
-- **SMTP Service**: Direct SMTP integration for development (MailCatcher) and production
-- **API Service**: External email providers (SendGrid, AWS SES) for scalable email delivery
-- **Templates**: Built-in email templates for password reset and email verification
-- **Error Handling**: Graceful email failure handling without blocking operations
-
-#### `/internal/di` - Dependency Injection Modules
+- **Config**: Viper for configuration management (YAML, env vars)
+- **Database**: GORM with PostgreSQL connection pooling
+- **Cache**: Redis for high-performance caching
+- **External Services**: MinIO, SMTP, SMS, Push notifications
+- **Messaging**: NATS with inbox/outbox pattern for reliability
+- **Persistence**: GORM models and repository implementations
+- **Security**: bcrypt password hashing, token generation
+- **Logger**: Structured logging with Zap
+- **Tracing**: OpenTelemetry + Jaeger for distributed tracing
+- **Metrics**: Prometheus metrics collection
+- **Jobs**: Background job processing with Redis queue
+#### `/internal/modules` - Dependency Injection Modules
 
 ```bash
-internal/di/
-├── application.go            # 🎯 Application layer DI bindings
-├── domain.go                # 🏛️ Domain layer DI bindings
+internal/modules/
+├── user.go                   # 🎯 User module DI (repositories, commands, queries, handlers)
+├── auth.go                   # 🔐 Auth module DI (auth services, commands, queries)
+├── job.go                    # ⚡ Job module DI (job handlers, scheduler)
+└── messaging.go              # 📬 Messaging module DI (outbox, inbox, NATS)
+```
+
+**Purpose**: Uber FX dependency injection modules organized by domain/feature.
+
+**Key Concepts**:
+- Each module provides all dependencies for a specific domain
+- Includes repositories, commands, queries, services, handlers
+- Registered in `cmd/main.go` via `fx.Module()`
+
+**Example Structure** (`internal/modules/user.go`):
+```go
+var UserModule = fx.Module("user",
+    fx.Provide(
+        // Repositories
+        NewUserRepository,
+        
+        // Commands
+        NewCreateUserCommandHandler,
+        NewUpdateUserCommandHandler,
+        NewDeleteUserCommandHandler,
+        NewUploadAvatarCommandHandler,
+        
+        // Queries
+        NewGetUserQueryHandler,
+        NewListUsersQueryHandler,
+        
+        // Services
+        NewUserService,
+        
+        // Validators
+        NewUserValidator,
+        
+        // Handlers
+        NewUserHandler,
+    ),
+)
+```
+
+#### `/internal/presentation` - Presentation Layer
+
+```bash
+internal/presentation/
+├── presentation.go           # Presentation module (Fx)
+└── http/                     # 🌐 HTTP-specific handlers
+    ├── handlers/             # HTTP request handlers
+    │   ├── handler.go       # Handler module (Fx)
+    │   └── v1/              # API version 1
+    │       ├── auth_handler.go  # Auth endpoints (login, register, etc.)
+    │       └── user_handler.go  # User endpoints (CRUD operations)
+    └── middleware/           # 🛡️ HTTP middleware components
+        ├── manager.go       # Middleware manager and orchestration
+        ├── auth.go          # JWT authentication middleware
+        ├── authorization.go # RBAC authorization middleware
+        ├── cors.go          # Cross-Origin Resource Sharing
+        ├── logger.go        # HTTP request/response logging
+        ├── metrics.go       # Prometheus metrics collection
+        ├── ratelimit.go     # Rate limiting and throttling
+        ├── recovery.go      # Panic recovery and error handling
+        ├── security.go      # Security headers and protection
+        ├── tracing.go       # Distributed tracing with OpenTelemetry
+        └── idempotency.go   # Idempotency key handling
+```
+
+**Purpose**: HTTP layer for handling requests and responses. Converts HTTP requests to commands/queries.
+
+**Key Components**:
+- **Handlers**: Convert HTTP requests to application commands/queries
+- **Middleware**: Cross-cutting concerns (auth, logging, metrics, etc.)
+- **Manager**: Orchestrates middleware chain based on environment
+
+**Middleware Stack** (Production):
+1. Request ID
+2. Security Headers
+3. CORS
+4. Tracing
+5. Recovery
+6. Logging
+7. Metrics
+8. Rate Limiting
+9. Authentication (protected routes)
+10. Authorization (role-based)
 ├── handler.go               # 🌐 HTTP handler DI bindings
 ├── infrastructure.go        # ⚙️ Infrastructure layer DI bindings
 └── server.go                # 🚀 Server configuration and startup

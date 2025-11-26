@@ -163,7 +163,7 @@ AI phải phân tích User Story để xác định:
 
 ## 🏗️ Layer-by-Layer Guidelines
 
-### 1. Domain Layer (`internal/core/domain/`)
+### 1. Domain Layer (`internal/domain/`)
 
 #### Entity Creation Rules
 ```go
@@ -174,7 +174,7 @@ import (
     "time"
     "errors"
     "github.com/google/uuid"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/domain/shared/events"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/shared/events"
 )
 
 // [Entity] represents the [entity] aggregate root
@@ -267,7 +267,7 @@ package commands
 import (
     "context"
     "[domain_package]"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/repositories"
 )
 
 // [Action][Entity]Command represents a command to [action] [entity]
@@ -307,7 +307,7 @@ package queries
 import (
     "context"
     "[dto_package]"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/repositories"
 )
 
 // [Action][Entity]Query represents a query to [action] [entity]
@@ -406,7 +406,7 @@ func (v *[Entity]Validator) Validate[Action][Entity]Request(req [dto_package].[A
 }
 ```
 
-### 3. Infrastructure Layer (`internal/adapters/`)
+### 3. Infrastructure Layer (`internal/infrastructure/`)
 
 #### Repository Implementation Rules
 ```go
@@ -418,7 +418,7 @@ import (
     "gorm.io/gorm"
     "[domain_package]"
     "[models_package]"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/repositories"
 )
 
 type [Entity]Repository struct {
@@ -494,7 +494,7 @@ func (m *[Entity]) To[Entity]() *[domain_package].[Entity] {
 #### Migration Rules
 ```sql
 -- Template for migration
--- migrate create -ext sql -dir internal/adapters/persistence/postgres/migrations -seq create_[table_name]_table
+-- migrate create -ext sql -dir internal/infrastructure/persistence/postgres/migrations -seq create_[table_name]_table
 
 -- Create table
 CREATE TABLE IF NOT EXISTS [table_name] (
@@ -514,7 +514,7 @@ COMMENT ON TABLE [table_name] IS '[Description of the table]';
 COMMENT ON COLUMN [table_name].id IS '[Description of ID column]';
 ```
 
-### 4. Presentation Layer (`internal/handlers/http/rest/v1/`)
+### 4. Presentation Layer (`internal/presentation/http/handlers/v1/`)
 
 #### HTTP Handler Rules
 ```go
@@ -603,7 +603,7 @@ import (
     "github.com/google/uuid"
     
     // Internal packages
-    "github.com/tranvuongduy2003/go-mvc/internal/core/domain/user"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/user"
     "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 ```
@@ -641,15 +641,16 @@ logger.Error(ctx, "Failed to create user", "error", err)
 
 ```
 internal/
-├── core/
-│   ├── domain/
-│   │   └── [entity]/
-│   │       ├── [entity].go              # Domain entity
-│   │       ├── value_objects.go         # Value objects
-│   │       └── events.go               # Domain events
-│   └── ports/
-│       └── repositories/
-│           └── [entity]_repository.go   # Repository interface
+├── domain/
+│   ├── [entity]/
+│   │   ├── [entity].go              # Domain entity
+│   │   ├── [entity]_id.go          # Entity ID value object
+│   │   ├── value_objects.go         # Value objects
+│   │   └── events.go               # Domain events
+│   ├── repositories/
+│   │   └── [entity]_repository.go   # Repository interface
+│   └── shared/
+│       └── events/                  # Shared event interfaces
 ├── application/
 │   ├── commands/
 │   │   └── [entity]/
@@ -662,14 +663,13 @@ internal/
 │   │       └── list_[entity]_query.go
 │   ├── dto/
 │   │   └── [entity]/
-│   │       ├── [entity]_dto.go          # DTOs
-│   │       └── mappers.go               # Mapping functions
+│   │       └── [entity]_dto.go          # Request/Response DTOs
 │   ├── services/
 │   │   └── [entity]_service.go          # Application service
 │   └── validators/
 │       └── [entity]/
 │           └── [entity]_validator.go    # Validators
-├── adapters/
+├── infrastructure/
 │   └── persistence/
 │       └── postgres/
 │           ├── models/
@@ -679,11 +679,14 @@ internal/
 │           └── migrations/
 │               ├── [timestamp]_create_[entity]_table.up.sql
 │               └── [timestamp]_create_[entity]_table.down.sql
-└── handlers/
-    └── http/
-        └── rest/
-            └── v1/
-                └── [entity]_handler.go   # HTTP handlers
+├── presentation/
+│   └── http/
+│       ├── handlers/
+│       │   └── v1/
+│       │       └── [entity]_handler.go   # HTTP handlers
+│       └── middleware/                   # HTTP middleware
+└── modules/
+    └── [entity].go                       # Feature-based DI module
 ```
 
 ## ✅ Validation Rules
@@ -825,7 +828,7 @@ Từ User Story này, AI sẽ sinh ra:
 Sau khi sinh code, AI phải cập nhật các DI modules:
 
 ```go
-// internal/di/modules/[entity].go
+// internal/modules/[entity].go
 package modules
 
 import (

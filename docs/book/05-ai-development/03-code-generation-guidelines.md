@@ -21,7 +21,7 @@ User Story → Analysis → Domain → Application → Infrastructure → Presen
 
 ## 🏛️ Domain Layer Generation
 
-### 1. Entity Generation (`internal/core/domain/[entity]/`)
+### 1. Entity Generation (`internal/domain/[entity]/`)
 
 #### Entity Structure Template
 ```go
@@ -31,7 +31,7 @@ import (
     "errors"
     "time"
     "github.com/google/uuid"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/domain/shared/events"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/shared/events"
 )
 
 // [Entity] represents the [entity] aggregate root
@@ -156,7 +156,7 @@ func (e [Entity][Action]Event) OccurredAt() time.Time {
 }
 ```
 
-### 2. Repository Interface Generation (`internal/core/ports/repositories/`)
+### 2. Repository Interface Generation (`internal/domain/repositories/`)
 
 ```go
 package repositories
@@ -204,8 +204,8 @@ import (
     "context"
     "[domain_package]"
     "[dto_package]"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/messaging"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/repositories"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
     apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
@@ -281,7 +281,7 @@ package queries
 import (
     "context"
     "[dto_package]"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/repositories"
     "github.com/tranvuongduy2003/go-mvc/pkg/pagination"
     apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
@@ -420,7 +420,7 @@ package validators
 
 import (
     "[dto_package]"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/repositories"
     apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
     "github.com/tranvuongduy2003/go-mvc/pkg/validator"
 )
@@ -562,7 +562,7 @@ func (s *[Entity]Service) List[Entity](ctx context.Context, req [dto_package].Li
 
 ## ⚙️ Infrastructure Layer Generation
 
-### 1. Database Model Generation (`internal/adapters/persistence/postgres/models/`)
+### 1. Database Model Generation (`internal/infrastructure/persistence/postgres/models/`)
 
 ```go
 package models
@@ -647,7 +647,7 @@ func (m *[Entity]) To[Entity]() (*[domain_package].[Entity], error) {
 }
 ```
 
-### 2. Repository Implementation (`internal/adapters/persistence/postgres/repositories/`)
+### 2. Repository Implementation (`internal/infrastructure/persistence/postgres/repositories/`)
 
 ```go
 package repositories
@@ -657,7 +657,7 @@ import (
     "gorm.io/gorm"
     "[domain_package]"
     "[models_package]"
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/repositories"
     "github.com/tranvuongduy2003/go-mvc/pkg/pagination"
     apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
@@ -817,7 +817,7 @@ func (r *[Entity]Repository) ExistsByUnique[Field](ctx context.Context, field [F
 }
 ```
 
-### 3. Migration Generation (`internal/adapters/persistence/postgres/migrations/`)
+### 3. Migration Generation (`internal/infrastructure/persistence/postgres/migrations/`)
 
 ```sql
 -- [timestamp]_create_[entity]_table.up.sql
@@ -896,7 +896,7 @@ DROP FUNCTION IF EXISTS update_updated_at_column();
 
 ## 🌐 Presentation Layer Generation
 
-### 1. HTTP Handler Generation (`internal/handlers/http/rest/v1/`)
+### 1. HTTP Handler Generation (`internal/presentation/http/handlers/v1/`)
 
 ```go
 package v1
@@ -1168,13 +1168,13 @@ func (h *[Entity]Handler) Delete[Entity](c *gin.Context) {
 ### 2. Route Setup Generation
 
 ```go
-// internal/handlers/http/rest/v1/routes.go
+// internal/presentation/http/handlers/v1/routes.go
 
 package v1
 
 import (
     "github.com/gin-gonic/gin"
-    "github.com/tranvuongduy2003/go-mvc/internal/handlers/http/middleware"
+    "github.com/tranvuongduy2003/go-mvc/internal/presentation/http/middleware"
 )
 
 func Setup[Entity]Routes(
@@ -1211,7 +1211,7 @@ func Setup[Entity]Routes(
 
 ## 🔧 Integration & DI
 
-### DI Module Generation (`internal/di/modules/`)
+### DI Module Generation (`internal/modules/`)
 
 ```go
 package modules
@@ -1220,7 +1220,7 @@ import (
     "go.uber.org/fx"
     
     // Domain
-    "github.com/tranvuongduy2003/go-mvc/internal/core/ports/repositories"
+    "github.com/tranvuongduy2003/go-mvc/internal/domain/repositories"
     
     // Application
     "[command_package]"
@@ -1268,11 +1268,12 @@ var [Entity]Module = fx.Module("[entity]",
 )
 ```
 
-### Main DI Update (`internal/di/application.go`)
+### Main DI Update (`cmd/main.go`)
 
 ```go
-// Add to existing ApplicationModule
-var ApplicationModule = fx.Module("application",
+// Add to existing application modules in main.go
+fx.New(
+    // Existing modules...
     // Existing modules...
     
     // Add new entity module
@@ -1452,11 +1453,12 @@ func TestEntityHandler_CreateEntity_ShouldReturn201_WhenValidRequest(t *testing.
 
 ```
 ✅ Domain Layer:
-   ├── internal/core/domain/[entity]/
+   ├── internal/domain/[entity]/
    │   ├── [entity].go                    # Main entity
+   │   ├── [entity]_id.go                 # Entity ID value object
    │   ├── value_objects.go               # Value objects
    │   └── events.go                      # Domain events
-   └── internal/core/ports/repositories/
+   └── internal/domain/repositories/
        └── [entity]_repository.go         # Repository interface
 
 ✅ Application Layer:
@@ -1468,31 +1470,31 @@ func TestEntityHandler_CreateEntity_ShouldReturn201_WhenValidRequest(t *testing.
    │   ├── get_[entity]_query.go          # Get query
    │   └── list_[entity]_query.go         # List query
    ├── internal/application/dto/[entity]/
-   │   └── [entity]_dto.go                # DTOs và mappers
+   │   └── [entity]_dto.go                # Request/Response DTOs
    ├── internal/application/services/
    │   └── [entity]_service.go            # Application service
    └── internal/application/validators/[entity]/
        └── [entity]_validator.go          # Validators
 
 ✅ Infrastructure Layer:
-   ├── internal/adapters/persistence/postgres/models/
+   ├── internal/infrastructure/persistence/postgres/models/
    │   └── [entity].go                    # Database model
-   ├── internal/adapters/persistence/postgres/repositories/
+   ├── internal/infrastructure/persistence/postgres/repositories/
    │   └── [entity]_repository.go         # Repository implementation
-   └── internal/adapters/persistence/postgres/migrations/
+   └── internal/infrastructure/persistence/postgres/migrations/
        ├── [timestamp]_create_[entity]_table.up.sql
        └── [timestamp]_create_[entity]_table.down.sql
 
 ✅ Presentation Layer:
-   ├── internal/handlers/http/rest/v1/
+   ├── internal/presentation/http/handlers/v1/
    │   └── [entity]_handler.go            # HTTP handlers
-   └── internal/handlers/http/rest/v1/
-       └── routes.go                      # Route setup
+   └── internal/presentation/http/middleware/
+       └── [entity]_middleware.go         # Custom middleware (if needed)
 
 ✅ Integration:
-   ├── internal/di/modules/
-   │   └── [entity].go                    # DI module
-   └── Updated main DI files
+   ├── internal/modules/
+   │   └── [entity].go                    # Feature-based DI module
+   └── cmd/main.go                        # Updated with module registration
 ```
 
 Với bộ guidelines này, AI có thể sinh ra code hoàn chỉnh, chất lượng cao, và sẵn sàng production cho bất kỳ User Story nào được format đúng theo template!

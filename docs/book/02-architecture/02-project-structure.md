@@ -32,72 +32,142 @@ go-mvc/
 │       └── 📄 main.go              # Background job processor
 │
 ├── 🏗️ internal/                    # Private Application Code
-│   ├── 🏛️ core/                    # Domain Layer (Clean Architecture Core)
-│   │   ├── domain/                 # Domain entities and business logic
-│   │   │   ├── shared/             # Common domain constructs
-│   │   │   │   ├── events/
-│   │   │   │   │   └── 📄 events.go        # Domain events (UserCreated, etc.)
-│   │   │   │   ├── specification/   # Business rule specifications
-│   │   │   │   └── valueobject/
-│   │   │   │       └── 📄 valueobject.go  # Immutable value objects
-│   │   │   └── user/               # User domain aggregate
-│   │   └── ports/                  # Interface definitions (Dependency Inversion)
-│   │       ├── cache/              # Cache interface contracts
-│   │       ├── messaging/          # Message bus interface contracts
-│   │       ├── repositories/       # Data access interface contracts
-│   │       └── services/           # External service interface contracts
+│   ├── 🏛️ domain/                  # Domain Layer (Clean Architecture Core)
+│   │   ├── 📄 domain.go            # Domain module (Fx)
+│   │   ├── user/                   # User domain aggregate
+│   │   │   ├── 📄 user.go          # User entity with business logic
+│   │   │   └── 📄 user_repository.go # User repository interface
+│   │   ├── auth/                   # Authentication domain
+│   │   │   ├── 📄 role.go          # Role entity
+│   │   │   ├── 📄 permission.go    # Permission entity
+│   │   │   ├── 📄 user_role.go     # User-Role relationship
+│   │   │   └── 📄 *_repository.go  # Repository interfaces
+│   │   ├── messaging/              # Messaging domain (inbox/outbox pattern)
+│   │   │   ├── 📄 message.go       # Message entities
+│   │   │   ├── 📄 outbox_message.go # Outbox pattern
+│   │   │   ├── 📄 inbox_message.go # Inbox pattern
+│   │   │   └── 📄 *_repository.go  # Repository interfaces
+│   │   ├── job/                    # Background job domain
+│   │   │   ├── 📄 job.go           # Job entity
+│   │   │   └── 📄 job_types.go     # Job type constants
+│   │   ├── contracts/              # Service interfaces (ports)
+│   │   │   ├── 📄 auth_service.go  # Auth service interface
+│   │   │   ├── 📄 user_service.go  # User service interface
+│   │   │   └── 📄 file_storage_service.go
+│   │   ├── repositories/           # Common repository interfaces
+│   │   └── shared/                 # Shared domain constructs
+│   │       ├── events/             # Domain events
+│   │       │   ├── 📄 events.go    # Event definitions
+│   │       │   └── 📄 user_events.go
+│   │       └── valueobject/        # Value objects
+│   │           └── 📄 valueobject.go
 │   │
 │   ├── 🎯 application/             # Application Layer (Use Cases)
+│   │   ├── 📄 application.go       # Application module (Fx)
 │   │   ├── commands/               # Write operations (CQRS Commands)
-│   │   │   └── shared/             # Common command structures
+│   │   │   ├── 📄 command.go       # Base command interface
+│   │   │   ├── auth/               # Auth commands
+│   │   │   │   ├── 📄 login_command.go
+│   │   │   │   ├── 📄 register_command.go
+│   │   │   │   └── ... (10+ auth commands)
+│   │   │   └── user/               # User commands
+│   │   │       ├── 📄 create_user_command.go
+│   │   │       ├── 📄 update_user_command.go
+│   │   │       └── 📄 upload_avatar_command.go
 │   │   ├── queries/                # Read operations (CQRS Queries)
-│   │   │   └── shared/             # Common query structures
+│   │   │   ├── 📄 query.go         # Base query interface
+│   │   │   ├── auth/               # Auth queries
+│   │   │   └── user/               # User queries
 │   │   ├── dto/                    # Data Transfer Objects
+│   │   │   ├── auth/               # Auth DTOs
+│   │   │   └── user/               # User DTOs
 │   │   ├── services/               # Application services (orchestration)
-│   │   ├── events/                 # Application event handlers
+│   │   │   ├── 📄 auth_service.go  # Auth service implementation
+│   │   │   ├── 📄 authorization_service.go # RBAC service
+│   │   │   ├── 📄 user_service.go  # User service implementation
+│   │   │   └── messaging/          # Messaging services
+│   │   │       ├── 📄 outbox_service.go
+│   │   │       └── 📄 inbox_service.go
+│   │   ├── event_handlers/         # Application event handlers
+│   │   │   └── 📄 user_event_handler.go
 │   │   └── validators/             # Input validation logic
+│   │       └── user/
+│   │           └── 📄 user_validator.go
 │   │
-│   ├── ⚙️ adapters/                # Infrastructure Layer (External Concerns)
+│   ├── ⚙️ infrastructure/          # Infrastructure Layer (External Concerns)
+│   │   ├── 📄 infrastructure.go    # Infrastructure module (Fx)
+│   │   ├── config/                 # Configuration management
+│   │   │   └── 📄 config.go        # Viper-based config loader
+│   │   ├── database/               # Database connection
+│   │   │   └── 📄 database.go      # GORM database manager
 │   │   ├── 💾 cache/               # Cache implementations
-│   │   │   ├── 📄 cache.go         # Redis cache adapter
-│   │   │   └── 📄 errors.go        # Cache-specific error types
+│   │   │   ├── 📄 cache.go         # Redis cache service
+│   │   │   └── 📄 errors.go        # Cache-specific errors
 │   │   ├── 🌐 external/            # External service clients
-│   │   │   ├── 📄 email_service.go # Email service (SendGrid/API-based)
-│   │   │   ├── 📄 file_storage_service.go # File storage services
-│   │   │   ├── 📄 push_notification_service.go # Push notification services
-│   │   │   ├── 📄 sms_service.go   # SMS service integrations
-│   │   │   └── 📄 smtp_service.go  # SMTP email service implementation
-│   │   ├── 📬 messaging/           # Message queue implementations
-│   │   │   └── rabbitmq/           # RabbitMQ adapter
-│   │   ├── 📊 monitoring/          # Observability implementations
+│   │   │   ├── 📄 email_service.go # Email service client
+│   │   │   ├── 📄 smtp_service.go  # SMTP email implementation
+│   │   │   ├── 📄 file_storage_service.go # MinIO file storage
+│   │   │   ├── 📄 push_notification_service.go
+│   │   │   └── 📄 sms_service.go
+│   │   ├── 📬 messaging/           # Message broker implementations
+│   │   │   └── nats/               # NATS message broker
+│   │   │       ├── 📄 nats.go      # NATS adapter
+│   │   │       └── 📄 deduplicated_nats.go # With deduplication
 │   │   ├── 🗄️ persistence/         # Data storage implementations
-│   │   │   ├── postgres/           # PostgreSQL implementations
-│   │   │   │   ├── migrations/     # Database schema migrations
-│   │   │   │   ├── models/         # GORM model definitions
-│   │   │   │   └── repositories/   # Repository implementations
-│   │   │   └── redis/              # Redis specific implementations
-│   │   └── 📚 repositories/        # Repository interface implementations
+│   │   │   └── postgres/           # PostgreSQL implementations
+│   │   │       ├── models/         # GORM models
+│   │   │       │   ├── 📄 user.go
+│   │   │       │   ├── 📄 role.go
+│   │   │       │   └── 📄 permission.go
+│   │   │       ├── repositories/   # Repository implementations
+│   │   │       │   ├── 📄 user_repository.go
+│   │   │       │   ├── 📄 role_repository.go
+│   │   │       │   └── 📄 permission_repository.go
+│   │   │       └── messaging/      # Messaging repositories
+│   │   │           ├── 📄 outbox_repository.go
+│   │   │           └── 📄 inbox_repository.go
+│   │   ├── security/               # Security utilities
+│   │   │   └── 📄 security.go      # Password hashing, token generation
+│   │   ├── logger/                 # Logging
+│   │   │   └── 📄 logger.go        # Zap logger wrapper
+│   │   ├── tracing/                # Distributed tracing
+│   │   │   └── 📄 tracing.go       # OpenTelemetry setup
+│   │   ├── metrics/                # Metrics collection
+│   │   │   └── 📄 metrics.go       # Prometheus metrics
+│   │   ├── jobs/                   # Background job system
+│   │   │   ├── scheduler/          # Job scheduler
+│   │   │   ├── worker/             # Job worker
+│   │   │   ├── redis/              # Redis queue
+│   │   │   ├── handlers/           # Job handlers
+│   │   │   └── metrics/            # Job metrics
+│   │   └── utils/                  # Infrastructure utilities
 │   │
-│   ├── 🔌 di/                      # Dependency Injection Modules (Uber FX)
-│   │   ├── 📄 application.go       # Application layer DI bindings
-│   │   ├── 📄 domain.go            # Domain layer DI bindings
-│   │   ├── 📄 handler.go           # HTTP handler DI bindings
-│   │   ├── 📄 infrastructure.go    # Infrastructure layer DI bindings
-│   │   └── 📄 server.go            # Server configuration and startup
+│   ├── 🔌 modules/                 # Dependency Injection Modules (Uber FX)
+│   │   ├── 📄 user.go              # User module DI
+│   │   ├── 📄 auth.go              # Auth module DI
+│   │   ├── 📄 job.go               # Job module DI
+│   │   └── 📄 messaging.go         # Messaging module DI
 │   │
-│   ├── 🌐 handlers/                # Presentation Layer
-│   │   └── http/                   # HTTP-specific handlers
-│   │       ├── 🛡️ middleware/      # HTTP middleware components
-│   │       │   ├── 📄 auth.go      # JWT authentication middleware
-│   │       │   ├── 📄 authorization.go # RBAC authorization middleware
-│   │       │   ├── 📄 cors.go      # Cross-Origin Resource Sharing
-│   │       │   ├── 📄 logger.go    # HTTP request/response logging
-│   │       │   ├── 📄 manager.go   # Middleware manager and chaining
-│   │       │   ├── 📄 metrics.go   # Prometheus metrics collection
-│   │       │   ├── 📄 ratelimit.go # Rate limiting and throttling
-│   │       │   ├── 📄 recovery.go  # Panic recovery and error handling
-│   │       │   ├── 📄 security.go  # Security headers and protection
-│   │       │   └── 📄 tracing.go   # Distributed tracing (Jaeger)
+│   └── 🌐 presentation/            # Presentation Layer
+│       ├── 📄 presentation.go      # Presentation module (Fx)
+│       └── http/                   # HTTP-specific handlers
+│           ├── handlers/           # HTTP handlers
+│           │   ├── 📄 handler.go   # Handler module (Fx)
+│           │   └── v1/             # API v1
+│           │       ├── 📄 auth_handler.go
+│           │       └── 📄 user_handler.go
+│           └── middleware/         # HTTP middleware components
+│               ├── 📄 manager.go   # Middleware manager
+│               ├── 📄 auth.go      # JWT authentication
+│               ├── 📄 authorization.go # RBAC authorization
+│               ├── 📄 cors.go      # CORS handling
+│               ├── 📄 logger.go    # Request/response logging
+│               ├── 📄 metrics.go   # Prometheus metrics
+│               ├── 📄 ratelimit.go # Rate limiting
+│               ├── 📄 recovery.go  # Panic recovery
+│               ├── 📄 security.go  # Security headers
+│               ├── 📄 tracing.go   # Distributed tracing
+│               └── 📄 idempotency.go # Idempotency key
 │   │       ├── 📄 responses/       # Response formatting utilities
 │   │       ├── 🔗 rest/            # REST API endpoints
 │   │       │   └── v1/             # API version 1 endpoints

@@ -310,31 +310,32 @@ docker-compose up -d
 
 ## 📚 Documentation
 
+### 🤖 For AI Assistants & Developers
+- [**🤖 AGENT.md**](AGENT.md) - **START HERE!** Comprehensive guide for AI IDEs, code assistants, and developers
+
 ### Core Documentation
 - [**📁 Project Structure**](docs/PROJECT_STRUCTURE.md) - Complete directory structure with detailed explanations
 - [**🏛️ Architecture Guide**](docs/ARCHITECTURE.md) - Clean Architecture implementation and design patterns
 - [**🛠️ Development Guide**](docs/DEVELOPMENT.md) - Development setup, testing, and best practices
 - [**🚀 Deployment Guide**](docs/DEPLOYMENT.md) - Production deployment with Docker and Kubernetes
 
-### Code Organization & Best Practices ⭐ NEW
-> **[📚 Complete Index & Navigation Guide](docs/CODE_ORGANIZATION_INDEX.md)** ← START HERE!
-
-**Quick Access**:
-- [**🚀 Quick Reference**](docs/QUICK_REFERENCE.md) - Cheat sheet (5 min read)
-- [**📊 Reorganization Summary**](docs/REORGANIZATION_SUMMARY.md) - TL;DR with action plan (10 min)
-- [**📐 Visual Comparison**](docs/VISUAL_STRUCTURE_COMPARISON.md) - See the difference (15 min)
-- [**🔍 Current Analysis**](docs/CURRENT_STRUCTURE_ANALYSIS.md) - Deep dive (30 min)
-- [**📖 Best Practices Guide**](docs/CODE_ORGANIZATION_BEST_PRACTICES.md) - Complete reference (45 min)
-- [**🔧 Migration Script**](scripts/reorganize.sh) - Automated reorganization tool
-
-**Current Status**: 7/10 (Very good!) → Can reach 9-10/10 in 30 minutes with automated script
+### AI-Powered Development
+- [**🤖 AI API Generation Rules**](docs/AI_API_GENERATION_RULES.md) - Complete guide for AI to generate production-ready APIs
+- [**⚡ AI Quick Start**](docs/AI_QUICK_START.md) - Quick reference for AI-assisted development
+- [**📋 Code Generation Guidelines**](docs/CODE_GENERATION_GUIDELINES.md) - Layer-by-layer code generation patterns
 
 ### API & Technical Guides
 - [**📋 API Documentation**](docs/API.md) - REST API endpoints, examples, and usage
 - [**📧 Email Service Guide**](docs/EMAIL_SERVICE.md) - Email service implementation and MailCatcher testing
+- [**📦 File Upload Guide**](docs/FILE_UPLOAD.md) - File storage with MinIO
+- [**💬 NATS Messaging**](docs/NATS_MESSAGING.md) - Message broker patterns
+- [**🔄 Message Deduplication**](docs/MESSAGE_DEDUPLICATION.md) - Idempotent message processing
+- [**⚙️ Background Jobs**](docs/BACKGROUND_JOBS.md) - Async job processing
+- [**🗄️ Migrations Guide**](docs/MIGRATIONS.md) - Database migration management
 - [**🔌 Dependency Injection**](docs/DEPENDENCY_INJECTION.md) - Uber FX usage patterns and modules
 - [**🔍 Tracing Guide**](docs/TRACING.md) - OpenTelemetry and Jaeger setup
 - [**🛡️ RBAC Usage**](docs/RBAC_USAGE.md) - Role-based access control implementation
+- [**🚀 Quick Reference**](docs/QUICK_REFERENCE.md) - Cheat sheet for common tasks
 
 ## 🛡️ Security
 
