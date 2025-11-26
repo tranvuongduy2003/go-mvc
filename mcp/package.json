@@ -1,15 +1,16 @@
 {
   "name": "mcp-agents",
   "version": "1.0.0",
-  "description": "MCP Server with API Testing and Database Management Agents",
+  "description": "MCP Server with API Testing, Database Management, and GitHub Automation Agents",
   "type": "module",
   "main": "dist/agents/api/api-agent.server.js",
   "bin": {
     "mcp-api": "./dist/agents/api/api-agent.server.js",
-    "mcp-db": "./dist/agents/database/database-agent.server.js"
+    "mcp-db": "./dist/agents/database/database-agent.server.js",
+    "mcp-github": "./dist/agents/github/github-agent.server.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/agents/api/api-agent.server.js dist/agents/database/database-agent.server.js",
+    "build": "tsc && chmod +x dist/agents/api/api-agent.server.js dist/agents/database/database-agent.server.js dist/agents/github/github-agent.server.js",
     "dev": "tsc --watch",
     "prepare": "npm run build"
   },
@@ -21,7 +22,9 @@
     "database",
     "postgresql",
     "migration",
-    "sql"
+    "sql",
+    "github",
+    "automation"
   ],
   "author": "",
   "license": "MIT",

@@ -3,9 +3,11 @@
 [![Go Version](https://img.shields.io/badge/go-1.24.5-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](docker-compose.yml)
-[![Clean Code](https://img.shields.io/badge/code-self--documenting-brightgreen.svg)](docs/book/appendix/AI_CODING_STANDARDS.md)
+[![Clean Code](https://img.shields.io/badge/code-self--documenting-brightgreen.svg)](docs/AI_CODING_STANDARDS.md)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF.svg)](.github/workflows/)
+[![AI Powered](https://img.shields.io/badge/AI-powered-ff69b4.svg)](docs/AI_DEVOPS.md)
 
-A modern, production-ready Go web application built with **Clean Architecture**, **Domain-Driven Design (DDD)**, and **Enterprise patterns**. Features comprehensive observability, AI-powered development, and self-documenting code standards.
+A modern, production-ready Go web application built with **Clean Architecture**, **Domain-Driven Design (DDD)**, and **Enterprise patterns**. Features comprehensive observability, AI-powered development, automated CI/CD, and self-documenting code standards.
 
 ## 🚀 Features
 
@@ -45,11 +47,12 @@ A modern, production-ready Go web application built with **Clean Architecture**,
 - **Testing**: Unit, integration, and benchmark tests
 - **Documentation**: Swagger/OpenAPI generation
 - **Database Migrations**: golang-migrate/migrate v4.19.0+ with timestamp-based versioning
-- **MCP Agents**: AI-powered API testing and database management agents
+- **MCP Agents**: AI-powered API testing, database management, and GitHub automation agents
 
 ### 🤖 MCP Agents (Model Context Protocol)
 - **API Testing Agent**: 6 tools for REST API testing (GET, POST, PUT, PATCH, DELETE, TEST)
 - **Database Agent**: 6 tools for PostgreSQL management (connect, query, schema, migrate, analyze, generate SQL)
+- **GitHub Agent**: 10 tools for GitHub automation (repo info, issues, PRs, workflows, code search, branches)
 - **Modular Architecture**: Scalable, maintainable TypeScript implementation
 - **Full Documentation**: Architecture, quick reference, and user guides included
 - **Integration Ready**: Works with Claude Desktop and other MCP clients
@@ -182,6 +185,60 @@ make run
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Jaeger**: http://localhost:16686
 
+## 🚀 DevOps & CI/CD
+
+### Automated CI/CD Pipeline
+
+Complete DevOps automation với GitHub Actions và AI Assistant:
+
+**6 Workflows Tự động**:
+- ✅ **CI Pipeline**: Build, test, lint với PostgreSQL/Redis/NATS
+- ✅ **Security**: Gosec, Trivy, CodeQL, secret scanning
+- ✅ **Docker**: Multi-platform builds, GHCR publishing
+- ✅ **Release**: Automated releases, binaries, deployment
+- ✅ **Dependencies**: Auto-update Go modules, Actions, Docker
+- ✅ **AI Assistant**: AI code review, docs, coverage analysis
+
+**AI Development Scripts**:
+```bash
+# AI code review
+./.github/scripts/ai-code-review.sh
+
+# Generate CRUD code
+./.github/scripts/ai-code-generator.sh Product full
+
+# Analyze workflow
+./.github/scripts/ai-workflow-optimizer.sh
+```
+
+**AI Bot Commands** (trong PR comments):
+```bash
+/ai review      # Trigger AI code review
+/ai optimize    # Analyze workflow  
+/ai docs        # Generate documentation
+/ai help        # Show available commands
+```
+
+**Quick Start**:
+```bash
+# 1. Push code triggers CI/CD automatically
+git push origin master
+
+# 2. Create PR với AI assistance
+gh pr create
+# Comment: /ai review
+
+# 3. Release với tag
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+# Auto: build binaries, create release, deploy
+```
+
+> 📖 **Complete DevOps Guide**:
+> - [CI/CD Documentation](docs/CICD.md) - Workflows and automation
+> - [AI DevOps](docs/AI_DEVOPS.md) - AI-powered development features
+> - [MCP Agents](mcp/README.md) - AI testing and automation tools
+
 ## 🏗️ Architecture Overview
 
 This application follows **Clean Architecture** principles with clear separation of concerns:
@@ -219,48 +276,31 @@ This application follows **Clean Architecture** principles with clear separation
 - **Dependency Injection**: Uber FX modules for each domain
 - **Lifecycle Management**: Startup/shutdown coordination
 
-> 📖 **See [Architecture Guide](docs/book/02-architecture/01-architecture-overview.md)** for deep dive
+> 📖 **See [AGENT.md](AGENT.md)** for comprehensive architecture guide and AI assistant instructions
 
 ## 🤖 AI-Powered API Generation
 
-This project includes a comprehensive AI system that can automatically generate complete, production-ready APIs from User Stories following our strict coding standards.
+This project includes comprehensive AI assistance for development. The AGENT.md file contains complete instructions for AI assistants working on this codebase.
 
 ### Quick AI Generation
 
-1. **Use the User Story Template**
-   ```bash
-   # See template at: docs/USER_STORY_TEMPLATE.md
-   ```
+**AI will auto-generate complete, production-ready code following Clean Architecture:**
 
-2. **Give AI This Instruction**
-   ```markdown
-   Generate a complete API following Clean Architecture from this User Story.
-   Follow the rules in:
-   - docs/book/appendix/AI_CODING_STANDARDS.md (self-documenting code)
-   - docs/book/05-ai-development/02-api-generation-rules.md
-   - docs/book/05-ai-development/03-code-generation-guidelines.md
-   
-   [Your User Story Here]
-   ```
-
-**AI will generate:**
 - ✅ **Domain Layer**: Entities, value objects, repository interfaces
 - ✅ **Application Layer**: Commands/queries, DTOs, validators, services  
 - ✅ **Infrastructure Layer**: Repository implementations, migrations
 - ✅ **Presentation Layer**: HTTP handlers, routes, middleware
 - ✅ **Integration**: Complete dependency injection setup
-- ✅ **Self-Documenting Code**: Clear names, no unnecessary comments
+- ✅ **Self-Documenting Code**: Clear names, minimal comments
 
-### AI Documentation
-- **[🤖 AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md)** ⭐ **MUST READ** - Self-documenting code principles
-- **[⚡ AI Quick Start](docs/book/05-ai-development/01-ai-quick-start.md)** - 5-minute tutorial
-- **[📋 User Story Template](docs/USER_STORY_TEMPLATE.md)** - Complete template with examples
-- **[⚙️ API Generation Rules](docs/book/05-ai-development/02-api-generation-rules.md)** - Comprehensive AI rules
-- **[🔧 Code Generation Guidelines](docs/book/05-ai-development/03-code-generation-guidelines.md)** - Layer-by-layer guides
+### AI Documentation & Standards
+- **[AGENT.md](AGENT.md)** - Complete AI assistant guide
+- **[AI Coding Standards](docs/AI_CODING_STANDARDS.md)** - Self-documenting code principles
+- **[AI DevOps](docs/AI_DEVOPS.md)** - AI-powered development workflow
 
 ### Code Quality Principles
 
-**Self-Documenting Code**
+**Self-Documenting Code** - Code should be clear through naming, not comments:
 ```go
 // ❌ BAD - Unnecessary comments
 // CreateUser creates a new user
@@ -272,7 +312,7 @@ func CreateUser(email, password string) (*User, error) {
     ...
 }
 
-// ✅ GOOD - Clear naming, no comments
+// ✅ GOOD - Clear naming, no comments needed
 func CreateUser(email, password string) (*User, error) {
     if err := ValidateEmail(email); err != nil {
         return nil, err
@@ -281,7 +321,7 @@ func CreateUser(email, password string) (*User, error) {
 }
 ```
 
-> 📖 **See [AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md)** for complete guide
+> 📖 **See [AI Coding Standards](docs/AI_CODING_STANDARDS.md)** for complete self-documenting code guide
 
 ## 🔧 Development Commands
 
@@ -325,8 +365,6 @@ make migrate-down    # Rollback last migration
 make migrate-create  # Create new timestamped migration
 make migrate-status  # Show migration status
 make migrate-version # Show current version
-
-# See docs/book/03-development-guide/02-migrations.md for detailed guide
 ```
 
 ### Docker
@@ -351,10 +389,10 @@ make mcp-clean       # Clean MCP artifacts
 make mcp-rebuild     # Clean rebuild
 ```
 
-> 📖 **See [MCP Documentation](mcp/)** for detailed usage:
-> - [README.md](mcp/README.md) - User guide
-> - [ARCHITECTURE.md](mcp/ARCHITECTURE.md) - Technical docs
-> - [QUICK_REFERENCE.md](mcp/QUICK_REFERENCE.md) - Quick start
+> 📖 **MCP Agent Documentation**:
+> - [MCP README](mcp/README.md) - Complete user guide with all 3 agents
+> - [GitHub Agent Setup](mcp/GITHUB_AGENT_SETUP.md) - GitHub automation guide
+> - [MCP Architecture](mcp/ARCHITECTURE.md) - Technical architecture
 
 ### Monitoring
 ```bash
@@ -409,54 +447,28 @@ docker-compose up -d
 
 ### Development Guidelines
 - Follow **Clean Architecture** principles
-- Use **self-documenting code** (see [AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md))
+- Use **self-documenting code** (see [AI Coding Standards](docs/AI_CODING_STANDARDS.md))
 - Write **comprehensive tests**
-- Add **proper documentation**
+- Add **proper documentation** to AGENT.md or README.md
 - Use **conventional commits**
 - Ensure **code quality** with linters
 - **NO unnecessary comments** - code should be clear through naming
+- **DO NOT create summary markdown files** after implementing features
 
 ## 📚 Documentation
 
-### 📖 Complete Developer Guide (Ebook Format)
-**[Start Here: Complete Book](docs/BOOK.md)** - Comprehensive documentation organized as professional ebook
+### Core Documentation
+- **[AGENT.md](AGENT.md)** - Complete AI assistant guide and architecture
+- **[README.md](README.md)** - This file, project overview and quick start
+- **[CI/CD Guide](docs/CICD.md)** - Complete CI/CD automation documentation
+- **[AI DevOps](docs/AI_DEVOPS.md)** - AI-powered development workflow
+- **[AI Coding Standards](docs/AI_CODING_STANDARDS.md)** - Self-documenting code principles
 
-**Quick Access:**
-- [Quick Start Guide](docs/book/01-getting-started/02-quick-start.md) - Running in 15 minutes
-- [Quick Reference](docs/book/01-getting-started/03-quick-reference.md) - Common commands & troubleshooting
-- [Architecture Overview](docs/book/02-architecture/01-architecture-overview.md) - Clean Architecture deep dive
-- [Development Workflow](docs/book/03-development-guide/01-development-workflow.md) - Dev environment setup
-
-### 🤖 AI Development (Must Read for AI Assistants)
-- **[AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md)** ⭐ **REQUIRED** - Self-documenting code principles
-- [AI Quick Start](docs/book/05-ai-development/01-ai-quick-start.md) - AI-powered development intro
-- [API Generation Rules](docs/book/05-ai-development/02-api-generation-rules.md) - Complete AI generation guide
-- [Code Generation Guidelines](docs/book/05-ai-development/03-code-generation-guidelines.md) - Layer-by-layer templates
-
-### 📋 Documentation Structure
-```
-docs/
-├── BOOK.md                 # Main table of contents
-├── INDEX.md                # Quick access index
-├── README.md               # Documentation overview
-├── MIGRATION_GUIDE.md      # Migration from old structure
-└── book/                   # Organized content
-    ├── 01-getting-started/     # Quick start, introduction
-    ├── 02-architecture/        # Architecture guides
-    ├── 03-development-guide/   # Development workflows
-    ├── 04-features/            # Feature documentation
-    ├── 05-ai-development/      # AI-powered development
-    ├── 06-operations/          # Deployment & monitoring
-    └── appendix/               # Standards, glossary, FAQ
-        └── AI_CODING_STANDARDS.md  # ⭐ Essential coding standards
-```
-
-### 🔍 Key Topics
-- **Getting Started**: [Introduction](docs/book/01-getting-started/01-introduction.md), [Quick Start](docs/book/01-getting-started/02-quick-start.md)
-- **Architecture**: [Overview](docs/book/02-architecture/01-architecture-overview.md), [Domain Layer](docs/book/02-architecture/03-domain-layer.md), [DI](docs/book/02-architecture/07-dependency-injection.md)
-- **Development**: [Workflow](docs/book/03-development-guide/01-development-workflow.md), [Migrations](docs/book/03-development-guide/02-migrations.md), [Testing](docs/book/03-development-guide/03-testing.md)
-- **Features**: [Auth](docs/book/04-features/01-authentication.md), [Background Jobs](docs/book/04-features/02-background-jobs.md), [Email](docs/book/04-features/03-email-service.md), [Tracing](docs/book/04-features/07-tracing.md)
-- **Operations**: [Deployment](docs/book/06-operations/01-deployment.md), [Monitoring](docs/book/06-operations/02-monitoring.md)
+### MCP Agents
+- **[MCP README](mcp/README.md)** - API Testing, Database, and GitHub agents
+- **[GitHub Agent Setup](mcp/GITHUB_AGENT_SETUP.md)** - GitHub automation setup
+- **[MCP Architecture](mcp/ARCHITECTURE.md)** - Technical architecture details
+- **[MCP Changelog](mcp/CHANGELOG.md)** - Version history and changes
 
 ## 🛡️ Security
 
@@ -484,14 +496,16 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 For questions, issues, or contributions:
 
 - **GitHub Issues**: [Create an issue](https://github.com/tranvuongduy2003/go-mvc/issues)
-- **Documentation**: Start with [Complete Book](docs/BOOK.md) or [Quick Start](docs/book/01-getting-started/02-quick-start.md)
+- **Documentation**: See [AGENT.md](AGENT.md) for comprehensive guide
 - **Email**: tranvuongduy2003@gmail.com
 
-### 📖 Documentation Quick Links
-- 🚀 [Quick Start (15 min)](docs/book/01-getting-started/02-quick-start.md)
-- 🤖 [AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md) - **Essential for contributors**
-- 📖 [Complete Developer Guide](docs/BOOK.md)
-- 🔍 [Quick Reference](docs/book/01-getting-started/03-quick-reference.md)
+### Quick Documentation Links
+- 🤖 [AGENT.md](AGENT.md) - AI assistant complete guide
+- 📖 [README.md](README.md) - Project overview (this file)
+- 🚀 [CI/CD Guide](docs/CICD.md) - DevOps automation
+- 🤖 [AI DevOps](docs/AI_DEVOPS.md) - AI development workflow
+- 📝 [AI Coding Standards](docs/AI_CODING_STANDARDS.md) - Code quality principles
+- 🔧 [MCP Agents](mcp/README.md) - Testing and automation tools
 
 ---
 

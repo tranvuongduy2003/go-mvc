@@ -1618,6 +1618,51 @@ When generating new features, include:
 - Use Swagger annotations for APIs
 - Keep docs updated with code changes
 - Include examples in documentation
+- **DO NOT create summary/completion markdown files after implementing features**
+- Only create new documentation files if explicitly requested
+- Update existing docs (README.md, AGENT.md, CHANGELOG.md) instead
+- See [AI Coding Standards](docs/AI_CODING_STANDARDS.md) for code documentation principles
+
+---
+
+## 🚫 AI Work Standards
+
+### IMPORTANT: Do NOT Create These Files
+
+After completing any implementation task, **DO NOT** automatically create:
+- ❌ IMPLEMENTATION_COMPLETE.md
+- ❌ TASK_SUMMARY.md
+- ❌ FEATURE_CHECKLIST.md
+- ❌ ARCHITECTURE_VISUALIZATION.md
+- ❌ QUICK_REFERENCE.md
+- ❌ Any other summary/status markdown files
+
+### What to Do Instead
+
+✅ **DO:**
+- Update existing documentation files (README.md, CHANGELOG.md)
+- Report completion status directly to user
+- Update relevant docs in `docs/` directory if needed
+- Only create new .md files when explicitly requested
+
+✅ **Example:**
+```
+After implementing feature X:
+1. Update README.md with new feature (if significant)
+2. Add entry to CHANGELOG.md
+3. Update API documentation in docs/ (if needed)
+4. Tell user "Feature X completed successfully"
+```
+
+❌ **DON'T:**
+```
+After implementing feature X:
+1. Create FEATURE_X_COMPLETE.md
+2. Create FEATURE_X_SUMMARY.md
+3. Create ARCHITECTURE_UPDATE.md
+```
+
+**Rule**: Focus on code quality and essential documentation only. Avoid creating verbose summary files that clutter the repository.
 
 ---
 
@@ -1641,6 +1686,7 @@ When working on this project, ensure:
 - [ ] Update dependency injection modules
 - [ ] Register routes properly
 - [ ] Test locally before committing
+- [ ] **DO NOT create summary markdown files after completion**
 
 ---
 

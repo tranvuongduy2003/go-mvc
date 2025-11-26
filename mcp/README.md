@@ -1,6 +1,6 @@
-# MCP Agents - API Testing & Database Management
+# MCP Agents - API Testing, Database Management & GitHub Automation
 
-Complete MCP (Model Context Protocol) server với 2 AI agents mạnh mẽ cho REST API testing và Database management. Được thiết kế theo best practices với kiến trúc modular, scalable và maintainable.
+Complete MCP (Model Context Protocol) server với 3 AI agents mạnh mẽ cho REST API testing, Database management và GitHub automation. Được thiết kế theo best practices với kiến trúc modular, scalable và maintainable.
 
 ## 🎯 Tính năng
 
@@ -19,6 +19,14 @@ Complete MCP (Model Context Protocol) server với 2 AI agents mạnh mẽ cho R
 - **Query Optimization**: Analyze query execution plans và suggestions
 - **SQL Generation**: Auto-generate complex SQL queries
 
+### 🐙 GitHub Agent
+- **Repository Management**: Get repository info, create branches
+- **Issues**: Create, list, search issues với labels và assignees
+- **Pull Requests**: Create, list, manage PRs
+- **Workflows**: List, trigger, view GitHub Actions workflows
+- **Code Search**: Search code trong repository
+- **Automation**: Automate GitHub tasks từ AI IDE
+
 ## 📁 Cấu trúc Project (Best Practices)
 
 ```
@@ -30,16 +38,18 @@ mcp/
 │   │   │   ├── api.handlers.ts   # Business logic
 │   │   │   ├── api-agent.server.ts # Server entry point
 │   │   │   └── index.ts          # Module exports
-│   │   └── database/             # Database Agent
-│   │       ├── database.tools.ts
-│   │       ├── database.handlers.ts
-│   │       ├── database-agent.server.ts
-│   │       ├── services/         # Service layer
-│   │       │   ├── schema.service.ts
-│   │       │   ├── migration.service.ts
-│   │       │   ├── query.service.ts
-│   │       │   └── index.ts
-│   │       └── index.ts
+│   │   ├── database/             # Database Agent
+│   │   │   ├── database.tools.ts
+│   │   │   ├── database.handlers.ts
+│   │   │   ├── database-agent.server.ts
+│   │   │   ├── services/         # Service layer
+│   │   │   │   ├── schema.service.ts
+│   │   │   │   ├── migration.service.ts
+│   │   │   │   ├── query.service.ts
+│   │   │   │   └── index.ts
+│   │   │   └── index.ts
+│   │   └── github/               # GitHub Agent
+│   │       └── github-agent.server.ts # GitHub automation
 │   └── shared/                   # Shared utilities
 │       ├── types/                # TypeScript types
 │       │   ├── api.types.ts
@@ -95,6 +105,15 @@ Thêm vào file cấu hình MCP của bạn:
     "database-agent": {
       "command": "node",
       "args": ["/absolute/path/to/mcp/dist/agents/database/database-agent.server.js"]
+    },
+    "github-agent": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp/dist/agents/github/github-agent.server.js"],
+      "env": {
+        "GITHUB_TOKEN": "your_github_token_here",
+        "GITHUB_OWNER": "your_github_username",
+        "GITHUB_REPO": "your_repo_name"
+      }
     }
   }
 }
@@ -104,6 +123,7 @@ Thêm vào file cấu hình MCP của bạn:
 - Thay đổi `/absolute/path/to/mcp` bằng đường dẫn tuyệt đối thực tế trên máy của bạn
 - Ví dụ: `/Users/yourname/projects/go-mvc/mcp`
 - Restart MCP client sau khi cấu hình
+- **GitHub Token**: Tạo Personal Access Token tại https://github.com/settings/tokens với scopes: `repo`, `workflow`
 
 ### Quick Test Commands
 
@@ -116,6 +136,15 @@ Use api_get to fetch https://jsonplaceholder.typicode.com/users/1
 ```
 Use db_connect to connect to database localhost:5432, 
 database: testdb, user: postgres, password: secret
+```
+
+**GitHub Agent:**
+```
+Use github_get_repo_info to get current repository information
+```
+
+```
+Use github_list_issues with state open to see current issues
 ```
 
 ## 🔧 API Testing Agent
@@ -171,6 +200,116 @@ and validate response has id (number), name (string), email (string)
 | `expectedStatus` | number | Expected status code (test only) |
 | `maxResponseTime` | number | Max response time (test only) |
 | `jsonSchema` | object | Schema validation (test only) |
+
+## 🐙 GitHub Agent
+
+### Tools có sẵn
+
+#### 1. `github_get_repo_info`
+Lấy thông tin chi tiết về repository.
+
+**Ví dụ:**
+```
+Use github_get_repo_info to get current repository information
+```
+
+**Response:**
+- Repository name, description, language
+- Stars, forks, open issues count
+- Default branch, URL
+
+#### 2. `github_create_issue`
+Tạo issue mới trong repository.
+
+**Ví dụ:**
+```
+Use github_create_issue with title: "Add user authentication"
+and body: "We need to implement JWT authentication"
+and labels: ["enhancement", "security"]
+```
+
+#### 3. `github_list_issues`
+List issues với filters.
+
+**Ví dụ:**
+```
+Use github_list_issues with state: "open" and labels: "bug" and limit: 20
+```
+
+#### 4. `github_create_pr`
+Tạo pull request mới.
+
+**Ví dụ:**
+```
+Use github_create_pr with title: "Feature: Add authentication"
+and body: "Implements JWT authentication"
+and head: "feature/auth" and base: "master"
+```
+
+#### 5. `github_list_prs`
+List pull requests.
+
+**Ví dụ:**
+```
+Use github_list_prs with state: "open" and limit: 10
+```
+
+#### 6. `github_get_workflows`
+List tất cả GitHub Actions workflows.
+
+**Ví dụ:**
+```
+Use github_get_workflows to see all available workflows
+```
+
+#### 7. `github_trigger_workflow`
+Trigger một workflow manually.
+
+**Ví dụ:**
+```
+Use github_trigger_workflow with workflow_id: "ci.yml" 
+and ref: "master"
+```
+
+#### 8. `github_list_workflow_runs`
+Xem workflow runs với status.
+
+**Ví dụ:**
+```
+Use github_list_workflow_runs with workflow_id: "ci.yml" 
+and status: "completed" and limit: 5
+```
+
+#### 9. `github_create_branch`
+Tạo branch mới từ branch khác.
+
+**Ví dụ:**
+```
+Use github_create_branch with branch: "feature/new-api" 
+and from_branch: "master"
+```
+
+#### 10. `github_search_code`
+Tìm code trong repository.
+
+**Ví dụ:**
+```
+Use github_search_code with query: "TODO" and limit: 10
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `GITHUB_TOKEN` | GitHub Personal Access Token (required) |
+| `GITHUB_OWNER` | Repository owner/organization |
+| `GITHUB_REPO` | Repository name |
+
+**Tạo GitHub Token:**
+1. Go to https://github.com/settings/tokens
+2. Generate new token (classic)
+3. Select scopes: `repo`, `workflow`
+4. Copy token và add vào MCP config
 
 ## 🗄️ Database Agent
 
@@ -448,6 +587,14 @@ on localhost:5432/ecommerce_db
 - **Index Optimization**: Suggest và implement optimal indexes
 - **Query Development**: Generate complex SQL queries
 - **Database Debugging**: Analyze và optimize query performance
+
+### GitHub Automation
+- **Issue Management**: Create và track issues từ AI IDE
+- **PR Automation**: Create và manage pull requests
+- **Workflow Automation**: Trigger CI/CD workflows
+- **Code Search**: Tìm code patterns và TODOs
+- **Branch Management**: Create feature branches
+- **Repository Insights**: Monitor repository status và metrics
 
 ## 🛠️ Development
 

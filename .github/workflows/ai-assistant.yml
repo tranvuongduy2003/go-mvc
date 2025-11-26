@@ -1,0 +1,294 @@
+name: AI Development Assistant
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  # AI Code Review
+  ai-code-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Install review tools
+        run: |
+          go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run AI code review
+        run: |
+          chmod +x .github/scripts/ai-code-review.sh
+          .github/scripts/ai-code-review.sh > review-output.txt
+
+      - name: Comment PR with review
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const review = fs.readFileSync('review-output.txt', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## 🤖 AI Code Review\n\n```\n' + review + '\n```'
+            });
+
+  # AI Documentation Generator
+  ai-documentation:
+    name: AI Documentation Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for documentation
+        id: doc-check
+        run: |
+          CHANGED_GO_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.go$' | grep -v '_test\.go$' || true)
+
+          MISSING_DOCS=""
+          for file in $CHANGED_GO_FILES; do
+            if ! grep -q "^// Package" "$file" && ! grep -q "^package main" "$file"; then
+              MISSING_DOCS="${MISSING_DOCS}\n- $file"
+            fi
+          done
+
+          if [ -n "$MISSING_DOCS" ]; then
+            echo "has_missing_docs=true" >> $GITHUB_OUTPUT
+            echo "missing_docs<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$MISSING_DOCS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "has_missing_docs=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment about documentation
+        if: steps.doc-check.outputs.has_missing_docs == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const missingDocs = '${{ steps.doc-check.outputs.missing_docs }}';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## 📚 Documentation Reminder\n\nThe following files might be missing package documentation:\n' + missingDocs + '\n\nPlease ensure all exported functions and packages have proper documentation.'
+            });
+
+  # AI Test Coverage Analyzer
+  ai-test-coverage:
+    name: AI Test Coverage Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Analyze test coverage
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.go$' | grep -v '_test\.go$' || true)
+
+          MISSING_TESTS=""
+          for file in $CHANGED_FILES; do
+            TEST_FILE="${file%.go}_test.go"
+            if [ ! -f "$TEST_FILE" ]; then
+              MISSING_TESTS="${MISSING_TESTS}\n- $file (test file: $TEST_FILE not found)"
+            fi
+          done
+
+          if [ -n "$MISSING_TESTS" ]; then
+            echo "## ⚠️ Missing Tests" > test-report.md
+            echo "" >> test-report.md
+            echo "The following files don't have corresponding test files:" >> test-report.md
+            echo -e "$MISSING_TESTS" >> test-report.md
+            echo "" >> test-report.md
+            echo "**Please add tests for new functionality.**" >> test-report.md
+          else
+            echo "## ✅ Test Coverage" > test-report.md
+            echo "" >> test-report.md
+            echo "All changed files have corresponding test files!" >> test-report.md
+          fi
+
+      - name: Run coverage
+        run: |
+          go test -coverprofile=coverage.out ./... || true
+          go tool cover -func=coverage.out | tail -1 >> test-report.md
+
+      - name: Comment test coverage
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('test-report.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  # AI Performance Suggestions
+  ai-performance:
+    name: AI Performance Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Check for performance issues
+        run: |
+          echo "## ⚡ Performance Analysis" > perf-report.md
+          echo "" >> perf-report.md
+
+          # Check for potential performance issues
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '\.go$' || true)
+
+          SUGGESTIONS=""
+          for file in $CHANGED_FILES; do
+            # Check for defer in loops
+            if grep -n "for.*{" "$file" | grep -A 10 "defer" > /dev/null 2>&1; then
+              SUGGESTIONS="${SUGGESTIONS}\n- Consider avoiding \`defer\` in loops in $file"
+            fi
+            
+            # Check for string concatenation in loops
+            if grep -n "for.*{" "$file" | grep -A 10 "+=" | grep "string" > /dev/null 2>&1; then
+              SUGGESTIONS="${SUGGESTIONS}\n- Consider using strings.Builder instead of += in $file"
+            fi
+          done
+
+          if [ -n "$SUGGESTIONS" ]; then
+            echo "### 💡 Performance Suggestions" >> perf-report.md
+            echo -e "$SUGGESTIONS" >> perf-report.md
+          else
+            echo "✅ No obvious performance issues detected!" >> perf-report.md
+          fi
+
+          echo "" >> perf-report.md
+          echo "**Note:** This is a basic static analysis. Consider running benchmarks for critical paths." >> perf-report.md
+
+      - name: Comment performance suggestions
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('perf-report.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  # AI Bot Commands Handler
+  ai-bot-commands:
+    name: AI Bot Commands
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/ai')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Parse command
+        id: parse
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+
+          if [[ "$COMMENT" == *"/ai review"* ]]; then
+            echo "command=review" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == *"/ai optimize"* ]]; then
+            echo "command=optimize" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == *"/ai docs"* ]]; then
+            echo "command=docs" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == *"/ai help"* ]]; then
+            echo "command=help" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute command
+        run: |
+          case "${{ steps.parse.outputs.command }}" in
+            review)
+              echo "Running AI review..."
+              ;;
+            optimize)
+              echo "Running workflow optimizer..."
+              chmod +x .github/scripts/ai-workflow-optimizer.sh
+              .github/scripts/ai-workflow-optimizer.sh > optimize-output.txt
+              ;;
+            docs)
+              echo "Generating documentation..."
+              ;;
+            help)
+              echo "Available commands:" > help-output.txt
+              echo "/ai review - Trigger AI code review" >> help-output.txt
+              echo "/ai optimize - Analyze workflow" >> help-output.txt
+              echo "/ai docs - Generate documentation" >> help-output.txt
+              echo "/ai help - Show this help" >> help-output.txt
+              ;;
+          esac
+
+      - name: Reply to comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const command = '${{ steps.parse.outputs.command }}';
+
+            let message = '## 🤖 AI Assistant Response\n\n';
+
+            if (command === 'optimize' && fs.existsSync('optimize-output.txt')) {
+              const output = fs.readFileSync('optimize-output.txt', 'utf8');
+              message += '```\n' + output + '\n```';
+            } else if (command === 'help' && fs.existsSync('help-output.txt')) {
+              message += fs.readFileSync('help-output.txt', 'utf8');
+            } else {
+              message += `Executed command: ${command}`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
