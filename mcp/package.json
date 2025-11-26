@@ -1,0 +1,41 @@
+{
+  "name": "mcp-agents",
+  "version": "1.0.0",
+  "description": "MCP Server with API Testing and Database Management Agents",
+  "type": "module",
+  "main": "dist/agents/api/api-agent.server.js",
+  "bin": {
+    "mcp-api": "./dist/agents/api/api-agent.server.js",
+    "mcp-db": "./dist/agents/database/database-agent.server.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/agents/api/api-agent.server.js dist/agents/database/database-agent.server.js",
+    "dev": "tsc --watch",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "rest-api",
+    "api-testing",
+    "database",
+    "postgresql",
+    "migration",
+    "sql"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "axios": "^1.7.9",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

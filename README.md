@@ -45,6 +45,14 @@ A modern, production-ready Go web application built with **Clean Architecture**,
 - **Testing**: Unit, integration, and benchmark tests
 - **Documentation**: Swagger/OpenAPI generation
 - **Database Migrations**: golang-migrate/migrate v4.19.0+ with timestamp-based versioning
+- **MCP Agents**: AI-powered API testing and database management agents
+
+### 🤖 MCP Agents (Model Context Protocol)
+- **API Testing Agent**: 6 tools for REST API testing (GET, POST, PUT, PATCH, DELETE, TEST)
+- **Database Agent**: 6 tools for PostgreSQL management (connect, query, schema, migrate, analyze, generate SQL)
+- **Modular Architecture**: Scalable, maintainable TypeScript implementation
+- **Full Documentation**: Architecture, quick reference, and user guides included
+- **Integration Ready**: Works with Claude Desktop and other MCP clients
 
 ## 📁 Project Structure
 
@@ -139,6 +147,27 @@ make monitoring
 ```bash
 # Development with hot reload
 make dev
+
+# Or run without hot reload
+make run
+```
+
+### 4. Setup MCP Agents (Optional)
+```bash
+# Setup and build MCP agents
+make mcp-all
+
+# Test MCP agents
+make mcp-test
+
+# View MCP configuration
+make mcp-config-show
+
+# Check status
+make mcp-status
+```
+
+> 📖 **See [MCP Agents Documentation](mcp/README.md)** for detailed usage
 
 # Or run directly
 make run
@@ -307,6 +336,25 @@ make docker-up-db        # Start database only
 make docker-up-monitoring # Start monitoring stack
 make docker-down         # Stop services
 ```
+
+### MCP Agents
+```bash
+make mcp-setup       # Install MCP dependencies
+make mcp-build       # Build MCP agents
+make mcp-test        # Run MCP tests
+make mcp-all         # Setup, build, and test
+make mcp-status      # Check MCP status
+make mcp-docs        # View MCP documentation
+make mcp-config-show # Show configuration example
+make mcp-dev         # Watch mode (rebuild on changes)
+make mcp-clean       # Clean MCP artifacts
+make mcp-rebuild     # Clean rebuild
+```
+
+> 📖 **See [MCP Documentation](mcp/)** for detailed usage:
+> - [README.md](mcp/README.md) - User guide
+> - [ARCHITECTURE.md](mcp/ARCHITECTURE.md) - Technical docs
+> - [QUICK_REFERENCE.md](mcp/QUICK_REFERENCE.md) - Quick start
 
 ### Monitoring
 ```bash

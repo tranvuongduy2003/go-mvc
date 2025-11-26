@@ -1,5 +1,5 @@
 # Go MVC Makefile
-.PHONY: help build run test clean docker-up docker-down migrate lint format setup dev monitoring
+.PHONY: help build run test clean docker-up docker-down migrate lint format setup dev monitoring mcp-build mcp-test mcp-clean
 
 # Variables
 APP_NAME=go-mvc
@@ -12,6 +12,10 @@ CONFIG_FILE ?= configs/development.yaml
 MIGRATION_PATH=internal/adapters/persistence/postgres/migrations
 DATABASE_URL ?= postgresql://postgres:postgres@localhost:5432/go_mvc_dev?sslmode=disable
 MIGRATE_CMD=$(shell if command -v migrate >/dev/null 2>&1; then echo "migrate"; else echo "~/go/bin/migrate"; fi)
+
+# MCP Variables
+MCP_DIR=mcp
+MCP_DIST=$(MCP_DIR)/dist
 
 # Go build flags
 LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME) -X main.gitCommit=$(GIT_COMMIT)"
@@ -30,6 +34,17 @@ help: ## Show this help message
 	@echo ''
 	@echo 'Available targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo ''
+	@echo '$(YELLOW)Quick Start:$(NC)'
+	@echo '  make setup           # Setup Go development environment'
+	@echo '  make mcp-all         # Setup and build MCP agents'
+	@echo '  make run             # Run the main application'
+	@echo '  make dev             # Run with hot reload'
+	@echo ''
+	@echo '$(YELLOW)MCP Agents:$(NC)'
+	@echo '  make mcp-status      # Check MCP agents status'
+	@echo '  make mcp-test        # Test MCP agents'
+	@echo '  make mcp-docs        # View documentation'
 
 # ==========================================
 # Build Commands
@@ -383,6 +398,90 @@ pprof-mem: ## Profile memory usage
 pprof-goroutine: ## Profile goroutines
 	@echo "$(YELLOW)Profiling goroutines...$(NC)"
 	@go tool pprof http://localhost:8080/debug/pprof/goroutine
+
+# ==========================================
+# MCP Agents Commands
+# ==========================================
+
+mcp-setup: ## Setup MCP agents (install dependencies)
+	@echo "$(YELLOW)Setting up MCP agents...$(NC)"
+	@cd $(MCP_DIR) && npm install
+	@echo "$(GREEN)MCP agents dependencies installed$(NC)"
+
+mcp-build: ## Build MCP agents
+	@echo "$(YELLOW)Building MCP agents...$(NC)"
+	@cd $(MCP_DIR) && npm run build
+	@echo "$(GREEN)MCP agents built successfully$(NC)"
+
+mcp-test: ## Run MCP agents integration tests
+	@echo "$(YELLOW)Testing MCP agents...$(NC)"
+	@cd $(MCP_DIR) && node tests/integration/test-agents.js
+	@echo "$(GREEN)MCP agents tests completed$(NC)"
+
+mcp-dev: ## Watch and rebuild MCP agents on changes
+	@echo "$(YELLOW)Starting MCP agents development mode...$(NC)"
+	@cd $(MCP_DIR) && npm run dev
+
+mcp-clean: ## Clean MCP agents build artifacts
+	@echo "$(YELLOW)Cleaning MCP agents...$(NC)"
+	@rm -rf $(MCP_DIST)
+	@cd $(MCP_DIR) && rm -rf node_modules package-lock.json
+	@echo "$(GREEN)MCP agents cleaned$(NC)"
+
+mcp-status: ## Show MCP agents status
+	@echo "$(YELLOW)MCP Agents Status:$(NC)"
+	@echo "MCP Directory: $(MCP_DIR)"
+	@if [ -d "$(MCP_DIST)" ]; then \
+		echo "Build Status: $(GREEN)Built$(NC)"; \
+		echo "API Agent: $(MCP_DIST)/agents/api/api-agent.server.js"; \
+		echo "Database Agent: $(MCP_DIST)/agents/database/database-agent.server.js"; \
+		ls -lh $(MCP_DIST)/agents/api/api-agent.server.js $(MCP_DIST)/agents/database/database-agent.server.js 2>/dev/null || echo "$(RED)Server files not found$(NC)"; \
+	else \
+		echo "Build Status: $(RED)Not built$(NC)"; \
+		echo "Run 'make mcp-build' to build agents"; \
+	fi
+	@if [ -d "$(MCP_DIR)/node_modules" ]; then \
+		echo "Dependencies: $(GREEN)Installed$(NC)"; \
+	else \
+		echo "Dependencies: $(RED)Not installed$(NC)"; \
+		echo "Run 'make mcp-setup' to install dependencies"; \
+	fi
+
+mcp-docs: ## Show MCP documentation files
+	@echo "$(YELLOW)MCP Documentation:$(NC)"
+	@ls -lh $(MCP_DIR)/*.md 2>/dev/null | awk '{printf "  %-20s %s\n", $$9, $$5}' | sed 's|$(MCP_DIR)/||'
+	@echo ""
+	@echo "$(GREEN)Available documentation:$(NC)"
+	@echo "  README.md           - User guide"
+	@echo "  ARCHITECTURE.md     - Technical architecture"
+	@echo "  QUICK_REFERENCE.md  - Developer quick start"
+	@echo "  CHANGELOG.md        - Version history"
+	@echo "  REFACTORING_COMPLETE.md - Refactoring summary"
+
+mcp-config-show: ## Show MCP configuration example
+	@echo "$(YELLOW)MCP Configuration Example:$(NC)"
+	@echo "Add this to your MCP client config file:"
+	@echo ""
+	@echo "macOS: ~/Library/Application Support/Claude/claude_desktop_config.json"
+	@echo "Windows: %APPDATA%\\Claude\\claude_desktop_config.json"
+	@echo "Linux: ~/.config/Claude/claude_desktop_config.json"
+	@echo ""
+	@echo "{"
+	@echo "  \"mcpServers\": {"
+	@echo "    \"api-tester\": {"
+	@echo "      \"command\": \"node\","
+	@echo "      \"args\": [\"$(shell pwd)/$(MCP_DIST)/agents/api/api-agent.server.js\"]"
+	@echo "    },"
+	@echo "    \"database-agent\": {"
+	@echo "      \"command\": \"node\","
+	@echo "      \"args\": [\"$(shell pwd)/$(MCP_DIST)/agents/database/database-agent.server.js\"]"
+	@echo "    }"
+	@echo "  }"
+	@echo "}"
+
+mcp-all: mcp-setup mcp-build mcp-test ## Setup, build and test MCP agents
+
+mcp-rebuild: mcp-clean mcp-setup mcp-build ## Clean rebuild MCP agents
 
 # Default target
 .DEFAULT_GOAL := help
