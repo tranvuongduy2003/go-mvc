@@ -1,7 +1,13 @@
 # AI API Generation Rules
 
+> ⚠️ **IMPORTANT**: All generated code must follow **[AI Coding Standards](../appendix/AI_CODING_STANDARDS.md)**
+> - Use self-documenting code with clear naming
+> - NO COMMENTS except for complex algorithms, security, or compliance
+> - Code quality over brevity
+
 ## 📋 Table of Contents
 - [Overview](#overview)
+- [Coding Standards](#coding-standards)
 - [User Story Template](#user-story-template)
 - [API Generation Process](#api-generation-process)
 - [Layer-by-Layer Guidelines](#layer-by-layer-guidelines)
@@ -14,34 +20,93 @@
 
 ## 🎯 Overview
 
-Tài liệu này định nghĩa quy tắc chi tiết để AI có thể tự động sinh ra một bộ API hoàn chỉnh từ User Story theo kiến trúc Clean Architecture của dự án Go MVC.
+This document defines detailed rules for AI to automatically generate a complete API set from User Stories following the Go MVC project's Clean Architecture.
 
-### Mục tiêu
-- **Tự động hoá**: AI chỉ cần nhận User Story để sinh code hoàn chỉnh
-- **Nhất quán**: Đảm bảo code sinh ra tuân thủ patterns và conventions hiện tại
-- **Chất lượng**: Code sinh ra sẵn sàng production với đầy đủ validation, error handling, và tests
-- **Kiến trúc**: Tuân thủ nghiêm ngặt Clean Architecture với 4 layers
+### Goals
+- **Automation**: AI only needs User Story to generate complete code
+- **Consistency**: Ensure generated code follows current patterns and conventions
+- **Quality**: Generated code is production-ready with complete validation, error handling, and tests
+- **Architecture**: Strictly follow Clean Architecture with 4 layers
 
-### Quy trình tự động
-1. **Phân tích User Story**: Trích xuất thông tin cần thiết
-2. **Sinh Domain Layer**: Tạo entities, value objects, repositories interfaces
-3. **Sinh Application Layer**: Tạo commands/queries, DTOs, services, validators
-4. **Sinh Infrastructure Layer**: Tạo repository implementations, migrations
-5. **Sinh Presentation Layer**: Tạo HTTP handlers, routes, middleware
-6. **Cập nhật Dependency Injection**: Liên kết tất cả components
+### Automatic Process
+1. **Analyze User Story**: Extract required information
+2. **Generate Domain Layer**: Create entities, value objects, repository interfaces
+3. **Generate Application Layer**: Create commands/queries, DTOs, services, validators
+4. **Generate Infrastructure Layer**: Create repository implementations, migrations
+5. **Generate Presentation Layer**: Create HTTP handlers, routes, middleware
+6. **Update Dependency Injection**: Link all components
+
+## 🤖 Coding Standards
+
+### CRITICAL: All AI-generated code MUST follow these principles
+
+1. **NO COMMENTS** except for:
+   - Complex algorithms that cannot be expressed in code
+   - Security-sensitive code
+   - Compliance/regulatory requirements
+   - Workarounds for external library bugs
+
+2. **Self-Documenting Code**:
+   - Use descriptive function names
+   - Use clear variable names
+   - Break complex functions into smaller ones
+   - Use guard clauses
+   - Use custom types for clarity
+
+3. **See Complete Standards**: [AI Coding Standards](../appendix/AI_CODING_STANDARDS.md)
+
+### Example: Good vs Bad Code
+
+**❌ BAD - Too Many Comments**
+```go
+// CreateUser creates a new user
+func CreateUser(email, password string) (*User, error) {
+    // Validate email
+    if !isValid(email) {
+        return nil, errors.New("invalid email")
+    }
+    // Hash password
+    hash, _ := bcrypt.GenerateFromPassword([]byte(password), 10)
+    // Create user
+    user := &User{Email: email, Password: string(hash)}
+    // Save to database
+    return user, db.Save(user)
+}
+```
+
+**✅ GOOD - Self-Documenting**
+```go
+func CreateUser(email, password string) (*User, error) {
+    if err := ValidateEmail(email); err != nil {
+        return nil, err
+    }
+    
+    hashedPassword, err := HashPassword(password)
+    if err != nil {
+        return nil, err
+    }
+    
+    user := &User{
+        Email:        email,
+        PasswordHash: hashedPassword,
+    }
+    
+    return user, SaveUser(user)
+}
+```
 
 ## 📝 User Story Template
 
-### Format bắt buộc
+### Required Format
 
 ```markdown
-## User Story: [Tên chức năng]
+## User Story: [Feature Name]
 
 ### Business Description
-- **Actor**: [Ai sẽ sử dụng - User, Admin, System, etc.]
-- **Action**: [Hành động gì - Create, Update, Delete, Get, List, etc.]
-- **Object**: [Đối tượng gì - Product, Order, User, etc.]
-- **Purpose**: [Mục đích/lợi ích]
+- **Actor**: [Who will use - User, Admin, System, etc.]
+- **Action**: [What action - Create, Update, Delete, Get, List, etc.]
+- **Object**: [What object - Product, Order, User, etc.]
+- **Purpose**: [Purpose/benefit]
 
 ### Functional Requirements
 - **Inputs**: 

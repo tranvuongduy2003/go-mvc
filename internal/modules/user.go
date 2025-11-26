@@ -14,7 +14,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
 )
 
-// UserModule provides user domain dependencies
 var UserModule = fx.Module("user",
 	fx.Provide(
 		NewCreateUserCommandHandler,
@@ -30,32 +29,26 @@ var UserModule = fx.Module("user",
 	fx.Invoke(SetupUserEventSubscriptions),
 )
 
-// NewCreateUserCommandHandler provides CreateUserCommandHandler
 func NewCreateUserCommandHandler(userRepo user.UserRepository) *userCommands.CreateUserCommandHandler {
 	return userCommands.NewCreateUserCommandHandler(userRepo)
 }
 
-// NewUpdateUserCommandHandler provides UpdateUserCommandHandler
 func NewUpdateUserCommandHandler(userRepo user.UserRepository) *userCommands.UpdateUserCommandHandler {
 	return userCommands.NewUpdateUserCommandHandler(userRepo)
 }
 
-// NewDeleteUserCommandHandler provides DeleteUserCommandHandler
 func NewDeleteUserCommandHandler(userRepo user.UserRepository) *userCommands.DeleteUserCommandHandler {
 	return userCommands.NewDeleteUserCommandHandler(userRepo)
 }
 
-// NewGetUserByIDQueryHandler provides GetUserByIDQueryHandler
 func NewGetUserByIDQueryHandler(userRepo user.UserRepository) *userQueries.GetUserByIDQueryHandler {
 	return userQueries.NewGetUserByIDQueryHandler(userRepo)
 }
 
-// NewListUsersQueryHandler provides ListUsersQueryHandler
 func NewListUsersQueryHandler(userRepo user.UserRepository) *userQueries.ListUsersQueryHandler {
 	return userQueries.NewListUsersQueryHandler(userRepo)
 }
 
-// NewUploadAvatarCommandHandler provides UploadAvatarCommandHandler
 func NewUploadAvatarCommandHandler(
 	userRepo user.UserRepository,
 	fileStorageService *external.FileStorageService,
@@ -64,7 +57,6 @@ func NewUploadAvatarCommandHandler(
 	return userCommands.NewUploadAvatarCommandHandler(userRepo, fileStorageService, eventBus)
 }
 
-// UserServiceParams holds parameters for UserService
 type UserServiceParams struct {
 	fx.In
 	CreateUserHandler   *userCommands.CreateUserCommandHandler
@@ -75,7 +67,6 @@ type UserServiceParams struct {
 	ListUsersHandler    *userQueries.ListUsersQueryHandler
 }
 
-// NewUserService provides UserService
 func NewUserService(params UserServiceParams) *services.UserService {
 	return services.NewUserService(
 		params.CreateUserHandler,
@@ -87,17 +78,14 @@ func NewUserService(params UserServiceParams) *services.UserService {
 	)
 }
 
-// NewUserValidator provides UserValidator
 func NewUserValidator() userValidators.IUserValidator {
 	return userValidators.NewUserValidator()
 }
 
-// NewUserEventHandler provides UserEventHandler
 func NewUserEventHandler(logger *logger.Logger) *eventHandlers.UserEventHandler {
 	return eventHandlers.NewUserEventHandler(logger.Logger)
 }
 
-// SetupUserEventSubscriptions sets up event subscriptions for user events
 func SetupUserEventSubscriptions(eventHandler *eventHandlers.UserEventHandler, eventBus messaging.EventBus) error {
 	return eventHandler.SetupEventSubscriptions(eventBus)
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/config"
 )
 
-// NATSBroker implements the MessageBroker interface using NATS
 type NATSBroker struct {
 	conn          *nats.Conn
 	config        config.NATSConfig
@@ -23,18 +22,15 @@ type NATSBroker struct {
 	subscriptions map[string]*NATSSubscription
 }
 
-// NATSMessage wraps a NATS message
 type NATSMessage struct {
 	msg *nats.Msg
 }
 
-// NATSSubscription wraps a NATS subscription
 type NATSSubscription struct {
 	sub     *nats.Subscription
 	subject string
 }
 
-// NewNATSBroker creates a new NATS message broker
 func NewNATSBroker(config config.NATSConfig, logger *zap.Logger) *NATSBroker {
 	return &NATSBroker{
 		config:        config,
@@ -43,7 +39,6 @@ func NewNATSBroker(config config.NATSConfig, logger *zap.Logger) *NATSBroker {
 	}
 }
 
-// Connect establishes connection to NATS server
 func (n *NATSBroker) Connect() error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -82,7 +77,6 @@ func (n *NATSBroker) Connect() error {
 	return nil
 }
 
-// Close closes the NATS connection
 func (n *NATSBroker) Close() error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -91,14 +85,12 @@ func (n *NATSBroker) Close() error {
 		return nil
 	}
 
-	// Close all subscriptions
 	for _, sub := range n.subscriptions {
 		if err := sub.Unsubscribe(); err != nil {
 			n.logger.Warn("Failed to unsubscribe", zap.String("subject", sub.subject), zap.Error(err))
 		}
 	}
 
-	// Drain and close connection
 	if err := n.conn.Drain(); err != nil {
 		n.logger.Warn("Failed to drain NATS connection", zap.Error(err))
 	}
@@ -110,7 +102,6 @@ func (n *NATSBroker) Close() error {
 	return nil
 }
 
-// IsConnected returns whether the connection is active
 func (n *NATSBroker) IsConnected() bool {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
@@ -118,13 +109,11 @@ func (n *NATSBroker) IsConnected() bool {
 	return n.conn != nil && n.conn.IsConnected()
 }
 
-// Health returns the health status of the connection
 func (n *NATSBroker) Health() error {
 	if !n.IsConnected() {
 		return fmt.Errorf("NATS connection is not active")
 	}
 
-	// Try a simple ping
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -135,7 +124,6 @@ func (n *NATSBroker) Health() error {
 	return nil
 }
 
-// Publish publishes a message to the specified subject
 func (n *NATSBroker) Publish(ctx context.Context, subject string, data []byte) error {
 	if !n.IsConnected() {
 		return fmt.Errorf("NATS connection is not active")
@@ -155,7 +143,6 @@ func (n *NATSBroker) Publish(ctx context.Context, subject string, data []byte) e
 	return nil
 }
 
-// PublishWithReply publishes a message and waits for a reply
 func (n *NATSBroker) PublishWithReply(ctx context.Context, subject string, data []byte, timeout context.Context) ([]byte, error) {
 	if !n.IsConnected() {
 		return nil, fmt.Errorf("NATS connection is not active")
@@ -177,7 +164,6 @@ func (n *NATSBroker) PublishWithReply(ctx context.Context, subject string, data 
 	return msg.Data, nil
 }
 
-// Subscribe creates a subscription to a subject
 func (n *NATSBroker) Subscribe(subject string, handler messaging.MessageHandler) (messaging.Subscription, error) {
 	if !n.IsConnected() {
 		return nil, fmt.Errorf("NATS connection is not active")
@@ -210,7 +196,6 @@ func (n *NATSBroker) Subscribe(subject string, handler messaging.MessageHandler)
 	return natsSub, nil
 }
 
-// QueueSubscribe creates a queue subscription (load balanced)
 func (n *NATSBroker) QueueSubscribe(subject, queue string, handler messaging.MessageHandler) (messaging.Subscription, error) {
 	if !n.IsConnected() {
 		return nil, fmt.Errorf("NATS connection is not active")
@@ -247,36 +232,26 @@ func (n *NATSBroker) QueueSubscribe(subject, queue string, handler messaging.Mes
 	return natsSub, nil
 }
 
-// NATSMessage implementation
-
-// Data returns the message payload
 func (m *NATSMessage) Data() []byte {
 	return m.msg.Data
 }
 
-// Subject returns the subject the message was sent to
 func (m *NATSMessage) Subject() string {
 	return m.msg.Subject
 }
 
-// Reply returns the reply subject if this is a request message
 func (m *NATSMessage) Reply() string {
 	return m.msg.Reply
 }
 
-// Ack acknowledges the message (no-op for basic NATS, used for JetStream)
 func (m *NATSMessage) Ack() error {
-	// Basic NATS doesn't require explicit ack
 	return nil
 }
 
-// Nack negatively acknowledges the message (no-op for basic NATS)
 func (m *NATSMessage) Nack() error {
-	// Basic NATS doesn't support explicit nack
 	return nil
 }
 
-// Headers returns message headers (NATS 2.2+ feature)
 func (m *NATSMessage) Headers() map[string]string {
 	headers := make(map[string]string)
 	if m.msg.Header != nil {
@@ -289,14 +264,10 @@ func (m *NATSMessage) Headers() map[string]string {
 	return headers
 }
 
-// NATSSubscription implementation
-
-// Subject returns the subscription subject
 func (s *NATSSubscription) Subject() string {
 	return s.subject
 }
 
-// Unsubscribe removes the subscription
 func (s *NATSSubscription) Unsubscribe() error {
 	if s.sub == nil {
 		return nil
@@ -310,18 +281,15 @@ func (s *NATSSubscription) Unsubscribe() error {
 	return nil
 }
 
-// IsValid returns whether the subscription is still active
 func (s *NATSSubscription) IsValid() bool {
 	return s.sub != nil && s.sub.IsValid()
 }
 
-// NATSEventBus implements EventBus using NATS
 type NATSEventBus struct {
 	broker *NATSBroker
 	logger *zap.Logger
 }
 
-// NewNATSEventBus creates a new NATS event bus
 func NewNATSEventBus(broker *NATSBroker, logger *zap.Logger) *NATSEventBus {
 	return &NATSEventBus{
 		broker: broker,
@@ -329,7 +297,6 @@ func NewNATSEventBus(broker *NATSBroker, logger *zap.Logger) *NATSEventBus {
 	}
 }
 
-// PublishEvent publishes a domain event
 func (e *NATSEventBus) PublishEvent(ctx context.Context, event messaging.Event) error {
 	subject := fmt.Sprintf("events.%s", event.EventType())
 
@@ -350,18 +317,15 @@ func (e *NATSEventBus) PublishEvent(ctx context.Context, event messaging.Event) 
 	return nil
 }
 
-// SubscribeToEvent subscribes to a specific event type
 func (e *NATSEventBus) SubscribeToEvent(eventType string, handler messaging.EventHandler) (messaging.Subscription, error) {
 	subject := fmt.Sprintf("events.%s", eventType)
 
 	messageHandler := func(msg messaging.BrokerMessage) error {
-		// Parse the event from message data
 		var eventData map[string]interface{}
 		if err := json.Unmarshal(msg.Data(), &eventData); err != nil {
 			return fmt.Errorf("failed to parse event data: %w", err)
 		}
 
-		// Create a basic event wrapper
 		event := &BasicEvent{
 			eventType:   eventType,
 			data:        msg.Data(),
@@ -376,14 +340,12 @@ func (e *NATSEventBus) SubscribeToEvent(eventType string, handler messaging.Even
 	return e.broker.Subscribe(subject, messageHandler)
 }
 
-// SubscribeToEvents subscribes to multiple event types
 func (e *NATSEventBus) SubscribeToEvents(eventTypes []string, handler messaging.EventHandler) ([]messaging.Subscription, error) {
 	subscriptions := make([]messaging.Subscription, 0, len(eventTypes))
 
 	for _, eventType := range eventTypes {
 		sub, err := e.SubscribeToEvent(eventType, handler)
 		if err != nil {
-			// Clean up already created subscriptions
 			for _, existingSub := range subscriptions {
 				existingSub.Unsubscribe()
 			}
@@ -395,7 +357,6 @@ func (e *NATSEventBus) SubscribeToEvents(eventTypes []string, handler messaging.
 	return subscriptions, nil
 }
 
-// BasicEvent is a simple implementation of the Event interface
 type BasicEvent struct {
 	eventType   string
 	data        []byte
@@ -410,7 +371,6 @@ func (e *BasicEvent) AggregateID() string        { return e.aggregateID }
 func (e *BasicEvent) Version() int               { return e.version }
 func (e *BasicEvent) Timestamp() int64           { return e.timestamp }
 
-// Helper functions for parsing event data
 func getStringValue(data map[string]interface{}, key string) string {
 	if val, ok := data[key].(string); ok {
 		return val

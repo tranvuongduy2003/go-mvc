@@ -9,7 +9,6 @@ import (
 	userQueries "github.com/tranvuongduy2003/go-mvc/internal/application/queries/user"
 )
 
-// UserService provides high-level business operations for users
 type UserService struct {
 	createUserHandler   *userCommands.CreateUserCommandHandler
 	updateUserHandler   *userCommands.UpdateUserCommandHandler
@@ -19,7 +18,6 @@ type UserService struct {
 	listUsersHandler    *userQueries.ListUsersQueryHandler
 }
 
-// NewUserService creates a new UserService
 func NewUserService(
 	createUserHandler *userCommands.CreateUserCommandHandler,
 	updateUserHandler *userCommands.UpdateUserCommandHandler,
@@ -38,7 +36,6 @@ func NewUserService(
 	}
 }
 
-// CreateUser creates a new user
 func (s *UserService) CreateUser(ctx context.Context, req userDto.CreateUserRequest) (userDto.UserResponse, error) {
 	cmd := userCommands.CreateUserCommand{
 		Email:    req.Email,
@@ -55,7 +52,6 @@ func (s *UserService) CreateUser(ctx context.Context, req userDto.CreateUserRequ
 	return userDto.UserResponseFromDomain(user), nil
 }
 
-// GetUserByID retrieves a user by ID
 func (s *UserService) GetUserByID(ctx context.Context, id string) (userDto.UserResponse, error) {
 	query := userQueries.GetUserByIDQuery{
 		ID: id,
@@ -69,7 +65,6 @@ func (s *UserService) GetUserByID(ctx context.Context, id string) (userDto.UserR
 	return userDto.UserResponseFromDomain(user), nil
 }
 
-// UpdateUser updates an existing user
 func (s *UserService) UpdateUser(ctx context.Context, id string, req userDto.UpdateUserRequest) (userDto.UserResponse, error) {
 	cmd := userCommands.UpdateUserCommand{
 		ID:    id,
@@ -85,7 +80,6 @@ func (s *UserService) UpdateUser(ctx context.Context, id string, req userDto.Upd
 	return userDto.UserResponseFromDomain(user), nil
 }
 
-// DeleteUser deletes a user
 func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 	cmd := userCommands.DeleteUserCommand{
 		ID: id,
@@ -94,7 +88,6 @@ func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 	return s.deleteUserHandler.Handle(ctx, cmd)
 }
 
-// ListUsers retrieves a paginated list of users
 func (s *UserService) ListUsers(ctx context.Context, req userDto.ListUsersRequest) (userDto.ListUsersResponse, error) {
 	query := userQueries.ListUsersQuery{
 		Page:     req.Page,
@@ -121,7 +114,6 @@ func (s *UserService) ListUsers(ctx context.Context, req userDto.ListUsersReques
 	}, nil
 }
 
-// UploadAvatar uploads user avatar
 func (s *UserService) UploadAvatar(ctx context.Context, userID string, file multipart.File, header *multipart.FileHeader) (userDto.UserResponse, error) {
 	cmd := userCommands.UploadAvatarCommand{
 		UserID: userID,

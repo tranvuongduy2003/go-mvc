@@ -10,18 +10,15 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
 )
 
-// Service provides caching functionality using Redis
 type Service struct {
 	client *redis.Client
 	logger *logger.Logger
 }
 
-// CacheOptions contains configuration options for cache operations
 type CacheOptions struct {
 	TTL time.Duration
 }
 
-// NewCacheService creates a new cache service
 func NewCacheService(client *redis.Client, logger *logger.Logger) *Service {
 	return &Service{
 		client: client,
@@ -29,18 +26,15 @@ func NewCacheService(client *redis.Client, logger *logger.Logger) *Service {
 	}
 }
 
-// Set stores a value in cache with optional TTL
 func (s *Service) Set(ctx context.Context, key string, value interface{}, options *CacheOptions) error {
 	s.logger.Debugf("Setting cache key: %s", key)
 
-	// Serialize value to JSON
 	data, err := json.Marshal(value)
 	if err != nil {
 		s.logger.Errorf("Failed to marshal value for cache key %s: %v", key, err)
 		return fmt.Errorf("failed to marshal value: %w", err)
 	}
 
-	// Determine TTL
 	var ttl time.Duration
 	if options != nil && options.TTL > 0 {
 		ttl = options.TTL
@@ -48,7 +42,6 @@ func (s *Service) Set(ctx context.Context, key string, value interface{}, option
 		ttl = 0 // No expiration
 	}
 
-	// Set value in Redis
 	if err := s.client.Set(ctx, key, data, ttl).Err(); err != nil {
 		s.logger.Errorf("Failed to set cache key %s: %v", key, err)
 		return fmt.Errorf("failed to set cache: %w", err)
@@ -58,11 +51,9 @@ func (s *Service) Set(ctx context.Context, key string, value interface{}, option
 	return nil
 }
 
-// Get retrieves a value from cache
 func (s *Service) Get(ctx context.Context, key string, dest interface{}) error {
 	s.logger.Debugf("Getting cache key: %s", key)
 
-	// Get value from Redis
 	data, err := s.client.Get(ctx, key).Result()
 	if err != nil {
 		if err == redis.Nil {
@@ -73,7 +64,6 @@ func (s *Service) Get(ctx context.Context, key string, dest interface{}) error {
 		return fmt.Errorf("failed to get cache: %w", err)
 	}
 
-	// Deserialize JSON to destination
 	if err := json.Unmarshal([]byte(data), dest); err != nil {
 		s.logger.Errorf("Failed to unmarshal cache value for key %s: %v", key, err)
 		return fmt.Errorf("failed to unmarshal cache value: %w", err)
@@ -83,7 +73,6 @@ func (s *Service) Get(ctx context.Context, key string, dest interface{}) error {
 	return nil
 }
 
-// Delete removes a value from cache
 func (s *Service) Delete(ctx context.Context, key string) error {
 	s.logger.Debugf("Deleting cache key: %s", key)
 
@@ -96,11 +85,9 @@ func (s *Service) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-// DeletePattern removes all keys matching a pattern
 func (s *Service) DeletePattern(ctx context.Context, pattern string) error {
 	s.logger.Debugf("Deleting cache keys with pattern: %s", pattern)
 
-	// Get all keys matching the pattern
 	keys, err := s.client.Keys(ctx, pattern).Result()
 	if err != nil {
 		s.logger.Errorf("Failed to get keys for pattern %s: %v", pattern, err)
@@ -112,7 +99,6 @@ func (s *Service) DeletePattern(ctx context.Context, pattern string) error {
 		return nil
 	}
 
-	// Delete all matching keys
 	if err := s.client.Del(ctx, keys...).Err(); err != nil {
 		s.logger.Errorf("Failed to delete keys for pattern %s: %v", pattern, err)
 		return fmt.Errorf("failed to delete keys: %w", err)
@@ -122,7 +108,6 @@ func (s *Service) DeletePattern(ctx context.Context, pattern string) error {
 	return nil
 }
 
-// Exists checks if a key exists in cache
 func (s *Service) Exists(ctx context.Context, key string) (bool, error) {
 	s.logger.Debugf("Checking existence of cache key: %s", key)
 
@@ -137,7 +122,6 @@ func (s *Service) Exists(ctx context.Context, key string) (bool, error) {
 	return exists, nil
 }
 
-// TTL returns the remaining time to live of a key
 func (s *Service) TTL(ctx context.Context, key string) (time.Duration, error) {
 	s.logger.Debugf("Getting TTL for cache key: %s", key)
 
@@ -151,7 +135,6 @@ func (s *Service) TTL(ctx context.Context, key string) (time.Duration, error) {
 	return ttl, nil
 }
 
-// Expire sets a timeout on a key
 func (s *Service) Expire(ctx context.Context, key string, expiration time.Duration) error {
 	s.logger.Debugf("Setting expiration for cache key: %s, expiration: %v", key, expiration)
 
@@ -164,7 +147,6 @@ func (s *Service) Expire(ctx context.Context, key string, expiration time.Durati
 	return nil
 }
 
-// Increment increments a numeric value in cache
 func (s *Service) Increment(ctx context.Context, key string) (int64, error) {
 	s.logger.Debugf("Incrementing cache key: %s", key)
 
@@ -178,7 +160,6 @@ func (s *Service) Increment(ctx context.Context, key string) (int64, error) {
 	return val, nil
 }
 
-// IncrementBy increments a numeric value by a specific amount
 func (s *Service) IncrementBy(ctx context.Context, key string, value int64) (int64, error) {
 	s.logger.Debugf("Incrementing cache key %s by %d", key, value)
 
@@ -192,18 +173,15 @@ func (s *Service) IncrementBy(ctx context.Context, key string, value int64) (int
 	return val, nil
 }
 
-// SetNX sets a key only if it doesn't exist (atomic operation)
 func (s *Service) SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) (bool, error) {
 	s.logger.Debugf("Setting cache key with NX: %s", key)
 
-	// Serialize value to JSON
 	data, err := json.Marshal(value)
 	if err != nil {
 		s.logger.Errorf("Failed to marshal value for cache key %s: %v", key, err)
 		return false, fmt.Errorf("failed to marshal value: %w", err)
 	}
 
-	// Set value only if key doesn't exist
 	success, err := s.client.SetNX(ctx, key, data, expiration).Result()
 	if err != nil {
 		s.logger.Errorf("Failed to set NX cache key %s: %v", key, err)
@@ -214,11 +192,9 @@ func (s *Service) SetNX(ctx context.Context, key string, value interface{}, expi
 	return success, nil
 }
 
-// GetOrSet retrieves a value from cache, or sets it if not found
 func (s *Service) GetOrSet(ctx context.Context, key string, dest interface{}, setter func() (interface{}, error), options *CacheOptions) error {
 	s.logger.Debugf("GetOrSet for cache key: %s", key)
 
-	// Try to get from cache first
 	err := s.Get(ctx, key, dest)
 	if err == nil {
 		s.logger.Debugf("Cache hit for key: %s", key)
@@ -232,20 +208,16 @@ func (s *Service) GetOrSet(ctx context.Context, key string, dest interface{}, se
 
 	s.logger.Debugf("Cache miss for key %s, calling setter", key)
 
-	// Cache miss, call setter to get value
 	value, err := setter()
 	if err != nil {
 		s.logger.Errorf("Setter failed for cache key %s: %v", key, err)
 		return fmt.Errorf("setter failed: %w", err)
 	}
 
-	// Set value in cache
 	if err := s.Set(ctx, key, value, options); err != nil {
 		s.logger.Errorf("Failed to set cache after setter for key %s: %v", key, err)
-		// Don't return error here, just log it
 	}
 
-	// Unmarshal the value to destination
 	data, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("failed to marshal setter result: %w", err)
@@ -259,7 +231,6 @@ func (s *Service) GetOrSet(ctx context.Context, key string, dest interface{}, se
 	return nil
 }
 
-// Ping checks the connection to Redis
 func (s *Service) Ping(ctx context.Context) error {
 	s.logger.Debug("Pinging Redis")
 
@@ -272,7 +243,6 @@ func (s *Service) Ping(ctx context.Context) error {
 	return nil
 }
 
-// Close closes the Redis connection
 func (s *Service) Close() error {
 	s.logger.Info("Closing Redis connection")
 

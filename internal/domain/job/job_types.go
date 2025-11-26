@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	// Job types
 	JobTypeEmail          = "email"
 	JobTypeEmailTemplate  = "email_template"
 	JobTypeFileProcessing = "file_processing"
@@ -18,12 +17,10 @@ const (
 	JobTypeAnalytics      = "analytics"
 )
 
-// EmailJob represents an email sending job
 type EmailJob struct {
 	*BaseJob
 }
 
-// NewEmailJob creates a new email job
 func NewEmailJob(to, subject, body string) *EmailJob {
 	payload := JobPayload{
 		"to":      to,
@@ -40,7 +37,6 @@ func NewEmailJob(to, subject, body string) *EmailJob {
 	}
 }
 
-// NewEmailTemplateJob creates a new email template job
 func NewEmailTemplateJob(to, template string, data map[string]interface{}) *EmailJob {
 	payload := JobPayload{
 		"to":       to,
@@ -57,7 +53,6 @@ func NewEmailTemplateJob(to, template string, data map[string]interface{}) *Emai
 	}
 }
 
-// Validate validates the email job
 func (e *EmailJob) Validate() error {
 	if err := e.BaseJob.Validate(); err != nil {
 		return err
@@ -65,7 +60,6 @@ func (e *EmailJob) Validate() error {
 
 	payload := e.GetPayload()
 
-	// Check required fields
 	if to, exists := payload["to"]; !exists || to == "" {
 		return fmt.Errorf("email recipient is required")
 	}
@@ -94,12 +88,10 @@ func (e *EmailJob) Validate() error {
 	return nil
 }
 
-// FileProcessingJob represents a file processing job
 type FileProcessingJob struct {
 	*BaseJob
 }
 
-// NewFileProcessingJob creates a new file processing job
 func NewFileProcessingJob(filePath, operation string, params map[string]interface{}) *FileProcessingJob {
 	payload := JobPayload{
 		"filePath":  filePath,
@@ -115,7 +107,6 @@ func NewFileProcessingJob(filePath, operation string, params map[string]interfac
 	}
 }
 
-// NewImageResizeJob creates a new image resize job
 func NewImageResizeJob(imagePath string, width, height int, quality int) *FileProcessingJob {
 	params := map[string]interface{}{
 		"width":   width,
@@ -137,7 +128,6 @@ func NewImageResizeJob(imagePath string, width, height int, quality int) *FilePr
 	}
 }
 
-// Validate validates the file processing job
 func (f *FileProcessingJob) Validate() error {
 	if err := f.BaseJob.Validate(); err != nil {
 		return err
@@ -156,12 +146,10 @@ func (f *FileProcessingJob) Validate() error {
 	return nil
 }
 
-// DataCleanupJob represents a data cleanup job
 type DataCleanupJob struct {
 	*BaseJob
 }
 
-// NewDataCleanupJob creates a new data cleanup job
 func NewDataCleanupJob(table string, condition map[string]interface{}, olderThan string) *DataCleanupJob {
 	payload := JobPayload{
 		"table":     table,
@@ -177,7 +165,6 @@ func NewDataCleanupJob(table string, condition map[string]interface{}, olderThan
 	}
 }
 
-// NewUserCleanupJob creates a new user cleanup job
 func NewUserCleanupJob(userID string, actions []string) *DataCleanupJob {
 	payload := JobPayload{
 		"userID":  userID,
@@ -193,7 +180,6 @@ func NewUserCleanupJob(userID string, actions []string) *DataCleanupJob {
 	}
 }
 
-// Validate validates the data cleanup job
 func (d *DataCleanupJob) Validate() error {
 	if err := d.BaseJob.Validate(); err != nil {
 		return err
@@ -217,12 +203,10 @@ func (d *DataCleanupJob) Validate() error {
 	return nil
 }
 
-// NotificationJob represents a push notification job
 type NotificationJob struct {
 	*BaseJob
 }
 
-// NewNotificationJob creates a new notification job
 func NewNotificationJob(userID, title, message string, data map[string]interface{}) *NotificationJob {
 	payload := JobPayload{
 		"userID":  userID,
@@ -239,7 +223,6 @@ func NewNotificationJob(userID, title, message string, data map[string]interface
 	}
 }
 
-// Validate validates the notification job
 func (n *NotificationJob) Validate() error {
 	if err := n.BaseJob.Validate(); err != nil {
 		return err
@@ -262,15 +245,12 @@ func (n *NotificationJob) Validate() error {
 	return nil
 }
 
-// JobFactory creates jobs of different types
 type JobFactory struct{}
 
-// NewJobFactory creates a new job factory
 func NewJobFactory() *JobFactory {
 	return &JobFactory{}
 }
 
-// CreateJob creates a job based on type and payload
 func (f *JobFactory) CreateJob(jobType string, payload JobPayload) (Job, error) {
 	switch jobType {
 	case JobTypeEmail:
@@ -319,20 +299,17 @@ func (f *JobFactory) CreateJob(jobType string, payload JobPayload) (Job, error) 
 		return job, job.Validate()
 
 	default:
-		// For unknown types, create a generic BaseJob
 		job := NewBaseJob(jobType, payload)
 		return job, job.Validate()
 	}
 }
 
-// CreateJobWithOptions creates a job with options
 func (f *JobFactory) CreateJobWithOptions(jobType string, payload JobPayload, opts JobOptions) (Job, error) {
 	job, err := f.CreateJob(jobType, payload)
 	if err != nil {
 		return nil, err
 	}
 
-	// Apply options
 	if baseJob, ok := job.(*BaseJob); ok {
 		if opts.Priority != 0 {
 			baseJob.priority = opts.Priority

@@ -13,7 +13,6 @@ type gormInboxRepository struct {
 	db *gorm.DB
 }
 
-// NewInboxRepository creates a new inbox repository using GORM
 func NewInboxRepository(db *gorm.DB) messaging.InboxRepository {
 	return &gormInboxRepository{
 		db: db,

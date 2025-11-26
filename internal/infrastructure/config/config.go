@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// AppConfig contains all application configuration
 type AppConfig struct {
 	App       App       `mapstructure:"app"`
 	Server    Server    `mapstructure:"server"`
@@ -194,7 +193,6 @@ type Feature struct {
 	EnableMetrics     bool `mapstructure:"enable_metrics"`
 }
 
-// GetDSN returns database connection string
 func (db *DatabaseConnection) GetDSN() string {
 	switch db.Driver {
 	case "postgres":
@@ -205,11 +203,9 @@ func (db *DatabaseConnection) GetDSN() string {
 	}
 }
 
-// LoadConfig loads configuration from various sources
 func LoadConfig(configPath string) (*AppConfig, error) {
 	v := viper.New()
 
-	// Set config file
 	if configPath != "" {
 		v.SetConfigFile(configPath)
 	} else {
@@ -220,14 +216,11 @@ func LoadConfig(configPath string) (*AppConfig, error) {
 		v.AddConfigPath("../configs")
 	}
 
-	// Set defaults
 	setDefaults(v)
 
-	// Read environment variables
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
-	// Read config file
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("error reading config file: %w", err)
@@ -239,7 +232,6 @@ func LoadConfig(configPath string) (*AppConfig, error) {
 		return nil, fmt.Errorf("unable to decode config: %w", err)
 	}
 
-	// Validate config
 	if err := validateConfig(&config); err != nil {
 		return nil, fmt.Errorf("config validation failed: %w", err)
 	}
@@ -247,9 +239,7 @@ func LoadConfig(configPath string) (*AppConfig, error) {
 	return &config, nil
 }
 
-// setDefaults sets default configuration values
 func setDefaults(v *viper.Viper) {
-	// App defaults
 	v.SetDefault("app.name", "go-mvc-enterprise")
 	v.SetDefault("app.version", "1.0.0")
 	v.SetDefault("app.environment", "development")
@@ -257,7 +247,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("app.timezone", "UTC")
 	v.SetDefault("app.graceful_stop", "30s")
 
-	// Server defaults
 	v.SetDefault("server.http.host", "0.0.0.0")
 	v.SetDefault("server.http.port", 8080)
 	v.SetDefault("server.http.read_timeout", "30s")
@@ -265,14 +254,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.http.idle_timeout", "120s")
 	v.SetDefault("server.http.max_header_bytes", 1048576)
 
-	// CORS defaults
 	v.SetDefault("server.http.cors.enabled", true)
 	v.SetDefault("server.http.cors.allowed_origins", []string{"*"})
 	v.SetDefault("server.http.cors.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	v.SetDefault("server.http.cors.allowed_headers", []string{"*"})
 	v.SetDefault("server.http.cors.max_age", 86400)
 
-	// Database defaults
 	v.SetDefault("database.primary.driver", "postgres")
 	v.SetDefault("database.primary.host", "localhost")
 	v.SetDefault("database.primary.port", 5432)
@@ -286,7 +273,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.primary.conn_max_idle_time", "5m")
 	v.SetDefault("database.primary.log_level", "warn")
 
-	// Redis defaults
 	v.SetDefault("redis.host", "localhost")
 	v.SetDefault("redis.port", 6379)
 	v.SetDefault("redis.db", 0)
@@ -297,43 +283,36 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("redis.write_timeout", "3s")
 	v.SetDefault("redis.idle_timeout", "5m")
 
-	// Logger defaults
 	v.SetDefault("logger.level", "info")
 	v.SetDefault("logger.encoding", "json")
 	v.SetDefault("logger.output_paths", []string{"stdout"})
 	v.SetDefault("logger.error_paths", []string{"stderr"})
 	v.SetDefault("logger.development", false)
 
-	// JWT defaults
 	v.SetDefault("jwt.secret", "your-secret-key")
 	v.SetDefault("jwt.access_expiry", "15m")
 	v.SetDefault("jwt.refresh_expiry", "7d")
 	v.SetDefault("jwt.issuer", "go-mvc-enterprise")
 	v.SetDefault("jwt.audience", "go-mvc-enterprise")
 
-	// Metrics defaults
 	v.SetDefault("metrics.enabled", true)
 	v.SetDefault("metrics.path", "/metrics")
 	v.SetDefault("metrics.port", 9090)
 
-	// Tracing defaults
 	v.SetDefault("tracing.enabled", false)
 	v.SetDefault("tracing.service_name", "go-mvc-enterprise")
 	v.SetDefault("tracing.sample_rate", 0.1)
 
-	// Rate limiting defaults
 	v.SetDefault("rate_limit.enabled", true)
 	v.SetDefault("rate_limit.rps", 100)
 	v.SetDefault("rate_limit.burst", 200)
 
-	// Feature flags defaults
 	v.SetDefault("feature.enable_swagger", true)
 	v.SetDefault("feature.enable_pprof", false)
 	v.SetDefault("feature.enable_health_check", true)
 	v.SetDefault("feature.enable_metrics", true)
 }
 
-// validateConfig validates the configuration
 func validateConfig(config *AppConfig) error {
 	if config.App.Name == "" {
 		return fmt.Errorf("app.name is required")

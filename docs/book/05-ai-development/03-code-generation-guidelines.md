@@ -1,7 +1,13 @@
 # Code Generation Guidelines by Layer
 
+> ⚠️ **CRITICAL**: Before generating ANY code, read **[AI Coding Standards](../appendix/AI_CODING_STANDARDS.md)**
+> - Self-documenting code is REQUIRED
+> - Comments are BANNED except for complex algorithms, security, or compliance
+> - Clear naming eliminates need for comments
+
 ## 📋 Table of Contents
 - [Overview](#overview)
+- [Coding Standards Compliance](#coding-standards-compliance)
 - [Domain Layer Generation](#domain-layer-generation)
 - [Application Layer Generation](#application-layer-generation)
 - [Infrastructure Layer Generation](#infrastructure-layer-generation)
@@ -12,12 +18,39 @@
 
 ## 🎯 Overview
 
-Tài liệu này cung cấp hướng dẫn chi tiết cho AI về cách sinh code cho từng layer của Clean Architecture. Mỗi layer có những patterns và conventions cụ thể cần tuân thủ.
+This document provides detailed guidance for AI on how to generate code for each layer of Clean Architecture. Each layer has specific patterns and conventions to follow.
 
 ### Code Generation Flow
 ```
 User Story → Analysis → Domain → Application → Infrastructure → Presentation → Integration → Testing
 ```
+
+## 🤖 Coding Standards Compliance
+
+### MANDATORY: Every Generated File Must Follow
+
+1. **NO COMMENTS** - Code must be self-documenting
+   - Use descriptive names: `ValidateEmail()` not `Check()`
+   - Break down functions: Small, focused, clear purpose
+   - Guard clauses: Early returns for clarity
+   - Custom types: `type UserID string` for domain meaning
+
+2. **Only Comment When**:
+   - Complex algorithm (e.g., Haversine formula)
+   - Security workaround (e.g., constant-time comparison)
+   - Regulatory requirement (e.g., GDPR Article 17)
+   - External library bug workaround
+
+3. **Code Review Before Generation**:
+   - Is function name clear? → No comment needed
+   - Is variable name descriptive? → No comment needed
+   - Can I extract a method? → Do it instead of commenting
+   - Is logic complex? → Break into smaller functions
+
+### See Complete Guide
+📖 **[AI Coding Standards](../appendix/AI_CODING_STANDARDS.md)** - MUST READ
+
+---
 
 ## 🏛️ Domain Layer Generation
 
@@ -34,17 +67,14 @@ import (
     "github.com/tranvuongduy2003/go-mvc/internal/domain/shared/events"
 )
 
-// [Entity] represents the [entity] aggregate root
 type [Entity] struct {
     id        [Entity]ID
-    // Value objects và other fields
     createdAt time.Time
     updatedAt time.Time
-    version   int64        // For optimistic locking
+    version   int64
     events    []events.DomainEvent
 }
 
-// Constructor with validation
 func New[Entity](
     // Parameters for creation
 ) (*[Entity], error) {

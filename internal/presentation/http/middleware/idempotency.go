@@ -20,14 +20,12 @@ const (
 	DefaultTTL           = 24 * time.Hour
 )
 
-// IdempotencyMiddleware provides idempotency for HTTP requests
 type IdempotencyMiddleware struct {
 	inboxService *messaging.InboxService
 	logger       *zap.Logger
 	ttl          time.Duration
 }
 
-// NewIdempotencyMiddleware creates a new idempotency middleware
 func NewIdempotencyMiddleware(
 	inboxService *messaging.InboxService,
 	logger *zap.Logger,
@@ -44,10 +42,8 @@ func NewIdempotencyMiddleware(
 	}
 }
 
-// Handler returns the Gin middleware handler
 func (m *IdempotencyMiddleware) Handler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Only apply to non-idempotent methods
 		if !m.shouldApplyIdempotency(c.Request.Method) {
 			c.Next()
 			return
@@ -55,19 +51,16 @@ func (m *IdempotencyMiddleware) Handler() gin.HandlerFunc {
 
 		idempotencyKey := c.GetHeader(IdempotencyKeyHeader)
 		if idempotencyKey == "" {
-			// No idempotency key provided, continue normally
 			c.Next()
 			return
 		}
 
-		// Create unique message ID from idempotency key + request details
 		messageID := m.generateMessageID(c, idempotencyKey)
 		consumerID := m.generateConsumerID(c)
 		eventType := m.generateEventType(c)
 
 		ctx := c.Request.Context()
 
-		// Check if this request has already been processed
 		shouldProcess, err := m.inboxService.ProcessMessageWithDeduplication(
 			ctx,
 			messageID,
@@ -97,7 +90,6 @@ func (m *IdempotencyMiddleware) Handler() gin.HandlerFunc {
 		}
 
 		if !shouldProcess {
-			// Request already processed, return cached response or 409 Conflict
 			if m.logger != nil {
 				m.logger.Info("Duplicate request detected",
 					zap.String("idempotency_key", idempotencyKey),
@@ -118,7 +110,6 @@ func (m *IdempotencyMiddleware) Handler() gin.HandlerFunc {
 			return
 		}
 
-		// Store idempotency context for handlers to access
 		c.Set("idempotency_key", idempotencyKey)
 		c.Set("message_id", messageID.String())
 
@@ -134,9 +125,7 @@ func (m *IdempotencyMiddleware) Handler() gin.HandlerFunc {
 	}
 }
 
-// shouldApplyIdempotency determines if idempotency should be applied to this method
 func (m *IdempotencyMiddleware) shouldApplyIdempotency(method string) bool {
-	// Apply idempotency to non-idempotent HTTP methods
 	switch method {
 	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
 		return true
@@ -145,37 +134,29 @@ func (m *IdempotencyMiddleware) shouldApplyIdempotency(method string) bool {
 	}
 }
 
-// generateMessageID creates a deterministic message ID from the request
 func (m *IdempotencyMiddleware) generateMessageID(c *gin.Context, idempotencyKey string) uuid.UUID {
-	// Create a deterministic UUID from idempotency key + request signature
 	hasher := sha256.New()
 	hasher.Write([]byte(idempotencyKey))
 	hasher.Write([]byte(c.Request.Method))
 	hasher.Write([]byte(c.Request.URL.Path))
 
-	// Include query parameters for uniqueness
 	hasher.Write([]byte(c.Request.URL.RawQuery))
 
 	hash := hex.EncodeToString(hasher.Sum(nil))
 
-	// Create a deterministic UUID from the hash
 	return uuid.NewSHA1(uuid.Nil, []byte(hash))
 }
 
-// generateConsumerID creates a consumer ID for this service instance
 func (m *IdempotencyMiddleware) generateConsumerID(c *gin.Context) string {
-	// Use service name + instance ID or just service name
 	return "http-api"
 }
 
-// generateEventType creates an event type from the HTTP request
 func (m *IdempotencyMiddleware) generateEventType(c *gin.Context) string {
 	return fmt.Sprintf("http.%s.%s",
 		c.Request.Method,
 		c.FullPath()) // Use route pattern, not actual path
 }
 
-// IdempotencyOptions defines configuration for idempotency middleware
 type IdempotencyOptions struct {
 	TTL            time.Duration
 	RequireKey     bool
@@ -184,31 +165,26 @@ type IdempotencyOptions struct {
 	IgnoredMethods []string
 }
 
-// WithOptions creates middleware with custom options
 func (m *IdempotencyMiddleware) WithOptions(options IdempotencyOptions) gin.HandlerFunc {
 	if options.TTL != 0 {
 		m.ttl = options.TTL
 	}
 
 	return func(c *gin.Context) {
-		// Check if path should be ignored
 		if m.shouldIgnorePath(c.Request.URL.Path, options.IgnoredPaths) {
 			c.Next()
 			return
 		}
 
-		// Check if method should be ignored
 		if m.shouldIgnoreMethod(c.Request.Method, options.IgnoredMethods) {
 			c.Next()
 			return
 		}
 
-		// Apply normal idempotency logic with custom options
 		m.handleWithOptions(c, options)
 	}
 }
 
-// shouldIgnorePath checks if the path should be ignored
 func (m *IdempotencyMiddleware) shouldIgnorePath(path string, ignoredPaths []string) bool {
 	for _, ignored := range ignoredPaths {
 		if path == ignored {
@@ -218,7 +194,6 @@ func (m *IdempotencyMiddleware) shouldIgnorePath(path string, ignoredPaths []str
 	return false
 }
 
-// shouldIgnoreMethod checks if the method should be ignored
 func (m *IdempotencyMiddleware) shouldIgnoreMethod(method string, ignoredMethods []string) bool {
 	for _, ignored := range ignoredMethods {
 		if method == ignored {
@@ -228,7 +203,6 @@ func (m *IdempotencyMiddleware) shouldIgnoreMethod(method string, ignoredMethods
 	return false
 }
 
-// handleWithOptions applies idempotency with custom options
 func (m *IdempotencyMiddleware) handleWithOptions(c *gin.Context, options IdempotencyOptions) {
 	idempotencyKey := c.GetHeader(IdempotencyKeyHeader)
 
@@ -250,12 +224,9 @@ func (m *IdempotencyMiddleware) handleWithOptions(c *gin.Context, options Idempo
 		return
 	}
 
-	// Continue with normal idempotency logic...
-	// (Similar to Handler() but with custom TTL from options)
 	m.processWithIdempotency(c, idempotencyKey, options.TTL)
 }
 
-// processWithIdempotency handles the core idempotency logic
 func (m *IdempotencyMiddleware) processWithIdempotency(c *gin.Context, idempotencyKey string, customTTL time.Duration) {
 	ttl := m.ttl
 	if customTTL != 0 {

@@ -14,28 +14,21 @@ import (
 
 func main() {
 	fx.New(
-		// Infrastructure modules
 		infrastructure.InfrastructureModule,
 
-		// Domain layer - temporarily disabled
 		domain.DomainModule,
 
-		// Application layer - temporarily disabled
 		application.ApplicationModule,
 
-		// HTTP handlers - temporarily disabled
 		handlers.HandlerModule,
 
-		// Server
 		presentation.ServerModule,
 
-		// Lifecycle hooks - temporarily disabled due to zap.Logger dependencies
 		fx.Invoke(infrastructure.InfrastructureLifecycle),
 		fx.Invoke(presentation.SetupMiddleware),
 		fx.Invoke(presentation.RegisterRoutes), // Routes after middleware
 		fx.Invoke(presentation.HTTPServerLifecycle),
 
-		// Logger configuration
 		fx.WithLogger(func(customLogger *logger.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{Logger: customLogger.Logger}
 		}),

@@ -228,17 +228,23 @@ This comprehensive guide covers everything you need to know to build, deploy, an
 
 ## Appendices
 
-### [Appendix A: Glossary](book/appendix/glossary.md)
+### [Appendix A: AI Coding Standards](book/appendix/AI_CODING_STANDARDS.md) ⭐ **NEW**
+- Self-Documenting Code Principles
+- Comment Policy (Minimal Comments Only)
+- AI Code Generation Rules
+- Code Review Checklist
+
+### [Appendix B: Glossary](book/appendix/glossary.md)
 - Technical Terms
 - Acronyms
 - Concepts
 
-### [Appendix B: Resources](book/appendix/resources.md)
+### [Appendix C: Resources](book/appendix/resources.md)
 - Further Reading
 - Online Resources
 - Community Links
 
-### [Appendix C: Migration from Legacy](book/appendix/migration.md)
+### [Appendix D: Migration from Legacy](book/appendix/migration.md)
 - Migration Strategies
 - Step-by-Step Guide
 - Common Challenges

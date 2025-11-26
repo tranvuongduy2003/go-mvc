@@ -14,29 +14,23 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
 )
 
-// RecoveryConfig represents recovery middleware configuration
 type RecoveryConfig struct {
 	Logger           *logger.Logger
 	EnableStackTrace bool
 	EnablePanic      bool
 }
 
-// CustomRecoveryMiddleware creates a recovery middleware with structured logging
 func CustomRecoveryMiddleware(config RecoveryConfig) gin.HandlerFunc {
 	return gin.CustomRecoveryWithWriter(nil, func(c *gin.Context, recovered interface{}) {
-		// Get request ID
 		requestID := requestid.Get(c)
 
-		// Build error message
 		err := fmt.Sprintf("Panic recovered: %v", recovered)
 
-		// Get stack trace if enabled
 		var stackTrace string
 		if config.EnableStackTrace {
 			stackTrace = getStackTrace()
 		}
 
-		// Log the panic with structured logging
 		config.Logger.Error("Panic Recovered",
 			zap.String("request_id", requestID),
 			zap.String("method", c.Request.Method),
@@ -47,7 +41,6 @@ func CustomRecoveryMiddleware(config RecoveryConfig) gin.HandlerFunc {
 			zap.String("stack_trace", stackTrace),
 		)
 
-		// Return error response
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":      "Internal server error",
 			"message":    "An unexpected error occurred",
@@ -57,7 +50,6 @@ func CustomRecoveryMiddleware(config RecoveryConfig) gin.HandlerFunc {
 	})
 }
 
-// DefaultRecoveryMiddleware creates a recovery middleware with default configuration
 func DefaultRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return CustomRecoveryMiddleware(RecoveryConfig{
 		Logger:           logger,
@@ -66,7 +58,6 @@ func DefaultRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	})
 }
 
-// ProductionRecoveryMiddleware creates a recovery middleware for production
 func ProductionRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return CustomRecoveryMiddleware(RecoveryConfig{
 		Logger:           logger,
@@ -75,18 +66,14 @@ func ProductionRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	})
 }
 
-// DevelopmentRecoveryMiddleware creates a recovery middleware for development
 func DevelopmentRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				// Get request ID
 				requestID := requestid.Get(c)
 
-				// Get stack trace
 				stackTrace := getStackTrace()
 
-				// Log the panic
 				logger.Error("Panic Recovered (Development)",
 					zap.String("request_id", requestID),
 					zap.String("method", c.Request.Method),
@@ -97,7 +84,6 @@ func DevelopmentRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 					zap.String("stack_trace", stackTrace),
 				)
 
-				// Return detailed error response for development
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error":       "Internal server error",
 					"message":     "An unexpected error occurred",
@@ -113,14 +99,12 @@ func DevelopmentRecoveryMiddleware(logger *logger.Logger) gin.HandlerFunc {
 	}
 }
 
-// getStackTrace returns formatted stack trace
 func getStackTrace() string {
 	buf := make([]byte, 1024*4)
 	n := runtime.Stack(buf, false)
 	return string(buf[:n])
 }
 
-// TimeoutMiddleware adds request timeout
 func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
@@ -129,7 +113,6 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 
-		// Check if context was cancelled due to timeout
 		if ctx.Err() == context.DeadlineExceeded {
 			c.JSON(http.StatusRequestTimeout, gin.H{
 				"error":      "Request timeout",
@@ -143,7 +126,6 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 	}
 }
 
-// HealthCheckMiddleware provides basic health check functionality
 func HealthCheckMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.URL.Path == "/health" {
@@ -159,7 +141,6 @@ func HealthCheckMiddleware() gin.HandlerFunc {
 	}
 }
 
-// MaintenanceMiddleware returns maintenance mode response
 func MaintenanceMiddleware(isMaintenanceMode func() bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if isMaintenanceMode() {
@@ -175,7 +156,6 @@ func MaintenanceMiddleware(isMaintenanceMode func() bool) gin.HandlerFunc {
 	}
 }
 
-// NoRouteMiddleware handles 404 responses
 func NoRouteMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -189,7 +169,6 @@ func NoRouteMiddleware() gin.HandlerFunc {
 	}
 }
 
-// NoMethodMiddleware handles 405 responses
 func NoMethodMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{

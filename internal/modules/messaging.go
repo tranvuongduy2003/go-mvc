@@ -16,50 +16,39 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/presentation/http/middleware"
 )
 
-// MessagingModule provides messaging-related dependencies
 var MessagingModule = fx.Module("messaging",
 	fx.Provide(
-		// Repositories
 		NewOutboxRepository,
 		NewInboxRepository,
 		NewMessageDeduplicationRepository,
 
-		// Services
 		NewOutboxService,
 		NewInboxService,
 
-		// Enhanced NATS Adapter
 		NewDeduplicatedNATSBroker,
 
-		// Background Jobs
 		NewOutboxProcessorJob,
 
-		// Middleware
 		NewIdempotencyMiddleware,
 	),
 )
 
-// NewOutboxRepository creates outbox repository
 func NewOutboxRepository(db *gorm.DB) messaging.OutboxRepository {
 	return postgresMessaging.NewOutboxRepository(db)
 }
 
-// NewInboxRepository creates inbox repository
 func NewInboxRepository(db *gorm.DB) messaging.InboxRepository {
 	return postgresMessaging.NewInboxRepository(db)
 }
 
-// NewMessageDeduplicationRepository creates message deduplication repository
 func NewMessageDeduplicationRepository(db *gorm.DB) messaging.MessageDeduplicationRepository {
 	return postgresMessaging.NewMessageDeduplicationRepository(db)
 }
 
-// NewOutboxService creates outbox service
 func NewOutboxService(outboxRepo messaging.OutboxRepository) *messagingServices.OutboxService {
 	return messagingServices.NewOutboxService(outboxRepo)
 }
 
-// NewInboxService creates inbox service
 func NewInboxService(
 	inboxRepo messaging.InboxRepository,
 	dedupRepo messaging.MessageDeduplicationRepository,
@@ -67,7 +56,6 @@ func NewInboxService(
 	return messagingServices.NewInboxService(inboxRepo, dedupRepo)
 }
 
-// NewDeduplicatedNATSBroker creates enhanced NATS broker with deduplication
 func NewDeduplicatedNATSBroker(
 	natsBroker *natsAdapter.NATSBroker,
 	inboxService *messagingServices.InboxService,
@@ -77,7 +65,6 @@ func NewDeduplicatedNATSBroker(
 	return natsAdapter.NewDeduplicatedNATSBroker(natsBroker, inboxService, consumerID)
 }
 
-// NewOutboxProcessorJob creates outbox processor background job
 func NewOutboxProcessorJob(
 	outboxService *messagingServices.OutboxService,
 	publisher messaging.Publisher,
@@ -94,7 +81,6 @@ func NewOutboxProcessorJob(
 	)
 }
 
-// NewIdempotencyMiddleware creates idempotency middleware
 func NewIdempotencyMiddleware(
 	inboxService *messagingServices.InboxService,
 	logger *zap.Logger,

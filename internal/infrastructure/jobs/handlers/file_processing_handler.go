@@ -10,14 +10,12 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
-// FileProcessingJobHandler handles file processing jobs
 type FileProcessingJobHandler struct {
 	fileService    FileProcessingService
 	storageService StorageService
 	metrics        job.JobMetrics
 }
 
-// FileProcessingService defines the interface for file processing operations
 type FileProcessingService interface {
 	ProcessImage(ctx context.Context, inputPath, outputPath string, options ImageProcessingOptions) error
 	ProcessVideo(ctx context.Context, inputPath, outputPath string, options VideoProcessingOptions) error
@@ -25,7 +23,6 @@ type FileProcessingService interface {
 	ValidateFile(ctx context.Context, filePath string, fileType string) error
 }
 
-// StorageService defines the interface for file storage operations
 type StorageService interface {
 	UploadFile(ctx context.Context, filePath, destination string) error
 	DownloadFile(ctx context.Context, source, destination string) error
@@ -33,7 +30,6 @@ type StorageService interface {
 	GetFileInfo(ctx context.Context, filePath string) (*FileInfo, error)
 }
 
-// Processing options for different file types
 type ImageProcessingOptions struct {
 	Width    int    `json:"width"`
 	Height   int    `json:"height"`
@@ -56,7 +52,6 @@ type DocumentProcessingOptions struct {
 	Watermark   string `json:"watermark"`
 }
 
-// FileInfo represents metadata about a file
 type FileInfo struct {
 	Name      string    `json:"name"`
 	Size      int64     `json:"size"`
@@ -65,7 +60,6 @@ type FileInfo struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// NewFileProcessingJobHandler creates a new file processing job handler
 func NewFileProcessingJobHandler(fileService FileProcessingService, storageService StorageService, metrics job.JobMetrics) *FileProcessingJobHandler {
 	return &FileProcessingJobHandler{
 		fileService:    fileService,
@@ -74,7 +68,6 @@ func NewFileProcessingJobHandler(fileService FileProcessingService, storageServi
 	}
 }
 
-// Execute processes a file processing job
 func (h *FileProcessingJobHandler) Execute(ctx context.Context, excutedJob job.Job) error {
 	start := time.Now()
 	defer func() {
@@ -83,7 +76,6 @@ func (h *FileProcessingJobHandler) Execute(ctx context.Context, excutedJob job.J
 		}
 	}()
 
-	// Cast to FileProcessingJob
 	fileJob, ok := excutedJob.(*job.FileProcessingJob)
 	if !ok {
 		err := fmt.Errorf("expected FileProcessingJob, got %T", excutedJob)
@@ -93,7 +85,6 @@ func (h *FileProcessingJobHandler) Execute(ctx context.Context, excutedJob job.J
 		return err
 	}
 
-	// Extract file processing data
 	payload := fileJob.GetPayload()
 	processingType, _ := payload["processing_type"].(string)
 	inputPath, _ := payload["input_path"].(string)
@@ -110,7 +101,6 @@ func (h *FileProcessingJobHandler) Execute(ctx context.Context, excutedJob job.J
 
 	var err error
 
-	// Handle different processing types
 	switch processingType {
 	case "image":
 		err = h.processImage(ctx, inputPath, outputPath, payload)
@@ -128,12 +118,10 @@ func (h *FileProcessingJobHandler) Execute(ctx context.Context, excutedJob job.J
 		err = fmt.Errorf("unknown processing type: %s", processingType)
 	}
 
-	// Record metrics
 	if h.metrics != nil {
 		success := err == nil
 		h.metrics.IncrementJobsProcessed(excutedJob.GetType(), success)
 
-		// Custom business metrics
 		if businessMetrics, ok := h.metrics.(*BusinessFileMetrics); ok {
 			businessMetrics.RecordFileProcessingJob(processingType, fileType, success)
 		}
@@ -146,15 +134,11 @@ func (h *FileProcessingJobHandler) Execute(ctx context.Context, excutedJob job.J
 	return nil
 }
 
-// GetJobType returns the job type this handler processes
 func (h *FileProcessingJobHandler) GetJobType() string {
 	return "file_processing"
 }
 
-// Private helper methods for different processing types
-
 func (h *FileProcessingJobHandler) processImage(ctx context.Context, inputPath, outputPath string, payload job.JobPayload) error {
-	// Parse image processing options
 	options := ImageProcessingOptions{
 		Width:    getIntFromPayload(payload, "width", 0),
 		Height:   getIntFromPayload(payload, "height", 0),
@@ -163,17 +147,14 @@ func (h *FileProcessingJobHandler) processImage(ctx context.Context, inputPath, 
 		Optimize: getBoolFromPayload(payload, "optimize", true),
 	}
 
-	// Validate input file
 	if err := h.fileService.ValidateFile(ctx, inputPath, "image"); err != nil {
 		return fmt.Errorf("image validation failed: %w", err)
 	}
 
-	// Process the image
 	return h.fileService.ProcessImage(ctx, inputPath, outputPath, options)
 }
 
 func (h *FileProcessingJobHandler) processVideo(ctx context.Context, inputPath, outputPath string, payload job.JobPayload) error {
-	// Parse video processing options
 	options := VideoProcessingOptions{
 		Resolution: getStringFromPayload(payload, "resolution", "720p"),
 		Bitrate:    getStringFromPayload(payload, "bitrate", "1000k"),
@@ -181,17 +162,14 @@ func (h *FileProcessingJobHandler) processVideo(ctx context.Context, inputPath, 
 		Compress:   getBoolFromPayload(payload, "compress", true),
 	}
 
-	// Validate input file
 	if err := h.fileService.ValidateFile(ctx, inputPath, "video"); err != nil {
 		return fmt.Errorf("video validation failed: %w", err)
 	}
 
-	// Process the video
 	return h.fileService.ProcessVideo(ctx, inputPath, outputPath, options)
 }
 
 func (h *FileProcessingJobHandler) processDocument(ctx context.Context, inputPath, outputPath string, payload job.JobPayload) error {
-	// Parse document processing options
 	options := DocumentProcessingOptions{
 		ConvertTo:   getStringFromPayload(payload, "convert_to", "pdf"),
 		ExtractText: getBoolFromPayload(payload, "extract_text", false),
@@ -199,12 +177,10 @@ func (h *FileProcessingJobHandler) processDocument(ctx context.Context, inputPat
 		Watermark:   getStringFromPayload(payload, "watermark", ""),
 	}
 
-	// Validate input file
 	if err := h.fileService.ValidateFile(ctx, inputPath, "document"); err != nil {
 		return fmt.Errorf("document validation failed: %w", err)
 	}
 
-	// Process the document
 	return h.fileService.ProcessDocument(ctx, inputPath, outputPath, options)
 }
 
@@ -254,8 +230,6 @@ func (h *FileProcessingJobHandler) handleBatchProcessing(ctx context.Context, pa
 	return nil
 }
 
-// Helper functions to extract typed values from payload
-
 func getStringFromPayload(payload job.JobPayload, key, defaultValue string) string {
 	if val, ok := payload[key].(string); ok {
 		return val
@@ -280,15 +254,12 @@ func getBoolFromPayload(payload job.JobPayload, key string, defaultValue bool) b
 	return defaultValue
 }
 
-// FileProcessingJobFactory creates file processing jobs with proper validation
 type FileProcessingJobFactory struct{}
 
-// NewFileProcessingJobFactory creates a new file processing job factory
 func NewFileProcessingJobFactory() *FileProcessingJobFactory {
 	return &FileProcessingJobFactory{}
 }
 
-// CreateImageProcessingJob creates an image processing job
 func (f *FileProcessingJobFactory) CreateImageProcessingJob(inputPath, outputPath string, options ImageProcessingOptions) (job.Job, error) {
 	payload := job.JobPayload{
 		"processing_type": "image",
@@ -310,7 +281,6 @@ func (f *FileProcessingJobFactory) CreateImageProcessingJob(inputPath, outputPat
 	return factory.CreateJobWithOptions("file_processing", payload, opts)
 }
 
-// CreateBatchProcessingJob creates a batch file processing job
 func (f *FileProcessingJobFactory) CreateBatchProcessingJob(inputPaths []string, outputDir, processingType string) (job.Job, error) {
 	payload := job.JobPayload{
 		"processing_type":       "batch",
@@ -328,19 +298,13 @@ func (f *FileProcessingJobFactory) CreateBatchProcessingJob(inputPaths []string,
 	return factory.CreateJobWithOptions("file_processing", payload, opts)
 }
 
-// Mock implementations for demonstration
-
-// MockFileProcessingService simulates file processing operations
 type MockFileProcessingService struct{}
 
-// NewMockFileProcessingService creates a new mock file processing service
 func NewMockFileProcessingService() *MockFileProcessingService {
 	return &MockFileProcessingService{}
 }
 
-// ProcessImage simulates image processing
 func (m *MockFileProcessingService) ProcessImage(ctx context.Context, inputPath, outputPath string, options ImageProcessingOptions) error {
-	// Simulate processing time based on complexity
 	processingTime := 500 * time.Millisecond
 	if options.Width > 1000 || options.Height > 1000 {
 		processingTime = 2 * time.Second
@@ -348,7 +312,6 @@ func (m *MockFileProcessingService) ProcessImage(ctx context.Context, inputPath,
 
 	time.Sleep(processingTime)
 
-	// Simulate occasional failures
 	if strings.Contains(inputPath, "corrupt") {
 		return fmt.Errorf("image file appears to be corrupt: %s", inputPath)
 	}
@@ -357,12 +320,9 @@ func (m *MockFileProcessingService) ProcessImage(ctx context.Context, inputPath,
 	return nil
 }
 
-// ProcessVideo simulates video processing
 func (m *MockFileProcessingService) ProcessVideo(ctx context.Context, inputPath, outputPath string, options VideoProcessingOptions) error {
-	// Simulate longer processing time for videos
 	time.Sleep(3 * time.Second)
 
-	// Simulate occasional failures
 	if strings.Contains(inputPath, "unsupported") {
 		return fmt.Errorf("unsupported video format: %s", inputPath)
 	}
@@ -371,26 +331,20 @@ func (m *MockFileProcessingService) ProcessVideo(ctx context.Context, inputPath,
 	return nil
 }
 
-// ProcessDocument simulates document processing
 func (m *MockFileProcessingService) ProcessDocument(ctx context.Context, inputPath, outputPath string, options DocumentProcessingOptions) error {
-	// Simulate processing time
 	time.Sleep(800 * time.Millisecond)
 
 	fmt.Printf("📄 Document processed: %s -> %s (format: %s)\n", inputPath, outputPath, options.ConvertTo)
 	return nil
 }
 
-// ValidateFile simulates file validation
 func (m *MockFileProcessingService) ValidateFile(ctx context.Context, filePath, fileType string) error {
-	// Simulate validation time
 	time.Sleep(100 * time.Millisecond)
 
-	// Check if file exists (simulation)
 	if strings.Contains(filePath, "missing") {
 		return fmt.Errorf("file not found: %s", filePath)
 	}
 
-	// Check file type
 	if !m.isValidFileType(filePath, fileType) {
 		return fmt.Errorf("invalid file type for %s processing: %s", fileType, filePath)
 	}
@@ -398,7 +352,6 @@ func (m *MockFileProcessingService) ValidateFile(ctx context.Context, filePath, 
 	return nil
 }
 
-// isValidFileType simulates file type validation
 func (m *MockFileProcessingService) isValidFileType(filePath, fileType string) bool {
 	ext := strings.ToLower(filepath.Ext(filePath))
 
@@ -414,36 +367,30 @@ func (m *MockFileProcessingService) isValidFileType(filePath, fileType string) b
 	}
 }
 
-// MockStorageService simulates storage operations
 type MockStorageService struct{}
 
-// NewMockStorageService creates a new mock storage service
 func NewMockStorageService() *MockStorageService {
 	return &MockStorageService{}
 }
 
-// UploadFile simulates file upload
 func (m *MockStorageService) UploadFile(ctx context.Context, filePath, destination string) error {
 	time.Sleep(200 * time.Millisecond)
 	fmt.Printf("☁️  File uploaded: %s -> %s\n", filePath, destination)
 	return nil
 }
 
-// DownloadFile simulates file download
 func (m *MockStorageService) DownloadFile(ctx context.Context, source, destination string) error {
 	time.Sleep(300 * time.Millisecond)
 	fmt.Printf("⬇️  File downloaded: %s -> %s\n", source, destination)
 	return nil
 }
 
-// DeleteFile simulates file deletion
 func (m *MockStorageService) DeleteFile(ctx context.Context, filePath string) error {
 	time.Sleep(50 * time.Millisecond)
 	fmt.Printf("🗑️  File deleted: %s\n", filePath)
 	return nil
 }
 
-// GetFileInfo simulates getting file information
 func (m *MockStorageService) GetFileInfo(ctx context.Context, filePath string) (*FileInfo, error) {
 	time.Sleep(50 * time.Millisecond)
 
@@ -456,13 +403,11 @@ func (m *MockStorageService) GetFileInfo(ctx context.Context, filePath string) (
 	}, nil
 }
 
-// BusinessFileMetrics extends the basic metrics with file-specific metrics
 type BusinessFileMetrics struct {
 	job.JobMetrics
 	fileProcessingCounts map[string]map[string]int64 // processing_type -> file_type -> count
 }
 
-// NewBusinessFileMetrics creates enhanced file processing metrics
 func NewBusinessFileMetrics(baseMetrics job.JobMetrics) *BusinessFileMetrics {
 	return &BusinessFileMetrics{
 		JobMetrics:           baseMetrics,
@@ -470,7 +415,6 @@ func NewBusinessFileMetrics(baseMetrics job.JobMetrics) *BusinessFileMetrics {
 	}
 }
 
-// RecordFileProcessingJob records file processing-specific metrics
 func (m *BusinessFileMetrics) RecordFileProcessingJob(processingType, fileType string, success bool) {
 	if success {
 		if m.fileProcessingCounts[processingType] == nil {

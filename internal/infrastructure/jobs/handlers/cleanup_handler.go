@@ -8,7 +8,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
-// DataCleanupJobHandler handles data cleanup and maintenance jobs
 type DataCleanupJobHandler struct {
 	userService    UserCleanupService
 	sessionService SessionCleanupService
@@ -17,7 +16,6 @@ type DataCleanupJobHandler struct {
 	metrics        job.JobMetrics
 }
 
-// Cleanup service interfaces
 type UserCleanupService interface {
 	CleanupInactiveUsers(ctx context.Context, inactiveDays int) (int, error)
 	CleanupUnverifiedUsers(ctx context.Context, unverifiedDays int) (int, error)
@@ -41,7 +39,6 @@ type LogCleanupService interface {
 	RotateLogs(ctx context.Context) error
 }
 
-// NewDataCleanupJobHandler creates a new data cleanup job handler
 func NewDataCleanupJobHandler(
 	userService UserCleanupService,
 	sessionService SessionCleanupService,
@@ -58,7 +55,6 @@ func NewDataCleanupJobHandler(
 	}
 }
 
-// Execute processes a data cleanup job
 func (h *DataCleanupJobHandler) Execute(ctx context.Context, excutedJob job.Job) error {
 	start := time.Now()
 	defer func() {
@@ -67,7 +63,6 @@ func (h *DataCleanupJobHandler) Execute(ctx context.Context, excutedJob job.Job)
 		}
 	}()
 
-	// Cast to DataCleanupJob
 	cleanupJob, ok := excutedJob.(*job.DataCleanupJob)
 	if !ok {
 		err := fmt.Errorf("expected DataCleanupJob, got %T", excutedJob)
@@ -77,14 +72,12 @@ func (h *DataCleanupJobHandler) Execute(ctx context.Context, excutedJob job.Job)
 		return err
 	}
 
-	// Extract cleanup data
 	payload := cleanupJob.GetPayload()
 	cleanupType, _ := payload["cleanup_type"].(string)
 
 	var err error
 	var itemsProcessed int
 
-	// Handle different cleanup types
 	switch cleanupType {
 	case "users":
 		itemsProcessed, err = h.cleanupUsers(ctx, payload)
@@ -102,12 +95,10 @@ func (h *DataCleanupJobHandler) Execute(ctx context.Context, excutedJob job.Job)
 		err = fmt.Errorf("unknown cleanup type: %s", cleanupType)
 	}
 
-	// Record metrics
 	if h.metrics != nil {
 		success := err == nil
 		h.metrics.IncrementJobsProcessed(excutedJob.GetType(), success)
 
-		// Custom business metrics
 		if businessMetrics, ok := h.metrics.(*BusinessCleanupMetrics); ok {
 			businessMetrics.RecordCleanupJob(cleanupType, itemsProcessed, success)
 		}
@@ -121,12 +112,9 @@ func (h *DataCleanupJobHandler) Execute(ctx context.Context, excutedJob job.Job)
 	return nil
 }
 
-// GetJobType returns the job type this handler processes
 func (h *DataCleanupJobHandler) GetJobType() string {
 	return "data_cleanup"
 }
-
-// Private helper methods for different cleanup types
 
 func (h *DataCleanupJobHandler) cleanupUsers(ctx context.Context, payload job.JobPayload) (int, error) {
 	userCleanupType, _ := payload["user_cleanup_type"].(string)
@@ -141,24 +129,20 @@ func (h *DataCleanupJobHandler) cleanupUsers(ctx context.Context, payload job.Jo
 	case "deleted":
 		return h.userService.CleanupDeletedUsers(ctx)
 	default:
-		// Clean up all user-related data
 		total := 0
 
-		// Clean inactive users (default 90 days)
 		if count, err := h.userService.CleanupInactiveUsers(ctx, 90); err != nil {
 			return 0, fmt.Errorf("failed to cleanup inactive users: %w", err)
 		} else {
 			total += count
 		}
 
-		// Clean unverified users (default 30 days)
 		if count, err := h.userService.CleanupUnverifiedUsers(ctx, 30); err != nil {
 			return total, fmt.Errorf("failed to cleanup unverified users: %w", err)
 		} else {
 			total += count
 		}
 
-		// Clean deleted users
 		if count, err := h.userService.CleanupDeletedUsers(ctx); err != nil {
 			return total, fmt.Errorf("failed to cleanup deleted users: %w", err)
 		} else {
@@ -178,17 +162,14 @@ func (h *DataCleanupJobHandler) cleanupSessions(ctx context.Context, payload job
 	case "orphaned":
 		return h.sessionService.CleanupOrphanedSessions(ctx)
 	default:
-		// Clean up all session-related data
 		total := 0
 
-		// Clean expired sessions
 		if count, err := h.sessionService.CleanupExpiredSessions(ctx); err != nil {
 			return 0, fmt.Errorf("failed to cleanup expired sessions: %w", err)
 		} else {
 			total += count
 		}
 
-		// Clean orphaned sessions
 		if count, err := h.sessionService.CleanupOrphanedSessions(ctx); err != nil {
 			return total, fmt.Errorf("failed to cleanup orphaned sessions: %w", err)
 		} else {
@@ -212,17 +193,14 @@ func (h *DataCleanupJobHandler) cleanupFiles(ctx context.Context, payload job.Jo
 		sizeLimitMB := getIntFromPayload(payload, "size_limit_mb", 100)
 		return h.fileService.CleanupLargeFiles(ctx, sizeLimitMB)
 	default:
-		// Clean up all file-related data
 		total := 0
 
-		// Clean temp files (older than 24 hours)
 		if count, err := h.fileService.CleanupTempFiles(ctx, 24); err != nil {
 			return 0, fmt.Errorf("failed to cleanup temp files: %w", err)
 		} else {
 			total += count
 		}
 
-		// Clean orphaned files
 		if count, err := h.fileService.CleanupOrphanedFiles(ctx); err != nil {
 			return total, fmt.Errorf("failed to cleanup orphaned files: %w", err)
 		} else {
@@ -248,23 +226,19 @@ func (h *DataCleanupJobHandler) cleanupLogs(ctx context.Context, payload job.Job
 		err := h.logService.RotateLogs(ctx)
 		return 1, err // Return 1 as a placeholder for rotation
 	default:
-		// Perform all log maintenance
 		total := 0
 
-		// Rotate logs first
 		if err := h.logService.RotateLogs(ctx); err != nil {
 			return 0, fmt.Errorf("failed to rotate logs: %w", err)
 		}
 		total++
 
-		// Compress old logs (older than 7 days)
 		if count, err := h.logService.CompressOldLogs(ctx, 7); err != nil {
 			return total, fmt.Errorf("failed to compress old logs: %w", err)
 		} else {
 			total += count
 		}
 
-		// Clean old logs (older than 30 days)
 		if count, err := h.logService.CleanupOldLogs(ctx, 30); err != nil {
 			return total, fmt.Errorf("failed to cleanup old logs: %w", err)
 		} else {
@@ -278,28 +252,24 @@ func (h *DataCleanupJobHandler) cleanupLogs(ctx context.Context, payload job.Job
 func (h *DataCleanupJobHandler) performFullSystemCleanup(ctx context.Context, payload job.JobPayload) (int, error) {
 	total := 0
 
-	// User cleanup
 	if count, err := h.cleanupUsers(ctx, map[string]interface{}{}); err != nil {
 		return total, fmt.Errorf("user cleanup failed: %w", err)
 	} else {
 		total += count
 	}
 
-	// Session cleanup
 	if count, err := h.cleanupSessions(ctx, map[string]interface{}{}); err != nil {
 		return total, fmt.Errorf("session cleanup failed: %w", err)
 	} else {
 		total += count
 	}
 
-	// File cleanup
 	if count, err := h.cleanupFiles(ctx, map[string]interface{}{}); err != nil {
 		return total, fmt.Errorf("file cleanup failed: %w", err)
 	} else {
 		total += count
 	}
 
-	// Log cleanup
 	if count, err := h.cleanupLogs(ctx, map[string]interface{}{}); err != nil {
 		return total, fmt.Errorf("log cleanup failed: %w", err)
 	} else {
@@ -310,37 +280,24 @@ func (h *DataCleanupJobHandler) performFullSystemCleanup(ctx context.Context, pa
 }
 
 func (h *DataCleanupJobHandler) cleanupDatabase(ctx context.Context, payload job.JobPayload) (int, error) {
-	// This could include database-specific cleanup operations
-	// like optimizing tables, updating statistics, etc.
 
-	// Simulate database cleanup operations
 	time.Sleep(2 * time.Second)
-
-	// In a real implementation, this would:
-	// - Optimize database tables
-	// - Update table statistics
-	// - Clean up database logs
-	// - Defragment indexes
 
 	return 10, nil // Placeholder for database operations performed
 }
 
-// DataCleanupJobFactory creates data cleanup jobs with proper validation
 type DataCleanupJobFactory struct{}
 
-// NewDataCleanupJobFactory creates a new data cleanup job factory
 func NewDataCleanupJobFactory() *DataCleanupJobFactory {
 	return &DataCleanupJobFactory{}
 }
 
-// CreateUserCleanupJob creates a user cleanup job
 func (f *DataCleanupJobFactory) CreateUserCleanupJob(cleanupType string, params map[string]interface{}) (job.Job, error) {
 	payload := job.JobPayload{
 		"cleanup_type":      "users",
 		"user_cleanup_type": cleanupType,
 	}
 
-	// Add type-specific parameters
 	for key, value := range params {
 		payload[key] = value
 	}
@@ -354,7 +311,6 @@ func (f *DataCleanupJobFactory) CreateUserCleanupJob(cleanupType string, params 
 	return factory.CreateJobWithOptions("data_cleanup", payload, opts)
 }
 
-// CreateScheduledCleanupJob creates a recurring cleanup job
 func (f *DataCleanupJobFactory) CreateScheduledCleanupJob(cleanupType string) (job.Job, error) {
 	payload := job.JobPayload{
 		"cleanup_type": cleanupType,
@@ -369,7 +325,6 @@ func (f *DataCleanupJobFactory) CreateScheduledCleanupJob(cleanupType string) (j
 	return factory.CreateJobWithOptions("data_cleanup", payload, opts)
 }
 
-// CreateFullSystemCleanupJob creates a comprehensive system cleanup job
 func (f *DataCleanupJobFactory) CreateFullSystemCleanupJob() (job.Job, error) {
 	payload := job.JobPayload{
 		"cleanup_type": "full_system",
@@ -384,9 +339,6 @@ func (f *DataCleanupJobFactory) CreateFullSystemCleanupJob() (job.Job, error) {
 	return factory.CreateJobWithOptions("data_cleanup", payload, opts)
 }
 
-// Mock implementations for demonstration
-
-// MockUserCleanupService simulates user cleanup operations
 type MockUserCleanupService struct{}
 
 func NewMockUserCleanupService() *MockUserCleanupService {
@@ -414,7 +366,6 @@ func (m *MockUserCleanupService) CleanupDeletedUsers(ctx context.Context) (int, 
 	return count, nil
 }
 
-// MockSessionCleanupService simulates session cleanup operations
 type MockSessionCleanupService struct{}
 
 func NewMockSessionCleanupService() *MockSessionCleanupService {
@@ -435,7 +386,6 @@ func (m *MockSessionCleanupService) CleanupOrphanedSessions(ctx context.Context)
 	return count, nil
 }
 
-// MockFileCleanupService simulates file cleanup operations
 type MockFileCleanupService struct{}
 
 func NewMockFileCleanupService() *MockFileCleanupService {
@@ -463,7 +413,6 @@ func (m *MockFileCleanupService) CleanupLargeFiles(ctx context.Context, sizeLimi
 	return count, nil
 }
 
-// MockLogCleanupService simulates log cleanup operations
 type MockLogCleanupService struct{}
 
 func NewMockLogCleanupService() *MockLogCleanupService {
@@ -490,14 +439,12 @@ func (m *MockLogCleanupService) RotateLogs(ctx context.Context) error {
 	return nil
 }
 
-// BusinessCleanupMetrics extends the basic metrics with cleanup-specific metrics
 type BusinessCleanupMetrics struct {
 	job.JobMetrics
 	cleanupCounts  map[string]int64 // cleanup_type -> count
 	itemsProcessed map[string]int64 // cleanup_type -> total items processed
 }
 
-// NewBusinessCleanupMetrics creates enhanced cleanup metrics
 func NewBusinessCleanupMetrics(baseMetrics job.JobMetrics) *BusinessCleanupMetrics {
 	return &BusinessCleanupMetrics{
 		JobMetrics:     baseMetrics,
@@ -506,7 +453,6 @@ func NewBusinessCleanupMetrics(baseMetrics job.JobMetrics) *BusinessCleanupMetri
 	}
 }
 
-// RecordCleanupJob records cleanup-specific metrics
 func (m *BusinessCleanupMetrics) RecordCleanupJob(cleanupType string, itemsProcessed int, success bool) {
 	if success {
 		m.cleanupCounts[cleanupType]++

@@ -17,11 +17,9 @@ var (
 	translator ut.Translator
 )
 
-// InitValidator initializes the validator with custom rules and translations
 func InitValidator() error {
 	validate = validator.New()
 
-	// Register function to get tag name from json tag
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
@@ -30,7 +28,6 @@ func InitValidator() error {
 		return name
 	})
 
-	// Initialize translator
 	english := en.New()
 	uni := ut.New(english, english)
 	var found bool
@@ -39,15 +36,12 @@ func InitValidator() error {
 		return fmt.Errorf("translator not found")
 	}
 
-	// Register default translations
 	if err := en_translations.RegisterDefaultTranslations(validate, translator); err != nil {
 		return fmt.Errorf("failed to register translations: %w", err)
 	}
 
-	// Register custom validations
 	registerCustomValidations()
 
-	// Set validator for Gin
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		*v = *validate
 	}
@@ -55,7 +49,6 @@ func InitValidator() error {
 	return nil
 }
 
-// ValidateStruct validates a struct and returns validation errors
 func ValidateStruct(data interface{}) map[string]string {
 	errors := make(map[string]string)
 
@@ -69,9 +62,7 @@ func ValidateStruct(data interface{}) map[string]string {
 	return errors
 }
 
-// registerCustomValidations registers custom validation rules
 func registerCustomValidations() {
-	// Password validation
 	validate.RegisterValidation("password", func(fl validator.FieldLevel) bool {
 		password := fl.Field().String()
 		return len(password) >= 8 &&
@@ -81,7 +72,6 @@ func registerCustomValidations() {
 			strings.ContainsAny(password, "!@#$%^&*()_+-=[]{}|;:,.<>?")
 	})
 
-	// Register custom message for password validation
 	validate.RegisterTranslation("password", translator, func(ut ut.Translator) error {
 		return ut.Add("password", "{0} must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character", true)
 	}, func(ut ut.Translator, fe validator.FieldError) string {
@@ -89,10 +79,8 @@ func registerCustomValidations() {
 		return t
 	})
 
-	// Phone number validation
 	validate.RegisterValidation("phone", func(fl validator.FieldLevel) bool {
 		phone := fl.Field().String()
-		// Simple phone validation - can be enhanced based on requirements
 		return len(phone) >= 10 && len(phone) <= 15 && strings.HasPrefix(phone, "+")
 	})
 

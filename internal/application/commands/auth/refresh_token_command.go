@@ -7,32 +7,26 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
-// RefreshTokenCommand represents the refresh token command
 type RefreshTokenCommand struct {
 	RefreshToken string `validate:"required"`
 }
 
-// RefreshTokenCommandHandler handles the RefreshTokenCommand
 type RefreshTokenCommandHandler struct {
 	authService contracts.AuthService
 }
 
-// NewRefreshTokenCommandHandler creates a new RefreshTokenCommandHandler
 func NewRefreshTokenCommandHandler(authService contracts.AuthService) *RefreshTokenCommandHandler {
 	return &RefreshTokenCommandHandler{
 		authService: authService,
 	}
 }
 
-// Handle executes the RefreshTokenCommand
 func (h *RefreshTokenCommandHandler) Handle(ctx context.Context, cmd RefreshTokenCommand) (*dto.RefreshTokenResponse, error) {
-	// Refresh token
 	tokens, err := h.authService.RefreshToken(ctx, cmd.RefreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert to response DTO
 	return &dto.RefreshTokenResponse{
 		Tokens: dto.TokensDTO{
 			AccessToken:           tokens.AccessToken,

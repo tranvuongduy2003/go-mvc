@@ -6,34 +6,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SecurityHeaders adds security headers to responses
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// X-Content-Type-Options: Prevent MIME sniffing
 		c.Header("X-Content-Type-Options", "nosniff")
 
-		// X-Frame-Options: Prevent clickjacking
 		c.Header("X-Frame-Options", "DENY")
 
-		// X-XSS-Protection: Enable XSS protection
 		c.Header("X-XSS-Protection", "1; mode=block")
 
-		// Strict-Transport-Security: Force HTTPS
 		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
-		// Content-Security-Policy: Prevent XSS and injection attacks
 		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';")
 
-		// Referrer-Policy: Control referrer information
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 
-		// Permissions-Policy: Control browser features
 		c.Header("Permissions-Policy", "camera=(), microphone=(), geolocation=(), interest-cohort=()")
 
-		// X-Permitted-Cross-Domain-Policies: Control Adobe Flash/PDF cross-domain access
 		c.Header("X-Permitted-Cross-Domain-Policies", "none")
 
-		// Cache-Control: Prevent caching of sensitive data
 		if c.Request.URL.Path != "/health" && c.Request.URL.Path != "/metrics" {
 			c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 			c.Header("Pragma", "no-cache")
@@ -44,32 +34,26 @@ func SecurityHeaders() gin.HandlerFunc {
 	}
 }
 
-// SecureHeaders adds comprehensive security headers for production
 func SecureHeaders(config SecurityConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Basic security headers
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", config.FrameOptions)
 		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("Referrer-Policy", config.ReferrerPolicy)
 		c.Header("X-Permitted-Cross-Domain-Policies", "none")
 
-		// HSTS (only if HTTPS)
 		if c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https" {
 			c.Header("Strict-Transport-Security", config.HSTSMaxAge)
 		}
 
-		// CSP
 		if config.CSP != "" {
 			c.Header("Content-Security-Policy", config.CSP)
 		}
 
-		// Permissions Policy
 		if config.PermissionsPolicy != "" {
 			c.Header("Permissions-Policy", config.PermissionsPolicy)
 		}
 
-		// Custom headers
 		for key, value := range config.CustomHeaders {
 			c.Header(key, value)
 		}
@@ -78,7 +62,6 @@ func SecureHeaders(config SecurityConfig) gin.HandlerFunc {
 	}
 }
 
-// SecurityConfig represents security middleware configuration
 type SecurityConfig struct {
 	FrameOptions      string
 	ReferrerPolicy    string
@@ -88,7 +71,6 @@ type SecurityConfig struct {
 	CustomHeaders     map[string]string
 }
 
-// DefaultSecurityConfig returns default security configuration
 func DefaultSecurityConfig() SecurityConfig {
 	return SecurityConfig{
 		FrameOptions:      "DENY",
@@ -102,7 +84,6 @@ func DefaultSecurityConfig() SecurityConfig {
 	}
 }
 
-// APIKeyAuthMiddleware validates API keys
 func APIKeyAuthMiddleware(validAPIKeys map[string]string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey := c.GetHeader("X-API-Key")
@@ -116,9 +97,7 @@ func APIKeyAuthMiddleware(validAPIKeys map[string]string) gin.HandlerFunc {
 			return
 		}
 
-		// Validate API key
 		if clientName, exists := validAPIKeys[apiKey]; exists {
-			// Set client information in context
 			c.Set("api_key", apiKey)
 			c.Set("client_name", clientName)
 			c.Next()
@@ -133,12 +112,10 @@ func APIKeyAuthMiddleware(validAPIKeys map[string]string) gin.HandlerFunc {
 	}
 }
 
-// BasicAuthMiddleware provides basic HTTP authentication
 func BasicAuthMiddleware(users map[string]string) gin.HandlerFunc {
 	return gin.BasicAuth(users)
 }
 
-// IPWhitelistMiddleware restricts access to whitelisted IPs
 func IPWhitelistMiddleware(allowedIPs []string) gin.HandlerFunc {
 	ipMap := make(map[string]bool)
 	for _, ip := range allowedIPs {
@@ -163,7 +140,6 @@ func IPWhitelistMiddleware(allowedIPs []string) gin.HandlerFunc {
 	}
 }
 
-// SizeLimit middleware limits request body size
 func SizeLimit(maxSize int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.ContentLength > maxSize {
@@ -182,7 +158,6 @@ func SizeLimit(maxSize int64) gin.HandlerFunc {
 	}
 }
 
-// ContentTypeMiddleware enforces content type validation
 func ContentTypeMiddleware(allowedTypes []string) gin.HandlerFunc {
 	typeMap := make(map[string]bool)
 	for _, contentType := range allowedTypes {

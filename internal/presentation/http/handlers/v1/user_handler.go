@@ -13,13 +13,11 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/pkg/response"
 )
 
-// UserHandler handles HTTP requests for user operations
 type UserHandler struct {
 	userService   *services.UserService
 	userValidator userValidators.IUserValidator
 }
 
-// NewUserHandler creates a new UserHandler
 func NewUserHandler(userService *services.UserService, userValidator userValidators.IUserValidator) *UserHandler {
 	return &UserHandler{
 		userService:   userService,
@@ -27,18 +25,6 @@ func NewUserHandler(userService *services.UserService, userValidator userValidat
 	}
 }
 
-// CreateUser creates a new user
-// @Summary Create a new user
-// @Description Create a new user with email, name, phone and password
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param user body dto.CreateUserRequest true "User creation data"
-// @Success 201 {object} response.APIResponse{data=dto.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 409 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var req userDto.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -46,7 +32,6 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// Validate request
 	if validationErrors := h.userValidator.ValidateCreateUserRequest(req); len(validationErrors) > 0 {
 		response.ValidationError(c, validationErrors)
 		return
@@ -61,18 +46,6 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	response.Created(c, user)
 }
 
-// GetUserByID retrieves a user by ID
-// @Summary Get user by ID
-// @Description Get a user by their unique ID
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param id path string true "User ID"
-// @Success 200 {object} response.APIResponse{data=dto.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users/{id} [get]
 func (h *UserHandler) GetUserByID(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -89,19 +62,6 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 	response.Success(c, user)
 }
 
-// UpdateUser updates an existing user
-// @Summary Update user
-// @Description Update an existing user's information
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param id path string true "User ID"
-// @Param user body dto.UpdateUserRequest true "User update data"
-// @Success 200 {object} response.APIResponse{data=dto.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -115,7 +75,6 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// Validate request
 	if validationErrors := h.userValidator.ValidateUpdateUserRequest(req); len(validationErrors) > 0 {
 		response.ValidationError(c, validationErrors)
 		return
@@ -130,18 +89,6 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	response.Success(c, user)
 }
 
-// DeleteUser deletes a user
-// @Summary Delete user
-// @Description Delete a user by their ID
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param id path string true "User ID"
-// @Success 200 {object} response.APIResponse
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users/{id} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -158,24 +105,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	response.SuccessWithMessage(c, "User deleted successfully", nil)
 }
 
-// ListUsers retrieves a paginated list of users
-// @Summary List users
-// @Description Get a paginated list of users with optional filters
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param page query int false "Page number" default(1)
-// @Param limit query int false "Items per page" default(10)
-// @Param search query string false "Search term"
-// @Param sort_by query string false "Sort field" default(created_at)
-// @Param sort_dir query string false "Sort direction (asc/desc)" default(desc)
-// @Param is_active query bool false "Filter by active status"
-// @Success 200 {object} response.APIResponse{data=dto.ListUsersResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users [get]
 func (h *UserHandler) ListUsers(c *gin.Context) {
-	// Parse query parameters
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	search := c.Query("search")
@@ -198,7 +128,6 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		IsActive: isActive,
 	}
 
-	// Validate request
 	if validationErrors := h.userValidator.ValidateListUsersRequest(req); len(validationErrors) > 0 {
 		response.ValidationError(c, validationErrors)
 		return
@@ -210,7 +139,6 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		return
 	}
 
-	// Convert pagination DTO to response pagination
 	pag := &pagination.Pagination{
 		Page:     result.Pagination.Page,
 		PageSize: result.Pagination.PageSize,
@@ -221,19 +149,6 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	response.SuccessWithPagination(c, result.Users, pag)
 }
 
-// UploadAvatar uploads user avatar
-// @Summary Upload user avatar
-// @Description Upload an avatar image for a user
-// @Tags users
-// @Accept multipart/form-data
-// @Produce json
-// @Param id path string true "User ID"
-// @Param avatar formData file true "Avatar image file"
-// @Success 200 {object} response.APIResponse{data=dto.UserResponse}
-// @Failure 400 {object} response.APIResponse
-// @Failure 404 {object} response.APIResponse
-// @Failure 500 {object} response.APIResponse
-// @Router /api/v1/users/{id}/avatar [post]
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -241,7 +156,6 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// Get file from form
 	file, header, err := c.Request.FormFile("avatar")
 	if err != nil {
 		response.Error(c, apperrors.NewValidationError("Avatar file is required", err))
@@ -249,14 +163,12 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// Validate file size (e.g., max 5MB)
 	const maxFileSize = 5 * 1024 * 1024 // 5MB
 	if header.Size > maxFileSize {
 		response.Error(c, apperrors.NewValidationError("File size exceeds 5MB limit", nil))
 		return
 	}
 
-	// Call service to handle avatar upload
 	user, err := h.userService.UploadAvatar(c.Request.Context(), id, file, header)
 	if err != nil {
 		response.Error(c, err)

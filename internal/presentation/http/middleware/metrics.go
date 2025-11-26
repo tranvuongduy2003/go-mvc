@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	// HTTP metrics
 	httpRequestsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
@@ -53,7 +52,6 @@ var (
 		[]string{"method", "endpoint"},
 	)
 
-	// Application metrics
 	activeConnections = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "active_connections",
@@ -78,16 +76,13 @@ var (
 	)
 )
 
-// PrometheusMiddleware collects HTTP metrics for Prometheus
 func PrometheusMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
-		// Increment in-flight requests
 		httpRequestsInFlight.Inc()
 		defer httpRequestsInFlight.Dec()
 
-		// Record request size
 		if c.Request.ContentLength > 0 {
 			httpRequestSize.WithLabelValues(
 				c.Request.Method,
@@ -95,13 +90,10 @@ func PrometheusMiddleware() gin.HandlerFunc {
 			).Observe(float64(c.Request.ContentLength))
 		}
 
-		// Process request
 		c.Next()
 
-		// Calculate duration
 		duration := time.Since(start).Seconds()
 
-		// Get response size
 		responseSize := c.Writer.Size()
 		if responseSize > 0 {
 			httpResponseSize.WithLabelValues(
@@ -110,7 +102,6 @@ func PrometheusMiddleware() gin.HandlerFunc {
 			).Observe(float64(responseSize))
 		}
 
-		// Record metrics
 		httpRequestsTotal.WithLabelValues(
 			c.Request.Method,
 			c.FullPath(),
@@ -124,39 +115,32 @@ func PrometheusMiddleware() gin.HandlerFunc {
 	}
 }
 
-// RecordDatabaseConnection records database connection metrics
 func RecordDatabaseConnection(state string, count float64) {
 	databaseConnections.WithLabelValues(state).Set(count)
 }
 
-// RecordCacheOperation records cache operation metrics
 func RecordCacheOperation(operation, result string) {
 	cacheOperations.WithLabelValues(operation, result).Inc()
 }
 
-// RecordActiveConnections records active connection count
 func RecordActiveConnections(count float64) {
 	activeConnections.Set(count)
 }
 
-// CustomMetrics allows applications to register custom metrics
 type CustomMetrics struct {
 	Registry *prometheus.Registry
 }
 
-// NewCustomMetrics creates a new custom metrics registry
 func NewCustomMetrics() *CustomMetrics {
 	return &CustomMetrics{
 		Registry: prometheus.NewRegistry(),
 	}
 }
 
-// MustRegister registers metrics with the custom registry
 func (cm *CustomMetrics) MustRegister(collectors ...prometheus.Collector) {
 	cm.Registry.MustRegister(collectors...)
 }
 
-// BusinessMetricsMiddleware collects business-specific metrics
 func BusinessMetricsMiddleware() gin.HandlerFunc {
 	userActions := promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -169,7 +153,6 @@ func BusinessMetricsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
-		// Extract user ID from context if available
 		userID := "anonymous"
 		if uid, exists := c.Get("user_id"); exists {
 			if id, ok := uid.(string); ok {
@@ -177,7 +160,6 @@ func BusinessMetricsMiddleware() gin.HandlerFunc {
 			}
 		}
 
-		// Record user action based on endpoint
 		action := "unknown"
 		switch c.FullPath() {
 		case "/api/v1/users":

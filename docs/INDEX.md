@@ -33,9 +33,14 @@ Quick access to all Go MVC documentation.
 - [AI Quick Start](book/05-ai-development/01-ai-quick-start.md) - Code generation intro
 - [API Generation Rules](book/05-ai-development/02-api-generation-rules.md) - AI templates
 - [Code Generation Guidelines](book/05-ai-development/03-code-generation-guidelines.md) - Layer guides
+- **[AI Coding Standards](book/appendix/AI_CODING_STANDARDS.md)** ⭐ **MUST READ** - Self-documenting code principles
 
 ### Operations
 - [Deployment Guide](book/06-operations/01-deployment.md) - Production deployment
+
+### Appendix
+- **[AI Coding Standards](book/appendix/AI_CODING_STANDARDS.md)** ⭐ - Essential for all developers
+- [Glossary](book/appendix/glossary.md) - Technical terms
 
 ## 📂 Original Documentation
 

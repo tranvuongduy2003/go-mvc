@@ -10,7 +10,6 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// RateLimiter represents a rate limiter for different endpoints
 type RateLimiter struct {
 	limiters map[string]*rate.Limiter
 	mu       sync.RWMutex
@@ -18,7 +17,6 @@ type RateLimiter struct {
 	burst    int
 }
 
-// NewRateLimiter creates a new rate limiter
 func NewRateLimiter(rps int, burst int) *RateLimiter {
 	return &RateLimiter{
 		limiters: make(map[string]*rate.Limiter),
@@ -27,7 +25,6 @@ func NewRateLimiter(rps int, burst int) *RateLimiter {
 	}
 }
 
-// getLimiter returns the rate limiter for a given key (IP address)
 func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
@@ -41,10 +38,8 @@ func (rl *RateLimiter) getLimiter(key string) *rate.Limiter {
 	return limiter
 }
 
-// RateLimitMiddleware returns a Gin middleware for rate limiting
 func (rl *RateLimiter) RateLimitMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Use client IP as the key
 		key := c.ClientIP()
 		limiter := rl.getLimiter(key)
 
@@ -62,7 +57,6 @@ func (rl *RateLimiter) RateLimitMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Add rate limit headers
 		c.Header("X-RateLimit-Limit", fmt.Sprintf("%.0f", float64(rl.rate)))
 		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%.0f", limiter.Tokens()))
 
@@ -70,20 +64,17 @@ func (rl *RateLimiter) RateLimitMiddleware() gin.HandlerFunc {
 	}
 }
 
-// CleanupOldLimiters removes old limiters to prevent memory leaks
 func (rl *RateLimiter) CleanupOldLimiters() {
 	ticker := time.NewTicker(time.Hour)
 	go func() {
 		for range ticker.C {
 			rl.mu.Lock()
-			// Clear all limiters - they will be recreated as needed
 			rl.limiters = make(map[string]*rate.Limiter)
 			rl.mu.Unlock()
 		}
 	}()
 }
 
-// GlobalRateLimitMiddleware creates a simple global rate limit middleware
 func GlobalRateLimitMiddleware(rps int, burst int) gin.HandlerFunc {
 	limiter := rate.NewLimiter(rate.Limit(rps), burst)
 
@@ -102,7 +93,6 @@ func GlobalRateLimitMiddleware(rps int, burst int) gin.HandlerFunc {
 			return
 		}
 
-		// Add rate limit headers for successful requests
 		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", rps))
 		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%.0f", limiter.Tokens()))
 
@@ -110,7 +100,6 @@ func GlobalRateLimitMiddleware(rps int, burst int) gin.HandlerFunc {
 	}
 }
 
-// APIKeyRateLimitMiddleware creates rate limit based on API key
 func APIKeyRateLimitMiddleware(rps int, burst int) gin.HandlerFunc {
 	limiters := make(map[string]*rate.Limiter)
 	mu := sync.RWMutex{}

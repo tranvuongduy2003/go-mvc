@@ -2,48 +2,32 @@ package contracts
 
 import "context"
 
-// UserCommandService handles user write operations
-// Following Single Responsibility Principle - separated from query operations
 type UserCommandService interface {
-	// CreateUser creates a new user account
 	CreateUser(ctx context.Context, req CreateUserRequest) (UserResponse, error)
 
-	// UpdateUser updates an existing user's profile
 	UpdateUser(ctx context.Context, userID string, req UpdateUserRequest) (UserResponse, error)
 
-	// DeleteUser removes a user account
 	DeleteUser(ctx context.Context, userID string) error
 
-	// UploadAvatar uploads and updates user avatar
 	UploadAvatar(ctx context.Context, userID string, req UploadAvatarRequest) (UserResponse, error)
 
-	// ActivateUser activates a deactivated user
 	ActivateUser(ctx context.Context, userID string) error
 
-	// DeactivateUser deactivates an active user
 	DeactivateUser(ctx context.Context, userID string) error
 }
 
-// UserQueryService handles user read operations
-// Following Single Responsibility Principle - separated from command operations
 type UserQueryService interface {
-	// GetUserByID retrieves a user by their ID
 	GetUserByID(ctx context.Context, userID string) (UserResponse, error)
 
-	// GetUserByEmail retrieves a user by their email
 	GetUserByEmail(ctx context.Context, email string) (UserResponse, error)
 
-	// ListUsers retrieves a paginated list of users
 	ListUsers(ctx context.Context, req ListUsersRequest) (ListUsersResponse, error)
 
-	// CountUsers returns the total number of users
 	CountUsers(ctx context.Context) (int64, error)
 
-	// UserExists checks if a user exists by ID
 	UserExists(ctx context.Context, userID string) (bool, error)
 }
 
-// Request/Response DTOs
 type CreateUserRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Name     string `json:"name" validate:"required,min=2,max=100"`

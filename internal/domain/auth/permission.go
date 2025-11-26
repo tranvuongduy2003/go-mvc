@@ -10,7 +10,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/shared/events"
 )
 
-// Permission represents the permission aggregate root for RBAC
 type Permission struct {
 	id          PermissionID
 	name        PermissionName
@@ -24,17 +23,14 @@ type Permission struct {
 	events      []events.DomainEvent
 }
 
-// PermissionID value object
 type PermissionID struct {
 	value string
 }
 
-// NewPermissionID creates a new permission ID
 func NewPermissionID() PermissionID {
 	return PermissionID{value: uuid.New().String()}
 }
 
-// NewPermissionIDFromString creates a permission ID from string
 func NewPermissionIDFromString(id string) (PermissionID, error) {
 	if id == "" {
 		return PermissionID{}, errors.New("permission ID cannot be empty")
@@ -45,22 +41,18 @@ func NewPermissionIDFromString(id string) (PermissionID, error) {
 	return PermissionID{value: id}, nil
 }
 
-// String returns the string representation of permission ID
 func (id PermissionID) String() string {
 	return id.value
 }
 
-// Equals checks if two permission IDs are equal
 func (id PermissionID) Equals(other PermissionID) bool {
 	return id.value == other.value
 }
 
-// PermissionName value object
 type PermissionName struct {
 	value string
 }
 
-// NewPermissionName creates a new permission name
 func NewPermissionName(name string) (PermissionName, error) {
 	if err := validatePermissionName(name); err != nil {
 		return PermissionName{}, err
@@ -68,22 +60,18 @@ func NewPermissionName(name string) (PermissionName, error) {
 	return PermissionName{value: strings.TrimSpace(name)}, nil
 }
 
-// String returns the string representation of permission name
 func (p PermissionName) String() string {
 	return p.value
 }
 
-// Equals checks if two permission names are equal
 func (p PermissionName) Equals(other PermissionName) bool {
 	return p.value == other.value
 }
 
-// Resource value object represents what the permission applies to
 type Resource struct {
 	value string
 }
 
-// NewResource creates a new resource
 func NewResource(resource string) (Resource, error) {
 	if err := validateResource(resource); err != nil {
 		return Resource{}, err
@@ -91,22 +79,18 @@ func NewResource(resource string) (Resource, error) {
 	return Resource{value: strings.ToLower(strings.TrimSpace(resource))}, nil
 }
 
-// String returns the string representation of resource
 func (r Resource) String() string {
 	return r.value
 }
 
-// Equals checks if two resources are equal
 func (r Resource) Equals(other Resource) bool {
 	return r.value == other.value
 }
 
-// Action value object represents what action can be performed
 type Action struct {
 	value string
 }
 
-// NewAction creates a new action
 func NewAction(action string) (Action, error) {
 	if err := validateAction(action); err != nil {
 		return Action{}, err
@@ -114,17 +98,14 @@ func NewAction(action string) (Action, error) {
 	return Action{value: strings.ToLower(strings.TrimSpace(action))}, nil
 }
 
-// String returns the string representation of action
 func (a Action) String() string {
 	return a.value
 }
 
-// Equals checks if two actions are equal
 func (a Action) Equals(other Action) bool {
 	return a.value == other.value
 }
 
-// Validation functions
 func validatePermissionName(name string) error {
 	name = strings.TrimSpace(name)
 
@@ -140,7 +121,6 @@ func validatePermissionName(name string) error {
 		return errors.New("permission name cannot be longer than 100 characters")
 	}
 
-	// Permission names should follow format: resource:action (e.g., users:read, posts:create)
 	validFormat := regexp.MustCompile(`^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$`)
 	if !validFormat.MatchString(name) {
 		return errors.New("permission name must follow format 'resource:action' with lowercase letters, numbers, and underscores")
@@ -164,7 +144,6 @@ func validateResource(resource string) error {
 		return errors.New("resource cannot be longer than 50 characters")
 	}
 
-	// Resources should be lowercase, alphanumeric with underscores
 	validFormat := regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 	if !validFormat.MatchString(resource) {
 		return errors.New("resource must start with lowercase letter and contain only lowercase letters, numbers, and underscores")
@@ -188,13 +167,11 @@ func validateAction(action string) error {
 		return errors.New("action cannot be longer than 50 characters")
 	}
 
-	// Actions should be lowercase, alphanumeric with underscores
 	validFormat := regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 	if !validFormat.MatchString(action) {
 		return errors.New("action must start with lowercase letter and contain only lowercase letters, numbers, and underscores")
 	}
 
-	// Check for standard CRUD actions
 	standardActions := []string{"create", "read", "update", "delete", "list", "manage", "execute", "view", "edit", "publish", "approve"}
 	isStandard := false
 	for _, std := range standardActions {
@@ -211,7 +188,6 @@ func validateAction(action string) error {
 	return nil
 }
 
-// NewPermission creates a new permission with validation
 func NewPermission(name, resource, action, description string) (*Permission, error) {
 	permissionName, err := NewPermissionName(name)
 	if err != nil {
@@ -228,7 +204,6 @@ func NewPermission(name, resource, action, description string) (*Permission, err
 		return nil, err
 	}
 
-	// Ensure permission name matches resource:action pattern
 	expectedName := resourceObj.String() + ":" + actionObj.String()
 	if permissionName.String() != expectedName {
 		return nil, errors.New("permission name must match 'resource:action' pattern")
@@ -252,7 +227,6 @@ func NewPermission(name, resource, action, description string) (*Permission, err
 		events:      make([]events.DomainEvent, 0),
 	}
 
-	// Add domain event
 	permissionUUID, _ := uuid.Parse(permission.id.String())
 	event := events.NewBaseDomainEvent("permission.created", permissionUUID, "permission", map[string]interface{}{
 		"permission_id": permission.id.String(),
@@ -267,7 +241,6 @@ func NewPermission(name, resource, action, description string) (*Permission, err
 	return permission, nil
 }
 
-// Getters
 func (p *Permission) ID() PermissionID {
 	return p.id
 }
@@ -308,7 +281,6 @@ func (p *Permission) DomainEvents() []events.DomainEvent {
 	return p.events
 }
 
-// Business methods
 func (p *Permission) UpdateDescription(newDescription string) error {
 	if len(newDescription) > 255 {
 		return errors.New("permission description cannot be longer than 255 characters")
@@ -319,7 +291,6 @@ func (p *Permission) UpdateDescription(newDescription string) error {
 	p.updatedAt = time.Now()
 	p.version++
 
-	// Add domain event
 	permissionUUID, _ := uuid.Parse(p.id.String())
 	event := events.NewBaseDomainEvent("permission.description_updated", permissionUUID, "permission", map[string]interface{}{
 		"permission_id":   p.id.String(),
@@ -338,7 +309,6 @@ func (p *Permission) Activate() {
 		p.updatedAt = time.Now()
 		p.version++
 
-		// Add domain event
 		permissionUUID, _ := uuid.Parse(p.id.String())
 		event := events.NewBaseDomainEvent("permission.activated", permissionUUID, "permission", map[string]interface{}{
 			"permission_id": p.id.String(),
@@ -355,7 +325,6 @@ func (p *Permission) Deactivate() {
 		p.updatedAt = time.Now()
 		p.version++
 
-		// Add domain event
 		permissionUUID, _ := uuid.Parse(p.id.String())
 		event := events.NewBaseDomainEvent("permission.deactivated", permissionUUID, "permission", map[string]interface{}{
 			"permission_id": p.id.String(),
@@ -366,12 +335,10 @@ func (p *Permission) Deactivate() {
 	}
 }
 
-// ClearEvents clears all domain events
 func (p *Permission) ClearEvents() {
 	p.events = make([]events.DomainEvent, 0)
 }
 
-// Equals checks if two permissions are equal
 func (p *Permission) Equals(other *Permission) bool {
 	if other == nil {
 		return false
@@ -379,19 +346,16 @@ func (p *Permission) Equals(other *Permission) bool {
 	return p.id.Equals(other.id)
 }
 
-// String returns string representation of the permission
 func (p *Permission) String() string {
 	return p.name.String()
 }
 
-// AppliesTo checks if this permission applies to a specific resource and action
 func (p *Permission) AppliesTo(resource, action string) bool {
 	return p.isActive &&
 		p.resource.String() == strings.ToLower(resource) &&
 		p.action.String() == strings.ToLower(action)
 }
 
-// Factory function for reconstruction from persistence
 func ReconstructPermission(id, name, resource, action, description string, isActive bool, createdAt, updatedAt time.Time, version int64) (*Permission, error) {
 	permissionID, err := NewPermissionIDFromString(id)
 	if err != nil {

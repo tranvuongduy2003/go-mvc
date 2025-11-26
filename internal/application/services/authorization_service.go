@@ -10,7 +10,6 @@ import (
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
-// authorizationService implements the AuthorizationService interface
 type authorizationService struct {
 	userRepo           user.UserRepository
 	roleRepo           auth.RoleRepository
@@ -19,7 +18,6 @@ type authorizationService struct {
 	rolePermissionRepo auth.RolePermissionRepository
 }
 
-// NewAuthorizationService creates a new authorization service
 func NewAuthorizationService(
 	userRepo user.UserRepository,
 	roleRepo auth.RoleRepository,
@@ -36,9 +34,7 @@ func NewAuthorizationService(
 	}
 }
 
-// UserHasPermission checks if user has specific permission
 func (s *authorizationService) UserHasPermission(ctx context.Context, userID, resource, action string) (bool, error) {
-	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
 		return false, apperrors.NewInternalError("failed to get user roles", err)
@@ -48,7 +44,6 @@ func (s *authorizationService) UserHasPermission(ctx context.Context, userID, re
 		return false, nil
 	}
 
-	// Check if any role has the required permission
 	for _, userRole := range userRoles {
 		hasPermission, err := s.rolePermissionRepo.RoleHasResourceAction(ctx, userRole.RoleID, resource, action)
 		if err != nil {
@@ -62,9 +57,7 @@ func (s *authorizationService) UserHasPermission(ctx context.Context, userID, re
 	return false, nil
 }
 
-// UserHasPermissionByName checks if user has specific permission by name
 func (s *authorizationService) UserHasPermissionByName(ctx context.Context, userID, permissionName string) (bool, error) {
-	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
 		return false, fmt.Errorf("failed to get user roles: %w", err)
@@ -74,7 +67,6 @@ func (s *authorizationService) UserHasPermissionByName(ctx context.Context, user
 		return false, nil
 	}
 
-	// Check if any role has the required permission by name
 	for _, userRole := range userRoles {
 		hasPermission, err := s.rolePermissionRepo.RoleHasPermissionByName(ctx, userRole.RoleID, permissionName)
 		if err != nil {
@@ -88,12 +80,10 @@ func (s *authorizationService) UserHasPermissionByName(ctx context.Context, user
 	return false, nil
 }
 
-// UserHasRole checks if user has specific role
 func (s *authorizationService) UserHasRole(ctx context.Context, userID, roleName string) (bool, error) {
 	return s.userRoleRepo.UserHasRoleName(ctx, userID, roleName)
 }
 
-// UserHasAnyRole checks if user has any of the specified roles
 func (s *authorizationService) UserHasAnyRole(ctx context.Context, userID string, roleNames []string) (bool, error) {
 	for _, roleName := range roleNames {
 		hasRole, err := s.userRoleRepo.UserHasRoleName(ctx, userID, roleName)
@@ -107,7 +97,6 @@ func (s *authorizationService) UserHasAnyRole(ctx context.Context, userID string
 	return false, nil
 }
 
-// UserHasAllRoles checks if user has all specified roles
 func (s *authorizationService) UserHasAllRoles(ctx context.Context, userID string, roleNames []string) (bool, error) {
 	for _, roleName := range roleNames {
 		hasRole, err := s.userRoleRepo.UserHasRoleName(ctx, userID, roleName)
@@ -121,9 +110,7 @@ func (s *authorizationService) UserHasAllRoles(ctx context.Context, userID strin
 	return true, nil
 }
 
-// GetUserPermissions retrieves all permissions for a user
 func (s *authorizationService) GetUserPermissions(ctx context.Context, userID string) ([]string, error) {
-	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
 		return nil, apperrors.NewInternalError("failed to get user roles", err)
@@ -135,14 +122,12 @@ func (s *authorizationService) GetUserPermissions(ctx context.Context, userID st
 
 	permissionsMap := make(map[string]bool)
 
-	// Get permissions for each role
 	for _, userRole := range userRoles {
 		rolePermissions, err := s.rolePermissionRepo.GetActiveRolePermissions(ctx, userRole.RoleID)
 		if err != nil {
 			return nil, apperrors.NewInternalError("failed to get role permissions", err)
 		}
 
-		// Get permission details
 		for _, rolePerm := range rolePermissions {
 			permission, err := s.permissionRepo.GetByID(ctx, rolePerm.PermissionID)
 			if err != nil {
@@ -154,7 +139,6 @@ func (s *authorizationService) GetUserPermissions(ctx context.Context, userID st
 		}
 	}
 
-	// Convert map to slice
 	permissions := make([]string, 0, len(permissionsMap))
 	for permission := range permissionsMap {
 		permissions = append(permissions, permission)
@@ -163,9 +147,7 @@ func (s *authorizationService) GetUserPermissions(ctx context.Context, userID st
 	return permissions, nil
 }
 
-// GetUserRoles retrieves all roles for a user
 func (s *authorizationService) GetUserRoles(ctx context.Context, userID string) ([]string, error) {
-	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
 		return nil, apperrors.NewInternalError("failed to get user roles", err)
@@ -177,7 +159,6 @@ func (s *authorizationService) GetUserRoles(ctx context.Context, userID string) 
 
 	roles := make([]string, 0, len(userRoles))
 
-	// Get role details
 	for _, userRole := range userRoles {
 		role, err := s.roleRepo.GetByID(ctx, userRole.RoleID)
 		if err != nil {
@@ -191,7 +172,6 @@ func (s *authorizationService) GetUserRoles(ctx context.Context, userID string) 
 	return roles, nil
 }
 
-// CheckMultiplePermissions checks multiple permissions at once
 func (s *authorizationService) CheckMultiplePermissions(ctx context.Context, userID string, permissions []string) (map[string]bool, error) {
 	result := make(map[string]bool)
 
@@ -206,7 +186,6 @@ func (s *authorizationService) CheckMultiplePermissions(ctx context.Context, use
 	return result, nil
 }
 
-// CanAccessResource checks if user can access a resource with specific action
 func (s *authorizationService) CanAccessResource(ctx context.Context, userID, resource, action string) error {
 	hasPermission, err := s.UserHasPermission(ctx, userID, resource, action)
 	if err != nil {
@@ -220,19 +199,15 @@ func (s *authorizationService) CanAccessResource(ctx context.Context, userID, re
 	return nil
 }
 
-// IsAdmin checks if user has admin privileges
 func (s *authorizationService) IsAdmin(ctx context.Context, userID string) (bool, error) {
 	return s.UserHasRole(ctx, userID, "admin")
 }
 
-// IsModerator checks if user has moderator privileges
 func (s *authorizationService) IsModerator(ctx context.Context, userID string) (bool, error) {
 	return s.UserHasAnyRole(ctx, userID, []string{"admin", "moderator"})
 }
 
-// GetEffectivePermissions gets all effective permissions (through all roles)
 func (s *authorizationService) GetEffectivePermissions(ctx context.Context, userID string) ([]contracts.PermissionInfo, error) {
-	// Get user's active roles
 	userRoles, err := s.userRoleRepo.GetActiveUserRoles(ctx, userID)
 	if err != nil {
 		return nil, apperrors.NewInternalError("failed to get user roles", err)
@@ -244,14 +219,12 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 
 	permissionsMap := make(map[string]contracts.PermissionInfo)
 
-	// Get permissions for each role
 	for _, userRole := range userRoles {
 		rolePermissions, err := s.rolePermissionRepo.GetActiveRolePermissions(ctx, userRole.RoleID)
 		if err != nil {
 			return nil, apperrors.NewInternalError("failed to get role permissions", err)
 		}
 
-		// Get role name for granted_by field
 		role, err := s.roleRepo.GetByID(ctx, userRole.RoleID)
 		if err != nil {
 			return nil, apperrors.NewInternalError("failed to get role", err)
@@ -262,14 +235,12 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 			roleName = role.Name().String()
 		}
 
-		// Get permission details
 		for _, rolePerm := range rolePermissions {
 			permission, err := s.permissionRepo.GetByID(ctx, rolePerm.PermissionID)
 			if err != nil {
 				return nil, apperrors.NewInternalError("failed to get permission", err)
 			}
 			if permission != nil && permission.IsActive() {
-				// Use permission name as key to avoid duplicates
 				permissionName := permission.Name().String()
 				if _, exists := permissionsMap[permissionName]; !exists {
 					permissionsMap[permissionName] = contracts.PermissionInfo{
@@ -285,7 +256,6 @@ func (s *authorizationService) GetEffectivePermissions(ctx context.Context, user
 		}
 	}
 
-	// Convert map to slice
 	permissions := make([]contracts.PermissionInfo, 0, len(permissionsMap))
 	for _, permission := range permissionsMap {
 		permissions = append(permissions, permission)

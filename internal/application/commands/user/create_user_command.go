@@ -8,8 +8,6 @@ import (
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
-// CreateUserCommand represents the command to create a new user
-// Implements Command interface for CQRS pattern
 type CreateUserCommand struct {
 	Email    string `json:"email" validate:"required,email"`
 	Name     string `json:"name" validate:"required,min=2,max=100"`
@@ -17,7 +15,6 @@ type CreateUserCommand struct {
 	Password string `json:"password" validate:"required,min=8"`
 }
 
-// Validate implements Command.Validate
 func (c CreateUserCommand) Validate() error {
 	if c.Email == "" {
 		return errors.New("email is required")
@@ -37,22 +34,17 @@ func (c CreateUserCommand) Validate() error {
 	return nil
 }
 
-// CreateUserCommandHandler handles the CreateUserCommand
 type CreateUserCommandHandler struct {
 	userRepo user.UserRepository
 }
 
-// NewCreateUserCommandHandler creates a new CreateUserCommandHandler
 func NewCreateUserCommandHandler(userRepo user.UserRepository) *CreateUserCommandHandler {
 	return &CreateUserCommandHandler{
 		userRepo: userRepo,
 	}
 }
 
-// Handle executes the CreateUserCommand
-// Improved error handling with proper error wrapping and types
 func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCommand) (*user.User, error) {
-	// Check if user already exists
 	existingUser, err := h.userRepo.GetByEmail(ctx, cmd.Email)
 	if err != nil {
 		return nil, apperrors.NewInternalError("Failed to check existing user", err)
@@ -61,14 +53,11 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		return nil, apperrors.NewConflictError("User with email "+cmd.Email+" already exists", nil)
 	}
 
-	// Create new user using domain factory
 	newUser, err := user.NewUser(cmd.Email, cmd.Name, cmd.Phone, cmd.Password)
 	if err != nil {
-		// Domain validation errors should be returned as validation error
 		return nil, apperrors.NewValidationError(err.Error(), err)
 	}
 
-	// Save to repository
 	if err := h.userRepo.Create(ctx, newUser); err != nil {
 		return nil, apperrors.NewInternalError("Failed to create user", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// RolePermissionModel represents the GORM model for RolePermission junction entity
 type RolePermissionModel struct {
 	ID           string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
 	RoleID       string    `gorm:"type:uuid;not null;index" json:"role_id"`
@@ -16,13 +15,11 @@ type RolePermissionModel struct {
 	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 	Version      int64     `gorm:"default:1" json:"version"`
 
-	// Relations
 	Role          RoleModel       `gorm:"foreignKey:RoleID;constraint:OnDelete:CASCADE" json:"role,omitempty"`
 	Permission    PermissionModel `gorm:"foreignKey:PermissionID;constraint:OnDelete:CASCADE" json:"permission,omitempty"`
 	GrantedByUser *UserModel      `gorm:"foreignKey:GrantedBy;constraint:OnDelete:SET NULL" json:"granted_by_user,omitempty"`
 }
 
-// TableName returns the table name for the RolePermissionModel
 func (RolePermissionModel) TableName() string {
 	return "role_permissions"
 }

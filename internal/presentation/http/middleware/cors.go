@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CORSConfig represents CORS configuration
 type CORSConfig struct {
 	AllowOrigins     []string
 	AllowMethods     []string
@@ -18,7 +17,6 @@ type CORSConfig struct {
 	MaxAge           int
 }
 
-// DefaultCORSConfig returns default CORS configuration
 func DefaultCORSConfig() CORSConfig {
 	return CORSConfig{
 		AllowOrigins: []string{"*"},
@@ -56,7 +54,6 @@ func DefaultCORSConfig() CORSConfig {
 	}
 }
 
-// ProductionCORSConfig returns production-safe CORS configuration
 func ProductionCORSConfig(allowedOrigins []string) CORSConfig {
 	return CORSConfig{
 		AllowOrigins: allowedOrigins,
@@ -89,7 +86,6 @@ func ProductionCORSConfig(allowedOrigins []string) CORSConfig {
 	}
 }
 
-// CORSMiddleware creates CORS middleware with custom configuration
 func CORSMiddleware(config CORSConfig) gin.HandlerFunc {
 	corsConfig := cors.Config{
 		AllowOrigins:     config.AllowOrigins,
@@ -103,17 +99,14 @@ func CORSMiddleware(config CORSConfig) gin.HandlerFunc {
 	return cors.New(corsConfig)
 }
 
-// DefaultCORSMiddleware creates CORS middleware with default configuration
 func DefaultCORSMiddleware() gin.HandlerFunc {
 	return CORSMiddleware(DefaultCORSConfig())
 }
 
-// ProductionCORSMiddleware creates CORS middleware for production
 func ProductionCORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
 	return CORSMiddleware(ProductionCORSConfig(allowedOrigins))
 }
 
-// DevCORSMiddleware creates CORS middleware for development (allows all origins)
 func DevCORSMiddleware() gin.HandlerFunc {
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true

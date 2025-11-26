@@ -13,7 +13,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
 )
 
-// Metrics holds all prometheus metrics
 type Metrics struct {
 	httpRequestsTotal     *prometheus.CounterVec
 	httpRequestDuration   *prometheus.HistogramVec
@@ -29,7 +28,6 @@ type Metrics struct {
 	cpuUsage              prometheus.Gauge
 }
 
-// NewMetrics creates a new metrics instance
 func NewMetrics() *Metrics {
 	metrics := &Metrics{
 		httpRequestsTotal: prometheus.NewCounterVec(
@@ -118,7 +116,6 @@ func NewMetrics() *Metrics {
 		),
 	}
 
-	// Register metrics
 	prometheus.MustRegister(
 		metrics.httpRequestsTotal,
 		metrics.httpRequestDuration,
@@ -137,7 +134,6 @@ func NewMetrics() *Metrics {
 	return metrics
 }
 
-// RecordHTTPRequest records HTTP request metrics
 func (m *Metrics) RecordHTTPRequest(method, endpoint, statusCode string, duration time.Duration, requestSize, responseSize int64) {
 	m.httpRequestsTotal.WithLabelValues(method, endpoint, statusCode).Inc()
 	m.httpRequestDuration.WithLabelValues(method, endpoint).Observe(duration.Seconds())
@@ -145,60 +141,48 @@ func (m *Metrics) RecordHTTPRequest(method, endpoint, statusCode string, duratio
 	m.httpResponseSize.WithLabelValues(method, endpoint).Observe(float64(responseSize))
 }
 
-// RecordDatabaseQuery records database query metrics
 func (m *Metrics) RecordDatabaseQuery(database, table, operation string, duration time.Duration) {
 	m.databaseQueries.WithLabelValues(database, table, operation).Inc()
 	m.databaseQueryDuration.WithLabelValues(database, table, operation).Observe(duration.Seconds())
 }
 
-// SetDatabaseConnections sets the number of database connections
 func (m *Metrics) SetDatabaseConnections(database, state string, count float64) {
 	m.databaseConnections.WithLabelValues(database, state).Set(count)
 }
 
-// RecordCacheHit records cache hit/miss
 func (m *Metrics) RecordCacheHit(cache, result string) {
 	m.cacheHits.WithLabelValues(cache, result).Inc()
 }
 
-// SetActiveConnections sets the number of active connections
 func (m *Metrics) SetActiveConnections(count float64) {
 	m.activeConnections.Set(count)
 }
 
-// SetUptime sets the application uptime
 func (m *Metrics) SetUptime(seconds float64) {
 	m.uptimeSeconds.Set(seconds)
 }
 
-// SetMemoryUsage sets memory usage
 func (m *Metrics) SetMemoryUsage(bytes float64) {
 	m.memoryUsage.Set(bytes)
 }
 
-// SetCPUUsage sets CPU usage percentage
 func (m *Metrics) SetCPUUsage(percent float64) {
 	m.cpuUsage.Set(percent)
 }
 
-// Handler returns the prometheus HTTP handler
 func (m *Metrics) Handler() http.Handler {
 	return promhttp.Handler()
 }
 
-// GinMiddleware returns a Gin middleware for collecting HTTP metrics
 func (m *Metrics) GinMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 
-		// Process request
 		c.Next()
 
-		// Record metrics
 		duration := time.Since(start)
 		statusCode := string(rune(c.Writer.Status()))
 
-		// Get request and response sizes
 		requestSize := c.Request.ContentLength
 		if requestSize < 0 {
 			requestSize = 0
@@ -216,7 +200,6 @@ func (m *Metrics) GinMiddleware() gin.HandlerFunc {
 	}
 }
 
-// Manager manages metrics collection and exposure
 type Manager struct {
 	metrics *Metrics
 	config  config.Metrics
@@ -224,7 +207,6 @@ type Manager struct {
 	server  *http.Server
 }
 
-// NewManager creates a new metrics manager
 func NewManager(cfg config.Metrics, log *logger.Logger) *Manager {
 	return &Manager{
 		metrics: NewMetrics(),
@@ -233,7 +215,6 @@ func NewManager(cfg config.Metrics, log *logger.Logger) *Manager {
 	}
 }
 
-// Start starts the metrics server
 func (m *Manager) Start() error {
 	if !m.config.Enabled {
 		m.logger.Info("Metrics collection is disabled")
@@ -258,7 +239,6 @@ func (m *Manager) Start() error {
 	return nil
 }
 
-// Stop stops the metrics server
 func (m *Manager) Stop() error {
 	if m.server != nil {
 		m.logger.Info("Stopping metrics server")
@@ -267,12 +247,10 @@ func (m *Manager) Stop() error {
 	return nil
 }
 
-// Metrics returns the metrics instance
 func (m *Manager) Metrics() *Metrics {
 	return m.metrics
 }
 
-// GinMiddleware returns the Gin middleware
 func (m *Manager) GinMiddleware() gin.HandlerFunc {
 	return m.metrics.GinMiddleware()
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/shared/events"
 )
 
-// Role represents the role aggregate root for RBAC
 type Role struct {
 	id          RoleID
 	name        RoleName
@@ -22,17 +21,14 @@ type Role struct {
 	events      []events.DomainEvent
 }
 
-// RoleID value object
 type RoleID struct {
 	value string
 }
 
-// NewRoleID creates a new role ID
 func NewRoleID() RoleID {
 	return RoleID{value: uuid.New().String()}
 }
 
-// NewRoleIDFromString creates a role ID from string
 func NewRoleIDFromString(id string) (RoleID, error) {
 	if id == "" {
 		return RoleID{}, errors.New("role ID cannot be empty")
@@ -43,22 +39,18 @@ func NewRoleIDFromString(id string) (RoleID, error) {
 	return RoleID{value: id}, nil
 }
 
-// String returns the string representation of role ID
 func (id RoleID) String() string {
 	return id.value
 }
 
-// Equals checks if two role IDs are equal
 func (id RoleID) Equals(other RoleID) bool {
 	return id.value == other.value
 }
 
-// RoleName value object
 type RoleName struct {
 	value string
 }
 
-// NewRoleName creates a new role name
 func NewRoleName(name string) (RoleName, error) {
 	if err := validateRoleName(name); err != nil {
 		return RoleName{}, err
@@ -66,17 +58,14 @@ func NewRoleName(name string) (RoleName, error) {
 	return RoleName{value: strings.TrimSpace(name)}, nil
 }
 
-// String returns the string representation of role name
 func (r RoleName) String() string {
 	return r.value
 }
 
-// Equals checks if two role names are equal
 func (r RoleName) Equals(other RoleName) bool {
 	return r.value == other.value
 }
 
-// validateRoleName validates role name format and business rules
 func validateRoleName(name string) error {
 	name = strings.TrimSpace(name)
 
@@ -92,7 +81,6 @@ func validateRoleName(name string) error {
 		return errors.New("role name cannot be longer than 50 characters")
 	}
 
-	// Role names should be uppercase, alphanumeric with underscores
 	validFormat := regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
 	if !validFormat.MatchString(name) {
 		return errors.New("role name must start with uppercase letter and contain only uppercase letters, numbers, and underscores")
@@ -101,7 +89,6 @@ func validateRoleName(name string) error {
 	return nil
 }
 
-// NewRole creates a new role with basic validation
 func NewRole(name string, description string) (*Role, error) {
 	roleName, err := NewRoleName(name)
 	if err != nil {
@@ -124,7 +111,6 @@ func NewRole(name string, description string) (*Role, error) {
 		events:      make([]events.DomainEvent, 0),
 	}
 
-	// Add domain event
 	roleUUID, _ := uuid.Parse(role.id.String())
 	event := events.NewBaseDomainEvent("role.created", roleUUID, "role", map[string]interface{}{
 		"role_id":     role.id.String(),
@@ -137,7 +123,6 @@ func NewRole(name string, description string) (*Role, error) {
 	return role, nil
 }
 
-// Getters
 func (r *Role) ID() RoleID {
 	return r.id
 }
@@ -170,7 +155,6 @@ func (r *Role) DomainEvents() []events.DomainEvent {
 	return r.events
 }
 
-// Business methods
 func (r *Role) UpdateDescription(newDescription string) error {
 	if len(newDescription) > 255 {
 		return errors.New("role description cannot be longer than 255 characters")
@@ -181,7 +165,6 @@ func (r *Role) UpdateDescription(newDescription string) error {
 	r.updatedAt = time.Now()
 	r.version++
 
-	// Add domain event
 	roleUUID, _ := uuid.Parse(r.id.String())
 	event := events.NewBaseDomainEvent("role.description_updated", roleUUID, "role", map[string]interface{}{
 		"role_id":         r.id.String(),
@@ -200,7 +183,6 @@ func (r *Role) Activate() {
 		r.updatedAt = time.Now()
 		r.version++
 
-		// Add domain event
 		roleUUID, _ := uuid.Parse(r.id.String())
 		event := events.NewBaseDomainEvent("role.activated", roleUUID, "role", map[string]interface{}{
 			"role_id":    r.id.String(),
@@ -217,7 +199,6 @@ func (r *Role) Deactivate() {
 		r.updatedAt = time.Now()
 		r.version++
 
-		// Add domain event
 		roleUUID, _ := uuid.Parse(r.id.String())
 		event := events.NewBaseDomainEvent("role.deactivated", roleUUID, "role", map[string]interface{}{
 			"role_id":    r.id.String(),
@@ -228,12 +209,10 @@ func (r *Role) Deactivate() {
 	}
 }
 
-// ClearEvents clears all domain events
 func (r *Role) ClearEvents() {
 	r.events = make([]events.DomainEvent, 0)
 }
 
-// Equals checks if two roles are equal
 func (r *Role) Equals(other *Role) bool {
 	if other == nil {
 		return false
@@ -241,12 +220,10 @@ func (r *Role) Equals(other *Role) bool {
 	return r.id.Equals(other.id)
 }
 
-// String returns string representation of the role
 func (r *Role) String() string {
 	return r.name.String()
 }
 
-// Factory function for reconstruction from persistence
 func ReconstructRole(id, name, description string, isActive bool, createdAt, updatedAt time.Time, version int64) (*Role, error) {
 	roleID, err := NewRoleIDFromString(id)
 	if err != nil {

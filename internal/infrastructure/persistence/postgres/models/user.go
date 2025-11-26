@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// UserModel represents the GORM model for User entity
 type UserModel struct {
 	ID            string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
 	Email         string    `gorm:"uniqueIndex;not null;size:255" json:"email"`
@@ -18,7 +17,6 @@ type UserModel struct {
 	UpdatedAt     time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-// TableName returns the table name for the UserModel
 func (UserModel) TableName() string {
 	return "users"
 }

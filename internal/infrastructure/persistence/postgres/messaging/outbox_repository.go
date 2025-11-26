@@ -13,7 +13,6 @@ type gormOutboxRepository struct {
 	db *gorm.DB
 }
 
-// NewOutboxRepository creates a new outbox repository using GORM
 func NewOutboxRepository(db *gorm.DB) messaging.OutboxRepository {
 	return &gormOutboxRepository{
 		db: db,

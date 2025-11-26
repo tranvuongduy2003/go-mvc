@@ -10,19 +10,16 @@ import (
 	apperrors "github.com/tranvuongduy2003/go-mvc/pkg/errors"
 )
 
-// GetUserProfileQuery represents the get user profile query
 type GetUserProfileQuery struct {
 	UserID string `validate:"required"`
 }
 
-// GetUserProfileQueryHandler handles the GetUserProfileQuery
 type GetUserProfileQueryHandler struct {
 	userRepo             user.UserRepository
 	roleRepo             auth.RoleRepository
 	authorizationService contracts.AuthorizationService
 }
 
-// NewGetUserProfileQueryHandler creates a new GetUserProfileQueryHandler
 func NewGetUserProfileQueryHandler(
 	userRepo user.UserRepository,
 	roleRepo auth.RoleRepository,
@@ -35,9 +32,7 @@ func NewGetUserProfileQueryHandler(
 	}
 }
 
-// Handle executes the GetUserProfileQuery
 func (h *GetUserProfileQueryHandler) Handle(ctx context.Context, query GetUserProfileQuery) (*dto.UserProfileResponse, error) {
-	// Get user by ID
 	user, err := h.userRepo.GetByID(ctx, query.UserID)
 	if err != nil {
 		return nil, err
@@ -47,25 +42,21 @@ func (h *GetUserProfileQueryHandler) Handle(ctx context.Context, query GetUserPr
 		return nil, apperrors.NewNotFoundError("user not found")
 	}
 
-	// Get user roles
 	userRoles, err := h.roleRepo.GetRolesByUserID(ctx, query.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get effective permissions for the user
 	permissions, err := h.authorizationService.GetEffectivePermissions(ctx, query.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert roles to string slice
 	roleNames := make([]string, len(userRoles))
 	for i, role := range userRoles {
 		roleNames[i] = role.Name().String()
 	}
 
-	// Convert to permission info DTOs
 	permissionInfos := make([]dto.PermissionInfoDTO, len(permissions))
 	for i, perm := range permissions {
 		permissionInfos[i] = dto.PermissionInfoDTO{
@@ -78,7 +69,6 @@ func (h *GetUserProfileQueryHandler) Handle(ctx context.Context, query GetUserPr
 		}
 	}
 
-	// Create response DTO
 	return &dto.UserProfileResponse{
 		User:        dto.ToAuthUserDTO(user),
 		Roles:       roleNames,

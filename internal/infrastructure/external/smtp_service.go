@@ -9,7 +9,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/infrastructure/logger"
 )
 
-// SMTPService handles SMTP email sending
 type SMTPService struct {
 	host     string
 	port     string
@@ -20,7 +19,6 @@ type SMTPService struct {
 	logger   *logger.Logger
 }
 
-// NewSMTPService creates a new SMTP email service
 func NewSMTPService(cfg *config.SMTPConfig, logger *logger.Logger) *SMTPService {
 	return &SMTPService{
 		host:     cfg.Host,
@@ -33,16 +31,13 @@ func NewSMTPService(cfg *config.SMTPConfig, logger *logger.Logger) *SMTPService 
 	}
 }
 
-// SendEmail sends an email using SMTP
 func (s *SMTPService) SendEmail(ctx context.Context, to []string, subject, body string) error {
 	s.logger.Infof("🚀 SMTP DEBUG: SendEmail called - to: %v, subject: %s", to, subject)
 	s.logger.Infof("🚀 SMTP DEBUG: SMTP Config - %s:%s (TLS: %t)", s.host, s.port, s.useTLS)
 
-	// Create the email message
 	message := s.buildMessage(to, subject, body)
 	s.logger.Infof("🚀 SMTP DEBUG: Built message length: %d", len(message))
 
-	// Set up authentication (if required)
 	var auth smtp.Auth
 	if s.username != "" && s.password != "" {
 		auth = smtp.PlainAuth("", s.username, s.password, s.host)
@@ -51,7 +46,6 @@ func (s *SMTPService) SendEmail(ctx context.Context, to []string, subject, body 
 		s.logger.Infof("🚀 SMTP DEBUG: No auth - username/password empty")
 	}
 
-	// Send the email
 	addr := fmt.Sprintf("%s:%s", s.host, s.port)
 	s.logger.Infof("🚀 SMTP DEBUG: Attempting to send to: %s", addr)
 	err := smtp.SendMail(addr, auth, s.from, to, []byte(message))
@@ -64,7 +58,6 @@ func (s *SMTPService) SendEmail(ctx context.Context, to []string, subject, body 
 	return nil
 }
 
-// SendVerificationEmail sends an email verification message
 func (s *SMTPService) SendVerificationEmail(ctx context.Context, to, firstName, verificationToken string) error {
 	subject := "Verify Your Email Address"
 	body := fmt.Sprintf(`
@@ -83,7 +76,6 @@ The Team
 	return s.SendEmail(ctx, []string{to}, subject, body)
 }
 
-// SendPasswordResetEmail sends a password reset email
 func (s *SMTPService) SendPasswordResetEmail(ctx context.Context, to, firstName, resetToken string) error {
 	s.logger.Infof("🔥 SMTP DEBUG: SendPasswordResetEmail called with to=%s, firstName=%s, token=%s", to, firstName, resetToken)
 	s.logger.Infof("🔥 SMTP DEBUG: Config - host=%s, port=%s, from=%s, useTLS=%t", s.host, s.port, s.from, s.useTLS)
@@ -105,7 +97,6 @@ The Team
 	return s.SendEmail(ctx, []string{to}, subject, body)
 }
 
-// buildMessage constructs the email message with proper headers
 func (s *SMTPService) buildMessage(to []string, subject, body string) string {
 	message := fmt.Sprintf("To: %s\r\n", to[0])
 	if len(to) > 1 {

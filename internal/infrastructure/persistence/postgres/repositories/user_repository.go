@@ -10,19 +10,16 @@ import (
 	"gorm.io/gorm"
 )
 
-// userRepository implements the UserRepository interface
 type userRepository struct {
 	db *gorm.DB
 }
 
-// NewUserRepository creates a new UserRepository instance
 func NewUserRepository(db *gorm.DB) user.UserRepository {
 	return &userRepository{
 		db: db,
 	}
 }
 
-// Create saves a new user to the database
 func (r *userRepository) Create(ctx context.Context, u *user.User) error {
 	userModel := r.domainToModel(u)
 	if err := r.db.WithContext(ctx).Create(userModel).Error; err != nil {
@@ -31,7 +28,6 @@ func (r *userRepository) Create(ctx context.Context, u *user.User) error {
 	return nil
 }
 
-// GetByID retrieves a user by ID
 func (r *userRepository) GetByID(ctx context.Context, id string) (*user.User, error) {
 	var userModel models.UserModel
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&userModel).Error; err != nil {
@@ -43,7 +39,6 @@ func (r *userRepository) GetByID(ctx context.Context, id string) (*user.User, er
 	return r.modelToDomain(&userModel)
 }
 
-// GetByEmail retrieves a user by email
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*user.User, error) {
 	var userModel models.UserModel
 	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&userModel).Error; err != nil {
@@ -55,7 +50,6 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*user.Us
 	return r.modelToDomain(&userModel)
 }
 
-// Update updates an existing user
 func (r *userRepository) Update(ctx context.Context, u *user.User) error {
 	userModel := r.domainToModel(u)
 	if err := r.db.WithContext(ctx).Model(&userModel).Where("id = ?", userModel.ID).Updates(userModel).Error; err != nil {
@@ -64,7 +58,6 @@ func (r *userRepository) Update(ctx context.Context, u *user.User) error {
 	return nil
 }
 
-// Delete soft deletes a user
 func (r *userRepository) Delete(ctx context.Context, id string) error {
 	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&models.UserModel{}).Error; err != nil {
 		return err
@@ -72,38 +65,31 @@ func (r *userRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// List retrieves users with pagination
 func (r *userRepository) List(ctx context.Context, params user.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {
 	var userModels []models.UserModel
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&models.UserModel{})
 
-	// Apply search filter
 	if params.Search != "" {
 		searchPattern := "%" + strings.ToLower(params.Search) + "%"
 		query = query.Where("LOWER(email) LIKE ? OR LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ?",
 			searchPattern, searchPattern, searchPattern)
 	}
 
-	// Apply isActive filter
 	if params.IsActive != nil {
 		query = query.Where("is_active = ?", *params.IsActive)
 	}
 
-	// Count total records
 	if err := query.Count(&total).Error; err != nil {
 		return nil, nil, err
 	}
 
-	// Create pagination object
 	pag := pagination.NewPagination(params.Page, params.Limit)
 	pag.SetTotal(total)
 
-	// Apply pagination
 	query = query.Limit(pag.PageSize).Offset(pag.Offset())
 
-	// Apply sorting
 	if params.SortBy != "" {
 		order := params.SortBy
 		if params.SortDir == "desc" {
@@ -132,7 +118,6 @@ func (r *userRepository) List(ctx context.Context, params user.ListUsersParams) 
 	return users, pag, nil
 }
 
-// Exists checks if a user exists by ID
 func (r *userRepository) Exists(ctx context.Context, id string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.UserModel{}).Where("id = ?", id).Count(&count).Error; err != nil {
@@ -141,7 +126,6 @@ func (r *userRepository) Exists(ctx context.Context, id string) (bool, error) {
 	return count > 0, nil
 }
 
-// ExistsByEmail checks if a user exists by email
 func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.UserModel{}).Where("email = ?", email).Count(&count).Error; err != nil {
@@ -150,7 +134,6 @@ func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 	return count > 0, nil
 }
 
-// Count returns the total number of users
 func (r *userRepository) Count(ctx context.Context) (int64, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.UserModel{}).Count(&count).Error; err != nil {
@@ -159,7 +142,6 @@ func (r *userRepository) Count(ctx context.Context) (int64, error) {
 	return count, nil
 }
 
-// domainToModel converts domain User to GORM UserModel
 func (r *userRepository) domainToModel(u *user.User) *models.UserModel {
 	return &models.UserModel{
 		ID:            u.ID(),
@@ -175,7 +157,6 @@ func (r *userRepository) domainToModel(u *user.User) *models.UserModel {
 	}
 }
 
-// modelToDomain converts GORM UserModel to domain User
 func (r *userRepository) modelToDomain(m *models.UserModel) (*user.User, error) {
 	return user.ReconstructUser(
 		m.ID,

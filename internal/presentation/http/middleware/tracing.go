@@ -10,18 +10,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// TracingMiddleware creates a Gin middleware for distributed tracing
 func TracingMiddleware(serviceName string) gin.HandlerFunc {
 	return otelgin.Middleware(serviceName)
 }
 
-// CustomTracingMiddleware creates a custom tracing middleware with additional attributes
 func CustomTracingMiddleware(serviceName string) gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
-		// Use the otelgin middleware first
 		otelgin.Middleware(serviceName)(c)
 
-		// Add custom attributes to the span
 		span := trace.SpanFromContext(c.Request.Context())
 		if span.IsRecording() {
 			span.SetAttributes(
@@ -30,7 +26,6 @@ func CustomTracingMiddleware(serviceName string) gin.HandlerFunc {
 				attribute.String("http.request_id", c.GetHeader("X-Request-ID")),
 			)
 
-			// Add user information if available
 			if userID, exists := c.Get("user_id"); exists {
 				if uid, ok := userID.(string); ok {
 					span.SetAttributes(attribute.String("user.id", uid))
@@ -46,7 +41,6 @@ func CustomTracingMiddleware(serviceName string) gin.HandlerFunc {
 
 		c.Next()
 
-		// Add response attributes after processing
 		if span.IsRecording() {
 			span.SetAttributes(
 				attribute.Int("http.status_code", c.Writer.Status()),
@@ -56,12 +50,10 @@ func CustomTracingMiddleware(serviceName string) gin.HandlerFunc {
 	})
 }
 
-// TraceContext extracts tracing context from Gin context
 func TraceContext(c *gin.Context) context.Context {
 	return c.Request.Context()
 }
 
-// WithSpan creates a new span in the context
 func WithSpan(ctx context.Context, spanName string, fn func(ctx context.Context, span trace.Span) error) error {
 	span := trace.SpanFromContext(ctx)
 	tracer := span.TracerProvider().Tracer("gin-middleware")

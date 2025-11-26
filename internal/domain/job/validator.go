@@ -5,12 +5,10 @@ import (
 	"regexp"
 )
 
-// JobValidator provides validation functions for jobs
 type JobValidator struct {
 	emailRegex *regexp.Regexp
 }
 
-// NewJobValidator creates a new job validator
 func NewJobValidator() *JobValidator {
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 	return &JobValidator{
@@ -18,7 +16,6 @@ func NewJobValidator() *JobValidator {
 	}
 }
 
-// ValidateJob validates a job based on its type and payload
 func (v *JobValidator) ValidateJob(job Job) error {
 	if err := v.validateBasicJob(job); err != nil {
 		return err
@@ -34,12 +31,10 @@ func (v *JobValidator) ValidateJob(job Job) error {
 	case JobTypeNotification:
 		return v.validateNotificationJob(job)
 	default:
-		// For unknown types, just validate basic job fields
 		return nil
 	}
 }
 
-// validateBasicJob validates basic job fields
 func (v *JobValidator) validateBasicJob(job Job) error {
 	if job.GetType() == "" {
 		return fmt.Errorf("job type is required")
@@ -64,11 +59,9 @@ func (v *JobValidator) validateBasicJob(job Job) error {
 	return nil
 }
 
-// validateEmailJob validates email-specific job fields
 func (v *JobValidator) validateEmailJob(job Job) error {
 	payload := job.GetPayload()
 
-	// Validate recipient email
 	to, exists := payload["to"]
 	if !exists {
 		return fmt.Errorf("email recipient is required")
@@ -83,7 +76,6 @@ func (v *JobValidator) validateEmailJob(job Job) error {
 		return fmt.Errorf("invalid email address: %s", toStr)
 	}
 
-	// Validate based on email type
 	emailType, exists := payload["type"]
 	if !exists {
 		return fmt.Errorf("email type is required")
@@ -108,7 +100,6 @@ func (v *JobValidator) validateEmailJob(job Job) error {
 	return nil
 }
 
-// validateFileProcessingJob validates file processing job fields
 func (v *JobValidator) validateFileProcessingJob(job Job) error {
 	payload := job.GetPayload()
 
@@ -130,19 +121,16 @@ func (v *JobValidator) validateFileProcessingJob(job Job) error {
 		return fmt.Errorf("file operation must be a non-empty string")
 	}
 
-	// Validate specific operations
 	switch operation {
 	case "resize":
 		return v.validateImageResizeParams(payload)
 	case "convert", "compress", "thumbnail":
-		// Basic validation for other operations
 		return nil
 	default:
 		return fmt.Errorf("unsupported file operation: %s", operation)
 	}
 }
 
-// validateImageResizeParams validates image resize parameters
 func (v *JobValidator) validateImageResizeParams(payload JobPayload) error {
 	params, exists := payload["params"]
 	if !exists {
@@ -154,7 +142,6 @@ func (v *JobValidator) validateImageResizeParams(payload JobPayload) error {
 		return fmt.Errorf("resize parameters must be a map")
 	}
 
-	// Validate width
 	width, exists := paramsMap["width"]
 	if !exists {
 		return fmt.Errorf("width is required for image resize")
@@ -164,7 +151,6 @@ func (v *JobValidator) validateImageResizeParams(payload JobPayload) error {
 		return fmt.Errorf("width must be a positive integer")
 	}
 
-	// Validate height
 	height, exists := paramsMap["height"]
 	if !exists {
 		return fmt.Errorf("height is required for image resize")
@@ -174,7 +160,6 @@ func (v *JobValidator) validateImageResizeParams(payload JobPayload) error {
 		return fmt.Errorf("height must be a positive integer")
 	}
 
-	// Validate quality (optional)
 	if quality, exists := paramsMap["quality"]; exists {
 		if qualityInt, ok := quality.(int); !ok || qualityInt < 1 || qualityInt > 100 {
 			return fmt.Errorf("quality must be an integer between 1 and 100")
@@ -184,16 +169,13 @@ func (v *JobValidator) validateImageResizeParams(payload JobPayload) error {
 	return nil
 }
 
-// validateDataCleanupJob validates data cleanup job fields
 func (v *JobValidator) validateDataCleanupJob(job Job) error {
 	payload := job.GetPayload()
 
-	// Check if it's a user cleanup job
 	if cleanupType, exists := payload["type"]; exists && cleanupType == "user" {
 		return v.validateUserCleanupJob(payload)
 	}
 
-	// Regular data cleanup validation
 	table, exists := payload["table"]
 	if !exists {
 		return fmt.Errorf("table name is required for data cleanup")
@@ -206,7 +188,6 @@ func (v *JobValidator) validateDataCleanupJob(job Job) error {
 	return nil
 }
 
-// validateUserCleanupJob validates user cleanup job fields
 func (v *JobValidator) validateUserCleanupJob(payload JobPayload) error {
 	userID, exists := payload["userID"]
 	if !exists {
@@ -231,7 +212,6 @@ func (v *JobValidator) validateUserCleanupJob(payload JobPayload) error {
 		return fmt.Errorf("at least one cleanup action is required")
 	}
 
-	// Validate action types
 	validActions := map[string]bool{
 		"delete_files":    true,
 		"anonymize_data":  true,
@@ -249,7 +229,6 @@ func (v *JobValidator) validateUserCleanupJob(payload JobPayload) error {
 	return nil
 }
 
-// validateNotificationJob validates notification job fields
 func (v *JobValidator) validateNotificationJob(job Job) error {
 	payload := job.GetPayload()
 
@@ -283,7 +262,6 @@ func (v *JobValidator) validateNotificationJob(job Job) error {
 	return nil
 }
 
-// ValidateJobOptions validates job options
 func (v *JobValidator) ValidateJobOptions(opts JobOptions) error {
 	if opts.MaxRetries < 0 {
 		return fmt.Errorf("max retries cannot be negative")

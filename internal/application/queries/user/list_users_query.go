@@ -7,7 +7,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/pkg/pagination"
 )
 
-// ListUsersQuery represents the query to list users with pagination
 type ListUsersQuery struct {
 	Page     int    `json:"page" validate:"min=1"`
 	Limit    int    `json:"limit" validate:"min=1,max=100"`
@@ -17,21 +16,17 @@ type ListUsersQuery struct {
 	IsActive *bool  `json:"is_active"`
 }
 
-// ListUsersQueryHandler handles the ListUsersQuery
 type ListUsersQueryHandler struct {
 	userRepo user.UserRepository
 }
 
-// NewListUsersQueryHandler creates a new ListUsersQueryHandler
 func NewListUsersQueryHandler(userRepo user.UserRepository) *ListUsersQueryHandler {
 	return &ListUsersQueryHandler{
 		userRepo: userRepo,
 	}
 }
 
-// Handle executes the ListUsersQuery
 func (h *ListUsersQueryHandler) Handle(ctx context.Context, query ListUsersQuery) ([]*user.User, *pagination.Pagination, error) {
-	// Set default values
 	if query.Page <= 0 {
 		query.Page = 1
 	}

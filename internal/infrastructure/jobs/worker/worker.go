@@ -11,7 +11,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
-// Worker represents a single worker that processes jobs
 type Worker struct {
 	id       string
 	queue    job.JobQueue
@@ -23,12 +22,10 @@ type Worker struct {
 	mu       sync.RWMutex
 }
 
-// NewWorker creates a new worker
 func NewWorker(id string, queue job.JobQueue) *Worker {
 	return NewWorkerWithJobMetrics(id, queue, nil)
 }
 
-// NewWorkerWithJobMetrics creates a new worker with job metrics
 func NewWorkerWithJobMetrics(id string, queue job.JobQueue, metrics job.JobMetrics) *Worker {
 	if id == "" {
 		id = uuid.New().String()
@@ -43,26 +40,22 @@ func NewWorkerWithJobMetrics(id string, queue job.JobQueue, metrics job.JobMetri
 	}
 }
 
-// GetWorkerID returns the unique identifier of the worker
 func (w *Worker) GetWorkerID() string {
 	return w.id
 }
 
-// IsRunning returns whether the worker is currently running
 func (w *Worker) IsRunning() bool {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return w.running
 }
 
-// RegisterHandler registers a job handler for a specific job type
 func (w *Worker) RegisterHandler(handler job.JobHandler) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.handlers[handler.GetJobType()] = handler
 }
 
-// Start begins processing jobs from the queue
 func (w *Worker) Start(ctx context.Context) error {
 	w.mu.Lock()
 	if w.running {
@@ -78,7 +71,6 @@ func (w *Worker) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop gracefully stops the worker
 func (w *Worker) Stop(ctx context.Context) error {
 	w.mu.Lock()
 	if !w.running {
@@ -88,10 +80,8 @@ func (w *Worker) Stop(ctx context.Context) error {
 	w.running = false
 	w.mu.Unlock()
 
-	// Signal shutdown
 	close(w.shutdown)
 
-	// Wait for worker to finish with timeout
 	done := make(chan struct{})
 	go func() {
 		w.wg.Wait()
@@ -106,7 +96,6 @@ func (w *Worker) Stop(ctx context.Context) error {
 	}
 }
 
-// run is the main worker loop
 func (w *Worker) run(ctx context.Context) {
 	defer w.wg.Done()
 
@@ -125,43 +114,32 @@ func (w *Worker) run(ctx context.Context) {
 	}
 }
 
-// processJob processes a single job from the queue
 func (w *Worker) processJob(ctx context.Context) {
-	// Try to dequeue a job
 	job, err := w.queue.Dequeue(ctx)
 	if err != nil {
-		// Log error but continue
 		return
 	}
 
 	if job == nil {
-		// No job available
 		return
 	}
 
-	// Start timing for metrics
 	start := time.Now()
 
-	// Find handler for this job type
 	w.mu.RLock()
 	handler, exists := w.handlers[job.GetType()]
 	w.mu.RUnlock()
 
 	if !exists {
-		// No handler found, fail the job
 		w.queue.NackJob(ctx, job, fmt.Errorf("no handler found for job type: %s", job.GetType()))
-		// Record failure metrics if available
 		if w.metrics != nil {
 			w.metrics.IncrementJobsProcessed(job.GetType(), false)
 		}
 		return
 	}
 
-	// Execute the job
 	if err := handler.Execute(ctx, job); err != nil {
-		// Job failed, nack it
 		w.queue.NackJob(ctx, job, err)
-		// Record failure metrics if available
 		if w.metrics != nil {
 			w.metrics.IncrementJobsProcessed(job.GetType(), false)
 			w.metrics.IncrementJobRetries(job.GetType())
@@ -169,9 +147,7 @@ func (w *Worker) processJob(ctx context.Context) {
 		return
 	}
 
-	// Job succeeded, ack it
 	w.queue.AckJob(ctx, job)
-	// Record success metrics if available
 	if w.metrics != nil {
 		duration := time.Since(start)
 		w.metrics.ObserveJobDuration(job.GetType(), duration)
@@ -179,7 +155,6 @@ func (w *Worker) processJob(ctx context.Context) {
 	}
 }
 
-// WorkerPool manages multiple workers
 type WorkerPool struct {
 	workers     map[string]*Worker
 	queue       job.JobQueue
@@ -189,12 +164,10 @@ type WorkerPool struct {
 	shutdown    chan struct{}
 	wg          sync.WaitGroup
 
-	// Stats
 	stats   WorkerPoolStats
 	statsMu sync.RWMutex
 }
 
-// WorkerPoolStats provides statistics about the worker pool
 type WorkerPoolStats struct {
 	ActiveWorkers      int   `json:"active_workers"`
 	TotalJobsProcessed int64 `json:"total_jobs_processed"`
@@ -202,7 +175,6 @@ type WorkerPoolStats struct {
 	FailedJobs         int64 `json:"failed_jobs"`
 }
 
-// NewWorkerPool creates a new worker pool
 func NewWorkerPool(queue job.JobQueue, workerCount int) *WorkerPool {
 	if workerCount <= 0 {
 		workerCount = 1
@@ -216,7 +188,6 @@ func NewWorkerPool(queue job.JobQueue, workerCount int) *WorkerPool {
 	}
 }
 
-// Start starts all workers in the pool
 func (wp *WorkerPool) Start(ctx context.Context) error {
 	wp.mu.Lock()
 	if wp.running {
@@ -226,7 +197,6 @@ func (wp *WorkerPool) Start(ctx context.Context) error {
 	wp.running = true
 	wp.mu.Unlock()
 
-	// Create and start workers
 	for i := 0; i < wp.workerCount; i++ {
 		workerID := fmt.Sprintf("worker-%d", i+1)
 		worker := NewWorker(workerID, wp.queue)
@@ -236,7 +206,6 @@ func (wp *WorkerPool) Start(ctx context.Context) error {
 		wp.mu.Unlock()
 
 		if err := worker.Start(ctx); err != nil {
-			// If any worker fails to start, stop all started workers
 			wp.Stop(ctx)
 			return fmt.Errorf("failed to start worker %s: %w", workerID, err)
 		}
@@ -246,7 +215,6 @@ func (wp *WorkerPool) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop stops all workers gracefully
 func (wp *WorkerPool) Stop(ctx context.Context) error {
 	wp.mu.Lock()
 	if !wp.running {
@@ -256,10 +224,8 @@ func (wp *WorkerPool) Stop(ctx context.Context) error {
 	wp.running = false
 	wp.mu.Unlock()
 
-	// Signal shutdown
 	close(wp.shutdown)
 
-	// Stop all workers
 	var wg sync.WaitGroup
 	wp.mu.RLock()
 	workers := make([]*Worker, 0, len(wp.workers))
@@ -276,7 +242,6 @@ func (wp *WorkerPool) Stop(ctx context.Context) error {
 		}(worker)
 	}
 
-	// Wait for all workers to stop
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
@@ -295,13 +260,11 @@ func (wp *WorkerPool) Stop(ctx context.Context) error {
 	}
 }
 
-// AddWorker adds a worker to the pool
 func (wp *WorkerPool) AddWorker(worker *Worker) {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
 
 	if wp.running {
-		// If pool is running, start the worker
 		go func() {
 			ctx := context.Background()
 			worker.Start(ctx)
@@ -312,13 +275,11 @@ func (wp *WorkerPool) AddWorker(worker *Worker) {
 	wp.updateStats()
 }
 
-// RemoveWorker removes a worker from the pool
 func (wp *WorkerPool) RemoveWorker(workerID string) {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
 
 	if worker, exists := wp.workers[workerID]; exists {
-		// Stop the worker if it's running
 		if worker.IsRunning() {
 			go func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -331,7 +292,6 @@ func (wp *WorkerPool) RemoveWorker(workerID string) {
 	}
 }
 
-// RegisterHandler registers a handler with all workers
 func (wp *WorkerPool) RegisterHandler(handler job.JobHandler) {
 	wp.mu.RLock()
 	defer wp.mu.RUnlock()
@@ -341,21 +301,18 @@ func (wp *WorkerPool) RegisterHandler(handler job.JobHandler) {
 	}
 }
 
-// GetWorkerCount returns the number of active workers
 func (wp *WorkerPool) GetWorkerCount() int {
 	wp.mu.RLock()
 	defer wp.mu.RUnlock()
 	return len(wp.workers)
 }
 
-// GetStats returns worker pool statistics
 func (wp *WorkerPool) GetStats() WorkerPoolStats {
 	wp.statsMu.RLock()
 	defer wp.statsMu.RUnlock()
 	return wp.stats
 }
 
-// updateStats updates the worker pool statistics
 func (wp *WorkerPool) updateStats() {
 	wp.statsMu.Lock()
 	defer wp.statsMu.Unlock()
@@ -372,7 +329,6 @@ func (wp *WorkerPool) updateStats() {
 	wp.stats.ActiveWorkers = activeCount
 }
 
-// IncrementSuccessfulJobs increments the successful jobs counter
 func (wp *WorkerPool) IncrementSuccessfulJobs() {
 	wp.statsMu.Lock()
 	defer wp.statsMu.Unlock()
@@ -380,7 +336,6 @@ func (wp *WorkerPool) IncrementSuccessfulJobs() {
 	wp.stats.TotalJobsProcessed++
 }
 
-// IncrementFailedJobs increments the failed jobs counter
 func (wp *WorkerPool) IncrementFailedJobs() {
 	wp.statsMu.Lock()
 	defer wp.statsMu.Unlock()
@@ -388,13 +343,11 @@ func (wp *WorkerPool) IncrementFailedJobs() {
 	wp.stats.TotalJobsProcessed++
 }
 
-// WorkerWithMetrics wraps a worker to collect metrics
 type WorkerWithMetrics struct {
 	*Worker
 	pool *WorkerPool
 }
 
-// NewWorkerWithMetrics creates a new worker with metrics collection
 func NewWorkerWithMetrics(id string, queue job.JobQueue, pool *WorkerPool) *WorkerWithMetrics {
 	worker := NewWorker(id, queue)
 	return &WorkerWithMetrics{
@@ -403,9 +356,7 @@ func NewWorkerWithMetrics(id string, queue job.JobQueue, pool *WorkerPool) *Work
 	}
 }
 
-// processJob overrides the parent method to collect metrics
 func (wm *WorkerWithMetrics) processJob(ctx context.Context) {
-	// Try to dequeue a job
 	job, err := wm.queue.Dequeue(ctx)
 	if err != nil {
 		return
@@ -415,27 +366,22 @@ func (wm *WorkerWithMetrics) processJob(ctx context.Context) {
 		return
 	}
 
-	// Find handler for this job type
 	wm.mu.RLock()
 	handler, exists := wm.handlers[job.GetType()]
 	wm.mu.RUnlock()
 
 	if !exists {
-		// No handler found, fail the job
 		wm.queue.NackJob(ctx, job, fmt.Errorf("no handler found for job type: %s", job.GetType()))
 		wm.pool.IncrementFailedJobs()
 		return
 	}
 
-	// Execute the job
 	if err := handler.Execute(ctx, job); err != nil {
-		// Job failed, nack it
 		wm.queue.NackJob(ctx, job, err)
 		wm.pool.IncrementFailedJobs()
 		return
 	}
 
-	// Job succeeded, ack it
 	wm.queue.AckJob(ctx, job)
 	wm.pool.IncrementSuccessfulJobs()
 }

@@ -23,7 +23,6 @@ var rootCmd = &cobra.Command{
 	Long:  `A tool for managing database migrations including running migrations, rollbacks, and checking migration status.`,
 }
 
-// loggerProvider provides a development logger
 func loggerProvider() *zap.Logger {
 	logger, _ := zap.NewDevelopment()
 	return logger
@@ -44,7 +43,6 @@ func init() {
 	rootCmd.AddCommand(versionCommand())
 }
 
-// Migration commands
 func upCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "up",
@@ -214,20 +212,16 @@ func createCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			name := args[0]
 
-			// Create migration directory if it doesn't exist
 			migrationDir := "internal/adapters/persistence/postgres/migrations"
 			if err := os.MkdirAll(migrationDir, 0755); err != nil {
 				log.Fatalf("Failed to create migration directory: %v", err)
 			}
 
-			// Generate timestamp
 			timestamp := time.Now().Format("20060102150405")
 
-			// Create migration file name
 			fileName := fmt.Sprintf("%s_%s.sql", timestamp, strings.ReplaceAll(name, " ", "_"))
 			filePath := filepath.Join(migrationDir, fileName)
 
-			// Create migration file content
 			content := fmt.Sprintf(`-- Migration: %s
 -- Created at: %s
 
@@ -240,7 +234,6 @@ func createCommand() *cobra.Command {
 
 `, name, time.Now().Format("2006-01-02 15:04:05"))
 
-			// Write migration file
 			if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 				log.Fatalf("Failed to create migration file: %v", err)
 			}
@@ -265,11 +258,9 @@ func versionCommand() *cobra.Command {
 	}
 }
 
-// Helper functions
 func runMigrationsUp(db *gorm.DB, steps int) error {
 	fmt.Println("Auto-migrating database schema...")
 
-	// Auto-migrate all models
 	if err := db.AutoMigrate(); err != nil {
 		return fmt.Errorf("failed to auto-migrate: %w", err)
 	}
@@ -281,10 +272,6 @@ func runMigrationsUp(db *gorm.DB, steps int) error {
 func runMigrationsDown(db *gorm.DB, steps int) error {
 	fmt.Printf("Rolling back %d migration steps...\n", steps)
 
-	// For now, we'll implement a simple table drop approach
-	// In a real implementation, you would track migration versions
-	// and rollback specific migrations
-
 	tables := []string{
 		"role_permissions",
 		"user_roles",
@@ -293,7 +280,6 @@ func runMigrationsDown(db *gorm.DB, steps int) error {
 		"users",
 	}
 
-	// Rollback specified number of tables (or all if steps >= len(tables))
 	rollbackCount := steps
 	if steps >= len(tables) {
 		rollbackCount = len(tables)
@@ -313,7 +299,6 @@ func runMigrationsDown(db *gorm.DB, steps int) error {
 func showMigrationStatus(db *gorm.DB) error {
 	fmt.Println("\n=== Migration Status ===")
 
-	// Check if tables exist
 	tables := []string{"users", "roles", "permissions", "user_roles", "role_permissions"}
 
 	for _, table := range tables {
@@ -333,13 +318,11 @@ func showMigrationStatus(db *gorm.DB) error {
 
 	fmt.Println("\n=== Database Info ===")
 
-	// Get database version
 	var version string
 	if err := db.Raw("SELECT version()").Scan(&version).Error; err == nil {
 		fmt.Printf("PostgreSQL Version: %s\n", strings.Split(version, " ")[1])
 	}
 
-	// Get current database name
 	var dbName string
 	if err := db.Raw("SELECT current_database()").Scan(&dbName).Error; err == nil {
 		fmt.Printf("Current Database: %s\n", dbName)

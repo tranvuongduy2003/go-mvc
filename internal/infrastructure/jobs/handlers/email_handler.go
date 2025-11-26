@@ -8,20 +8,17 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
-// EmailJobHandler handles email sending jobs
 type EmailJobHandler struct {
 	emailService EmailService
 	metrics      job.JobMetrics
 }
 
-// EmailService defines the interface for sending emails
 type EmailService interface {
 	SendEmail(ctx context.Context, to, subject, body string) error
 	SendBulkEmail(ctx context.Context, recipients []string, subject, body string) error
 	SendTemplateEmail(ctx context.Context, to, templateID string, data map[string]interface{}) error
 }
 
-// NewEmailJobHandler creates a new email job handler
 func NewEmailJobHandler(emailService EmailService, metrics job.JobMetrics) *EmailJobHandler {
 	return &EmailJobHandler{
 		emailService: emailService,
@@ -29,9 +26,7 @@ func NewEmailJobHandler(emailService EmailService, metrics job.JobMetrics) *Emai
 	}
 }
 
-// Execute processes an email job
 func (h *EmailJobHandler) Execute(ctx context.Context, excutedJob job.Job) error {
-	// Start timing
 	start := time.Now()
 	defer func() {
 		if h.metrics != nil {
@@ -39,7 +34,6 @@ func (h *EmailJobHandler) Execute(ctx context.Context, excutedJob job.Job) error
 		}
 	}()
 
-	// Cast to EmailJob
 	emailJob, ok := excutedJob.(*job.EmailJob)
 	if !ok {
 		err := fmt.Errorf("expected EmailJob, got %T", excutedJob)
@@ -49,7 +43,6 @@ func (h *EmailJobHandler) Execute(ctx context.Context, excutedJob job.Job) error
 		return err
 	}
 
-	// Extract email data
 	payload := emailJob.GetPayload()
 	emailType, _ := payload["email_type"].(string)
 	to, _ := payload["to"].(string)
@@ -58,7 +51,6 @@ func (h *EmailJobHandler) Execute(ctx context.Context, excutedJob job.Job) error
 
 	var err error
 
-	// Handle different email types
 	switch emailType {
 	case "welcome":
 		err = h.handleWelcomeEmail(ctx, to, payload)
@@ -71,16 +63,13 @@ func (h *EmailJobHandler) Execute(ctx context.Context, excutedJob job.Job) error
 	case "template":
 		err = h.handleTemplateEmail(ctx, to, payload)
 	default:
-		// Generic email
 		err = h.emailService.SendEmail(ctx, to, subject, body)
 	}
 
-	// Record metrics
 	if h.metrics != nil {
 		success := err == nil
 		h.metrics.IncrementJobsProcessed(excutedJob.GetType(), success)
 
-		// Custom business metrics
 		if businessMetrics, ok := h.metrics.(*BusinessEmailMetrics); ok {
 			businessMetrics.RecordEmailJob(emailType, success)
 		}
@@ -93,12 +82,9 @@ func (h *EmailJobHandler) Execute(ctx context.Context, excutedJob job.Job) error
 	return nil
 }
 
-// GetJobType returns the job type this handler processes
 func (h *EmailJobHandler) GetJobType() string {
 	return "email"
 }
-
-// Private helper methods for different email types
 
 func (h *EmailJobHandler) handleWelcomeEmail(ctx context.Context, to string, payload job.JobPayload) error {
 	username, _ := payload["username"].(string)
@@ -136,7 +122,6 @@ func (h *EmailJobHandler) handlePasswordResetEmail(ctx context.Context, to strin
 }
 
 func (h *EmailJobHandler) handleNotificationEmail(ctx context.Context, to, subject, body string) error {
-	// Add notification wrapper
 	wrappedBody := fmt.Sprintf(`
 		<div style="padding: 20px; border-left: 4px solid #007cba;">
 			<h2>📢 Notification</h2>
@@ -174,15 +159,12 @@ func (h *EmailJobHandler) handleTemplateEmail(ctx context.Context, to string, pa
 	return h.emailService.SendTemplateEmail(ctx, to, templateID, templateData)
 }
 
-// EmailJobFactory creates email jobs with proper validation
 type EmailJobFactory struct{}
 
-// NewEmailJobFactory creates a new email job factory
 func NewEmailJobFactory() *EmailJobFactory {
 	return &EmailJobFactory{}
 }
 
-// CreateWelcomeEmailJob creates a welcome email job
 func (f *EmailJobFactory) CreateWelcomeEmailJob(to, username string) (job.Job, error) {
 	payload := job.JobPayload{
 		"email_type": "welcome",
@@ -194,7 +176,6 @@ func (f *EmailJobFactory) CreateWelcomeEmailJob(to, username string) (job.Job, e
 	return factory.CreateJob("email", payload)
 }
 
-// CreatePasswordResetEmailJob creates a password reset email job
 func (f *EmailJobFactory) CreatePasswordResetEmailJob(to, resetToken, resetURL string) (job.Job, error) {
 	payload := job.JobPayload{
 		"email_type":  "password_reset",
@@ -207,7 +188,6 @@ func (f *EmailJobFactory) CreatePasswordResetEmailJob(to, resetToken, resetURL s
 	return factory.CreateJob("email", payload)
 }
 
-// CreateNotificationEmailJob creates a notification email job
 func (f *EmailJobFactory) CreateNotificationEmailJob(to, subject, body string, priority job.JobPriority) (job.Job, error) {
 	payload := job.JobPayload{
 		"email_type": "notification",
@@ -225,7 +205,6 @@ func (f *EmailJobFactory) CreateNotificationEmailJob(to, subject, body string, p
 	return factory.CreateJobWithOptions("email", payload, opts)
 }
 
-// CreateBulkEmailJob creates a bulk email job
 func (f *EmailJobFactory) CreateBulkEmailJob(recipients []string, subject, body string) (job.Job, error) {
 	payload := job.JobPayload{
 		"email_type": "bulk",
@@ -243,33 +222,24 @@ func (f *EmailJobFactory) CreateBulkEmailJob(recipients []string, subject, body 
 	return factory.CreateJobWithOptions("email", payload, opts)
 }
 
-// Mock email service for demonstration
 type MockEmailService struct{}
 
-// NewMockEmailService creates a new mock email service
 func NewMockEmailService() *MockEmailService {
 	return &MockEmailService{}
 }
 
-// SendEmail simulates sending a single email
 func (m *MockEmailService) SendEmail(ctx context.Context, to, subject, body string) error {
-	// Simulate processing time
 	time.Sleep(100 * time.Millisecond)
 
-	// Simulate occasional failures
 	if to == "fail@example.com" {
 		return fmt.Errorf("failed to send email to %s", to)
 	}
 
-	// In a real implementation, this would integrate with an email service
-	// like SendGrid, Amazon SES, or SMTP
 	fmt.Printf("📧 Email sent to %s: %s\n", to, subject)
 	return nil
 }
 
-// SendBulkEmail simulates sending bulk emails
 func (m *MockEmailService) SendBulkEmail(ctx context.Context, recipients []string, subject, body string) error {
-	// Simulate longer processing time for bulk emails
 	time.Sleep(time.Duration(len(recipients)) * 50 * time.Millisecond)
 
 	for _, recipient := range recipients {
@@ -281,22 +251,18 @@ func (m *MockEmailService) SendBulkEmail(ctx context.Context, recipients []strin
 	return nil
 }
 
-// SendTemplateEmail simulates sending template-based emails
 func (m *MockEmailService) SendTemplateEmail(ctx context.Context, to, templateID string, data map[string]interface{}) error {
-	// Simulate template processing time
 	time.Sleep(150 * time.Millisecond)
 
 	fmt.Printf("📧 Template email sent to %s using template %s\n", to, templateID)
 	return nil
 }
 
-// BusinessEmailMetrics extends the basic metrics with email-specific metrics
 type BusinessEmailMetrics struct {
 	job.JobMetrics
 	emailCounts map[string]int64
 }
 
-// NewBusinessEmailMetrics creates enhanced email metrics
 func NewBusinessEmailMetrics(baseMetrics job.JobMetrics) *BusinessEmailMetrics {
 	return &BusinessEmailMetrics{
 		JobMetrics:  baseMetrics,
@@ -304,7 +270,6 @@ func NewBusinessEmailMetrics(baseMetrics job.JobMetrics) *BusinessEmailMetrics {
 	}
 }
 
-// RecordEmailJob records email-specific metrics
 func (m *BusinessEmailMetrics) RecordEmailJob(emailType string, success bool) {
 	if success {
 		m.emailCounts[emailType]++

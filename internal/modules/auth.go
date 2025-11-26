@@ -17,10 +17,8 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 
-// AuthModule provides authentication and authorization dependencies
 var AuthModule = fx.Module("auth",
 	fx.Provide(
-		// Services - provide concrete service as all interface types
 		NewAuthService,
 		NewTokenManagementService,
 		NewPasswordManagementService,
@@ -28,7 +26,6 @@ var AuthModule = fx.Module("auth",
 		NewAuthorizationService,
 		NewSMTPService,
 
-		// Command Handlers
 		NewLoginCommandHandler,
 		NewRegisterCommandHandler,
 		NewRefreshTokenCommandHandler,
@@ -40,67 +37,51 @@ var AuthModule = fx.Module("auth",
 		NewLogoutCommandHandler,
 		NewLogoutAllDevicesCommandHandler,
 
-		// Query Handlers
 		NewGetUserProfileQueryHandler,
 		NewGetUserPermissionsQueryHandler,
 	),
 )
 
-// Command Handler Providers
-
-// NewLoginCommandHandler provides LoginCommandHandler
 func NewLoginCommandHandler(authService contracts.AuthService) *authCommands.LoginCommandHandler {
 	return authCommands.NewLoginCommandHandler(authService)
 }
 
-// NewRegisterCommandHandler provides RegisterCommandHandler
 func NewRegisterCommandHandler(authService contracts.AuthService) *authCommands.RegisterCommandHandler {
 	return authCommands.NewRegisterCommandHandler(authService)
 }
 
-// NewRefreshTokenCommandHandler provides RefreshTokenCommandHandler
 func NewRefreshTokenCommandHandler(authService contracts.AuthService) *authCommands.RefreshTokenCommandHandler {
 	return authCommands.NewRefreshTokenCommandHandler(authService)
 }
 
-// NewChangePasswordCommandHandler provides ChangePasswordCommandHandler
 func NewChangePasswordCommandHandler(passwordService contracts.PasswordManagementService) *authCommands.ChangePasswordCommandHandler {
 	return authCommands.NewChangePasswordCommandHandler(passwordService)
 }
 
-// NewResetPasswordCommandHandler provides ResetPasswordCommandHandler
 func NewResetPasswordCommandHandler(passwordService contracts.PasswordManagementService) *authCommands.ResetPasswordCommandHandler {
 	return authCommands.NewResetPasswordCommandHandler(passwordService)
 }
 
-// NewConfirmPasswordResetCommandHandler provides ConfirmPasswordResetCommandHandler
 func NewConfirmPasswordResetCommandHandler(passwordService contracts.PasswordManagementService) *authCommands.ConfirmPasswordResetCommandHandler {
 	return authCommands.NewConfirmPasswordResetCommandHandler(passwordService)
 }
 
-// NewVerifyEmailCommandHandler provides VerifyEmailCommandHandler
 func NewVerifyEmailCommandHandler(emailVerificationService contracts.EmailVerificationService) *authCommands.VerifyEmailCommandHandler {
 	return authCommands.NewVerifyEmailCommandHandler(emailVerificationService)
 }
 
-// NewResendVerificationEmailCommandHandler provides ResendVerificationEmailCommandHandler
 func NewResendVerificationEmailCommandHandler(emailVerificationService contracts.EmailVerificationService) *authCommands.ResendVerificationEmailCommandHandler {
 	return authCommands.NewResendVerificationEmailCommandHandler(emailVerificationService)
 }
 
-// NewLogoutCommandHandler provides LogoutCommandHandler
 func NewLogoutCommandHandler(tokenService contracts.TokenManagementService) *authCommands.LogoutCommandHandler {
 	return authCommands.NewLogoutCommandHandler(tokenService)
 }
 
-// NewLogoutAllDevicesCommandHandler provides LogoutAllDevicesCommandHandler
 func NewLogoutAllDevicesCommandHandler(tokenService contracts.TokenManagementService) *authCommands.LogoutAllDevicesCommandHandler {
 	return authCommands.NewLogoutAllDevicesCommandHandler(tokenService)
 }
 
-// Query Handler Providers
-
-// NewGetUserProfileQueryHandler provides GetUserProfileQueryHandler
 func NewGetUserProfileQueryHandler(
 	userRepo user.UserRepository,
 	roleRepo auth.RoleRepository,
@@ -109,14 +90,10 @@ func NewGetUserProfileQueryHandler(
 	return authQueries.NewGetUserProfileQueryHandler(userRepo, roleRepo, authorizationService)
 }
 
-// NewGetUserPermissionsQueryHandler provides GetUserPermissionsQueryHandler
 func NewGetUserPermissionsQueryHandler(authorizationService contracts.AuthorizationService) *authQueries.GetUserPermissionsQueryHandler {
 	return authQueries.NewGetUserPermissionsQueryHandler(authorizationService)
 }
 
-// Service Providers
-
-// AuthServiceParams holds parameters for AuthService
 type AuthServiceParams struct {
 	fx.In
 	UserRepo       user.UserRepository
@@ -127,7 +104,6 @@ type AuthServiceParams struct {
 	Logger         *logger.Logger
 }
 
-// NewAuthService provides AuthService interface
 func NewAuthService(params AuthServiceParams) contracts.AuthService {
 	return appServices.NewAuthService(
 		params.UserRepo,
@@ -139,8 +115,6 @@ func NewAuthService(params AuthServiceParams) contracts.AuthService {
 	)
 }
 
-// NewTokenManagementService provides TokenManagementService
-// The concrete auth service implements all split interfaces
 func NewTokenManagementService(params AuthServiceParams) contracts.TokenManagementService {
 	return appServices.NewAuthService(
 		params.UserRepo,
@@ -152,8 +126,6 @@ func NewTokenManagementService(params AuthServiceParams) contracts.TokenManageme
 	)
 }
 
-// NewPasswordManagementService provides PasswordManagementService
-// The concrete auth service implements all split interfaces
 func NewPasswordManagementService(params AuthServiceParams) contracts.PasswordManagementService {
 	return appServices.NewAuthService(
 		params.UserRepo,
@@ -165,8 +137,6 @@ func NewPasswordManagementService(params AuthServiceParams) contracts.PasswordMa
 	)
 }
 
-// NewEmailVerificationService provides EmailVerificationService
-// The concrete auth service implements all split interfaces
 func NewEmailVerificationService(params AuthServiceParams) contracts.EmailVerificationService {
 	return appServices.NewAuthService(
 		params.UserRepo,
@@ -178,7 +148,6 @@ func NewEmailVerificationService(params AuthServiceParams) contracts.EmailVerifi
 	)
 }
 
-// AuthorizationServiceParams holds parameters for AuthorizationService
 type AuthorizationServiceParams struct {
 	fx.In
 	UserRepo           user.UserRepository
@@ -188,7 +157,6 @@ type AuthorizationServiceParams struct {
 	RolePermissionRepo auth.RolePermissionRepository
 }
 
-// NewAuthorizationService provides AuthorizationService
 func NewAuthorizationService(params AuthorizationServiceParams) contracts.AuthorizationService {
 	return appServices.NewAuthorizationService(
 		params.UserRepo,
@@ -199,7 +167,6 @@ func NewAuthorizationService(params AuthorizationServiceParams) contracts.Author
 	)
 }
 
-// NewSMTPService provides SMTPService
 func NewSMTPService(cfg *config.AppConfig, logger *logger.Logger) *external.SMTPService {
 	return external.NewSMTPService(&cfg.External.EmailService.SMTP, logger)
 }

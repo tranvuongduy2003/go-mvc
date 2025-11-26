@@ -5,7 +5,6 @@ import (
 	"net/http"
 )
 
-// ErrorType định nghĩa các loại lỗi
 type ErrorType string
 
 const (
@@ -17,7 +16,6 @@ const (
 	ErrorTypeInternal     ErrorType = "INTERNAL_ERROR"
 )
 
-// AppError là custom error type cho ứng dụng
 type AppError struct {
 	Type    ErrorType `json:"type"`
 	Message string    `json:"message"`
@@ -25,7 +23,6 @@ type AppError struct {
 	Cause   error     `json:"-"` // Không serialize cause
 }
 
-// Error implements error interface
 func (e *AppError) Error() string {
 	if e.Cause != nil {
 		return fmt.Sprintf("%s: %s (caused by: %v)", e.Type, e.Message, e.Cause)
@@ -33,17 +30,13 @@ func (e *AppError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Message)
 }
 
-// Unwrap returns the underlying cause
 func (e *AppError) Unwrap() error {
 	return e.Cause
 }
 
-// HTTPStatusCode returns HTTP status code for the error
 func (e *AppError) HTTPStatusCode() int {
 	return e.Code
 }
-
-// Constructor functions for different error types
 
 func NewValidationError(message string, cause error) *AppError {
 	return &AppError{

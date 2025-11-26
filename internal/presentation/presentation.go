@@ -17,31 +17,26 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/pkg/jwt"
 )
 
-// ServerModule provides HTTP server dependencies
 var ServerModule = fx.Module("server",
 	fx.Provide(
 		NewHTTPServer,
 		NewGinRouter,
 		NewMiddlewareManager,
 	),
-	// Note: Routes registration moved to main.go after middleware setup
 )
 
-// ServerParams holds parameters for server providers
 type ServerParams struct {
 	fx.In
 	Config *config.AppConfig
 	Router *gin.Engine
 }
 
-// RouterParams holds parameters for router
 type RouterParams struct {
 	fx.In
 	Config *config.AppConfig
 	Logger *logger.Logger
 }
 
-// RouteParams holds parameters for route registration
 type RouteParams struct {
 	fx.In
 	Router      *gin.Engine
@@ -51,7 +46,6 @@ type RouteParams struct {
 	AuthService appservices.AuthService
 }
 
-// MiddlewareParams holds parameters for middleware setup
 type MiddlewareParams struct {
 	fx.In
 	Router            *gin.Engine
@@ -59,19 +53,16 @@ type MiddlewareParams struct {
 	Config            *config.AppConfig
 }
 
-// NewGinRouter creates and configures Gin router
 func NewGinRouter(params RouterParams) *gin.Engine {
 	if params.Config.App.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Create router without default middleware
 	router := gin.New()
 
 	return router
 }
 
-// NewMiddlewareManager creates middleware manager
 func NewMiddlewareManager(
 	config *config.AppConfig,
 	logger *logger.Logger,
@@ -79,7 +70,6 @@ func NewMiddlewareManager(
 ) *middleware.MiddlewareManager {
 	middlewareConfig := middleware.DefaultMiddlewareConfig()
 
-	// Customize config based on environment
 	if config.App.Environment == "production" {
 		middlewareConfig.Logging.LogRequestBody = false
 		middlewareConfig.Logging.LogResponseBody = false
@@ -95,7 +85,6 @@ func NewMiddlewareManager(
 	return middleware.NewMiddlewareManager(logger, middlewareConfig, jwtService)
 }
 
-// SetupMiddleware configures all middleware
 func SetupMiddleware(params MiddlewareParams) {
 	if params.Config.App.Environment == "production" {
 		allowedOrigins := []string{
@@ -108,14 +97,11 @@ func SetupMiddleware(params MiddlewareParams) {
 	}
 }
 
-// RegisterRoutes registers all application routes
 func RegisterRoutes(params RouteParams) {
-	// Create auth middleware
 	authMiddleware := middleware.NewAuthMiddleware(&params.AuthService)
 
 	v1API := params.Router.Group("/api/v1")
 	{
-		// Authentication routes (no auth required)
 		auth := v1API.Group("/auth")
 		{
 			auth.POST("/register", params.AuthHandler.Register)
@@ -127,7 +113,6 @@ func RegisterRoutes(params RouteParams) {
 			auth.POST("/resend-verification", params.AuthHandler.ResendVerificationEmail)
 		}
 
-		// Protected auth routes (authentication required)
 		protectedAuth := v1API.Group("/auth")
 		protectedAuth.Use(authMiddleware.RequireAuth())
 		{
@@ -138,7 +123,6 @@ func RegisterRoutes(params RouteParams) {
 			protectedAuth.PUT("/change-password", params.AuthHandler.ChangePassword)
 		}
 
-		// User routes (protected)
 		users := v1API.Group("/users")
 		{
 			users.POST("", params.UserHandler.CreateUser)
@@ -149,7 +133,6 @@ func RegisterRoutes(params RouteParams) {
 			users.POST("/:id/avatar", params.UserHandler.UploadAvatar) // Avatar upload endpoint
 		}
 
-		// Test route
 		v1API.GET("/test", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"message": "Test API endpoint",
@@ -159,7 +142,6 @@ func RegisterRoutes(params RouteParams) {
 	}
 }
 
-// NewHTTPServer creates HTTP server
 func NewHTTPServer(params ServerParams) *http.Server {
 	addr := fmt.Sprintf(":%d", params.Config.Server.HTTP.Port)
 	return &http.Server{
@@ -168,7 +150,6 @@ func NewHTTPServer(params ServerParams) *http.Server {
 	}
 }
 
-// HTTPServerLifecycle handles HTTP server lifecycle
 func HTTPServerLifecycle(
 	lc fx.Lifecycle,
 	server *http.Server,

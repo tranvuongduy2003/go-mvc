@@ -10,19 +10,16 @@ import (
 	"gorm.io/gorm"
 )
 
-// userRoleRepository implements the UserRoleRepository interface
 type userRoleRepository struct {
 	db *gorm.DB
 }
 
-// NewUserRoleRepository creates a new UserRoleRepository instance
 func NewUserRoleRepository(db *gorm.DB) auth.UserRoleRepository {
 	return &userRoleRepository{
 		db: db,
 	}
 }
 
-// AssignRoleToUser assigns a role to a user
 func (r *userRoleRepository) AssignRoleToUser(ctx context.Context, userID, roleID string, assignedBy *string, expiresAt *time.Time) error {
 	userRoleModel := &models.UserRoleModel{
 		UserID:     userID,
@@ -39,7 +36,6 @@ func (r *userRoleRepository) AssignRoleToUser(ctx context.Context, userID, roleI
 	return nil
 }
 
-// RevokeRoleFromUser revokes a role from a user
 func (r *userRoleRepository) RevokeRoleFromUser(ctx context.Context, userID, roleID string) error {
 	if err := r.db.WithContext(ctx).
 		Where("user_id = ? AND role_id = ?", userID, roleID).
@@ -49,7 +45,6 @@ func (r *userRoleRepository) RevokeRoleFromUser(ctx context.Context, userID, rol
 	return nil
 }
 
-// GetUserRole retrieves a specific user-role assignment
 func (r *userRoleRepository) GetUserRole(ctx context.Context, userID, roleID string) (*auth.UserRole, error) {
 	var userRoleModel models.UserRoleModel
 	if err := r.db.WithContext(ctx).
@@ -63,7 +58,6 @@ func (r *userRoleRepository) GetUserRole(ctx context.Context, userID, roleID str
 	return r.modelToDomain(&userRoleModel), nil
 }
 
-// GetUserRoleByID retrieves a user-role assignment by ID
 func (r *userRoleRepository) GetUserRoleByID(ctx context.Context, id string) (*auth.UserRole, error) {
 	var userRoleModel models.UserRoleModel
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&userRoleModel).Error; err != nil {
@@ -75,7 +69,6 @@ func (r *userRoleRepository) GetUserRoleByID(ctx context.Context, id string) (*a
 	return r.modelToDomain(&userRoleModel), nil
 }
 
-// GetUserRoles retrieves all role assignments for a user
 func (r *userRoleRepository) GetUserRoles(ctx context.Context, userID string) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 	if err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&userRoleModels).Error; err != nil {
@@ -90,7 +83,6 @@ func (r *userRoleRepository) GetUserRoles(ctx context.Context, userID string) ([
 	return userRoles, nil
 }
 
-// GetActiveUserRoles retrieves all active role assignments for a user
 func (r *userRoleRepository) GetActiveUserRoles(ctx context.Context, userID string) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 
@@ -110,7 +102,6 @@ func (r *userRoleRepository) GetActiveUserRoles(ctx context.Context, userID stri
 	return userRoles, nil
 }
 
-// GetRoleUsers retrieves all user assignments for a role
 func (r *userRoleRepository) GetRoleUsers(ctx context.Context, roleID string) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 	if err := r.db.WithContext(ctx).Where("role_id = ?", roleID).Find(&userRoleModels).Error; err != nil {
@@ -125,7 +116,6 @@ func (r *userRoleRepository) GetRoleUsers(ctx context.Context, roleID string) ([
 	return userRoles, nil
 }
 
-// GetActiveRoleUsers retrieves all active user assignments for a role
 func (r *userRoleRepository) GetActiveRoleUsers(ctx context.Context, roleID string) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 
@@ -145,14 +135,12 @@ func (r *userRoleRepository) GetActiveRoleUsers(ctx context.Context, roleID stri
 	return userRoles, nil
 }
 
-// List retrieves a paginated list of user-role assignments
 func (r *userRoleRepository) List(ctx context.Context, params auth.ListUserRolesParams) ([]*auth.UserRole, *pagination.Pagination, error) {
 	var userRoleModels []models.UserRoleModel
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&models.UserRoleModel{})
 
-	// Apply filters
 	if params.UserID != "" {
 		query = query.Where("user_id = ?", params.UserID)
 	}
@@ -177,16 +165,13 @@ func (r *userRoleRepository) List(ctx context.Context, params auth.ListUserRoles
 		}
 	}
 
-	// Count total records
 	if err := query.Count(&total).Error; err != nil {
 		return nil, nil, err
 	}
 
-	// Create pagination object
 	paginationObj := pagination.NewPagination(params.Page, params.Limit)
 	paginationObj.SetTotal(total)
 
-	// Apply sorting
 	sortBy := params.SortBy
 	if sortBy == "" {
 		sortBy = "created_at"
@@ -197,15 +182,12 @@ func (r *userRoleRepository) List(ctx context.Context, params auth.ListUserRoles
 	}
 	query = query.Order(sortBy + " " + sortDir)
 
-	// Apply pagination
 	query = query.Offset(paginationObj.Offset()).Limit(paginationObj.PageSize)
 
-	// Execute query
 	if err := query.Find(&userRoleModels).Error; err != nil {
 		return nil, nil, err
 	}
 
-	// Convert models to domain entities
 	userRoles := make([]*auth.UserRole, 0, len(userRoleModels))
 	for _, model := range userRoleModels {
 		userRoles = append(userRoles, r.modelToDomain(&model))
@@ -214,7 +196,6 @@ func (r *userRoleRepository) List(ctx context.Context, params auth.ListUserRoles
 	return userRoles, paginationObj, nil
 }
 
-// UpdateUserRole updates a user-role assignment
 func (r *userRoleRepository) UpdateUserRole(ctx context.Context, userRole *auth.UserRole) error {
 	userRoleModel := r.domainToModel(userRole)
 	if err := r.db.WithContext(ctx).Model(&userRoleModel).Where("id = ?", userRoleModel.ID).Updates(userRoleModel).Error; err != nil {
@@ -223,7 +204,6 @@ func (r *userRoleRepository) UpdateUserRole(ctx context.Context, userRole *auth.
 	return nil
 }
 
-// ActivateUserRole activates a user-role assignment
 func (r *userRoleRepository) ActivateUserRole(ctx context.Context, id string) error {
 	if err := r.db.WithContext(ctx).Model(&models.UserRoleModel{}).Where("id = ?", id).Update("is_active", true).Error; err != nil {
 		return err
@@ -231,7 +211,6 @@ func (r *userRoleRepository) ActivateUserRole(ctx context.Context, id string) er
 	return nil
 }
 
-// DeactivateUserRole deactivates a user-role assignment
 func (r *userRoleRepository) DeactivateUserRole(ctx context.Context, id string) error {
 	if err := r.db.WithContext(ctx).Model(&models.UserRoleModel{}).Where("id = ?", id).Update("is_active", false).Error; err != nil {
 		return err
@@ -239,7 +218,6 @@ func (r *userRoleRepository) DeactivateUserRole(ctx context.Context, id string) 
 	return nil
 }
 
-// SetExpiration sets or updates expiration for a user-role assignment
 func (r *userRoleRepository) SetExpiration(ctx context.Context, userID, roleID string, expiresAt *time.Time) error {
 	if err := r.db.WithContext(ctx).Model(&models.UserRoleModel{}).
 		Where("user_id = ? AND role_id = ?", userID, roleID).
@@ -249,7 +227,6 @@ func (r *userRoleRepository) SetExpiration(ctx context.Context, userID, roleID s
 	return nil
 }
 
-// IsUserRoleExpired checks if a user-role assignment is expired
 func (r *userRoleRepository) IsUserRoleExpired(ctx context.Context, userID, roleID string) (bool, error) {
 	var userRoleModel models.UserRoleModel
 	if err := r.db.WithContext(ctx).
@@ -268,7 +245,6 @@ func (r *userRoleRepository) IsUserRoleExpired(ctx context.Context, userID, role
 	return userRoleModel.ExpiresAt.Before(time.Now()), nil
 }
 
-// GetExpiredUserRoles retrieves all expired user-role assignments
 func (r *userRoleRepository) GetExpiredUserRoles(ctx context.Context) ([]*auth.UserRole, error) {
 	var userRoleModels []models.UserRoleModel
 
@@ -287,7 +263,6 @@ func (r *userRoleRepository) GetExpiredUserRoles(ctx context.Context) ([]*auth.U
 	return userRoles, nil
 }
 
-// CleanupExpiredRoles deactivates all expired user-role assignments
 func (r *userRoleRepository) CleanupExpiredRoles(ctx context.Context) (int64, error) {
 	result := r.db.WithContext(ctx).Model(&models.UserRoleModel{}).
 		Where("expires_at IS NOT NULL AND expires_at <= ? AND is_active = ?", time.Now(), true).
@@ -300,7 +275,6 @@ func (r *userRoleRepository) CleanupExpiredRoles(ctx context.Context) (int64, er
 	return result.RowsAffected, nil
 }
 
-// UserHasRole checks if a user currently has a specific role (active and not expired)
 func (r *userRoleRepository) UserHasRole(ctx context.Context, userID, roleID string) (bool, error) {
 	var count int64
 
@@ -315,7 +289,6 @@ func (r *userRoleRepository) UserHasRole(ctx context.Context, userID, roleID str
 	return count > 0, nil
 }
 
-// UserHasRoleName checks if a user currently has a specific role by name
 func (r *userRoleRepository) UserHasRoleName(ctx context.Context, userID, roleName string) (bool, error) {
 	var count int64
 
@@ -332,7 +305,6 @@ func (r *userRoleRepository) UserHasRoleName(ctx context.Context, userID, roleNa
 	return count > 0, nil
 }
 
-// CountUsersByRole counts users assigned to a specific role
 func (r *userRoleRepository) CountUsersByRole(ctx context.Context, roleID string) (int64, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.UserRoleModel{}).
@@ -344,7 +316,6 @@ func (r *userRoleRepository) CountUsersByRole(ctx context.Context, roleID string
 	return count, nil
 }
 
-// CountRolesByUser counts roles assigned to a specific user
 func (r *userRoleRepository) CountRolesByUser(ctx context.Context, userID string) (int64, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.UserRoleModel{}).
@@ -356,7 +327,6 @@ func (r *userRoleRepository) CountRolesByUser(ctx context.Context, userID string
 	return count, nil
 }
 
-// Exists checks if a user-role assignment exists
 func (r *userRoleRepository) Exists(ctx context.Context, userID, roleID string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.UserRoleModel{}).
@@ -367,7 +337,6 @@ func (r *userRoleRepository) Exists(ctx context.Context, userID, roleID string) 
 	return count > 0, nil
 }
 
-// domainToModel converts domain entity to GORM model
 func (r *userRoleRepository) domainToModel(userRole *auth.UserRole) *models.UserRoleModel {
 	return &models.UserRoleModel{
 		ID:         userRole.ID,
@@ -383,7 +352,6 @@ func (r *userRoleRepository) domainToModel(userRole *auth.UserRole) *models.User
 	}
 }
 
-// modelToDomain converts GORM model to domain entity
 func (r *userRoleRepository) modelToDomain(userRoleModel *models.UserRoleModel) *auth.UserRole {
 	return &auth.UserRole{
 		ID:         userRoleModel.ID,

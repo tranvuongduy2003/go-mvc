@@ -2,7 +2,6 @@ package auth
 
 import "time"
 
-// UserRole represents a user-role assignment
 type UserRole struct {
 	ID         string
 	UserID     string

@@ -10,19 +10,16 @@ import (
 	"gorm.io/gorm"
 )
 
-// permissionRepository implements the PermissionRepository interface
 type permissionRepository struct {
 	db *gorm.DB
 }
 
-// NewPermissionRepository creates a new PermissionRepository instance
 func NewPermissionRepository(db *gorm.DB) auth.PermissionRepository {
 	return &permissionRepository{
 		db: db,
 	}
 }
 
-// Create saves a new permission to the database
 func (r *permissionRepository) Create(ctx context.Context, permEntity *auth.Permission) error {
 	permModel := r.domainToModel(permEntity)
 	if err := r.db.WithContext(ctx).Create(permModel).Error; err != nil {
@@ -31,7 +28,6 @@ func (r *permissionRepository) Create(ctx context.Context, permEntity *auth.Perm
 	return nil
 }
 
-// GetByID retrieves a permission by ID
 func (r *permissionRepository) GetByID(ctx context.Context, id string) (*auth.Permission, error) {
 	var permModel models.PermissionModel
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&permModel).Error; err != nil {
@@ -43,7 +39,6 @@ func (r *permissionRepository) GetByID(ctx context.Context, id string) (*auth.Pe
 	return r.modelToDomain(&permModel)
 }
 
-// GetByName retrieves a permission by name
 func (r *permissionRepository) GetByName(ctx context.Context, name string) (*auth.Permission, error) {
 	var permModel models.PermissionModel
 	if err := r.db.WithContext(ctx).Where("name = ?", name).First(&permModel).Error; err != nil {
@@ -55,7 +50,6 @@ func (r *permissionRepository) GetByName(ctx context.Context, name string) (*aut
 	return r.modelToDomain(&permModel)
 }
 
-// GetByResourceAndAction retrieves a permission by resource and action
 func (r *permissionRepository) GetByResourceAndAction(ctx context.Context, resource, action string) (*auth.Permission, error) {
 	var permModel models.PermissionModel
 	if err := r.db.WithContext(ctx).Where("resource = ? AND action = ?", resource, action).First(&permModel).Error; err != nil {
@@ -67,7 +61,6 @@ func (r *permissionRepository) GetByResourceAndAction(ctx context.Context, resou
 	return r.modelToDomain(&permModel)
 }
 
-// Update updates an existing permission
 func (r *permissionRepository) Update(ctx context.Context, permEntity *auth.Permission) error {
 	permModel := r.domainToModel(permEntity)
 	if err := r.db.WithContext(ctx).Model(&permModel).Where("id = ?", permModel.ID).Updates(permModel).Error; err != nil {
@@ -76,7 +69,6 @@ func (r *permissionRepository) Update(ctx context.Context, permEntity *auth.Perm
 	return nil
 }
 
-// Delete soft deletes a permission
 func (r *permissionRepository) Delete(ctx context.Context, id string) error {
 	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(&models.PermissionModel{}).Error; err != nil {
 		return err
@@ -84,45 +76,37 @@ func (r *permissionRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// List retrieves permissions with pagination
 func (r *permissionRepository) List(ctx context.Context, params auth.ListPermissionsParams) ([]*auth.Permission, *pagination.Pagination, error) {
 	var permModels []models.PermissionModel
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&models.PermissionModel{})
 
-	// Apply search filter
 	if params.Search != "" {
 		searchPattern := "%" + strings.ToLower(params.Search) + "%"
 		query = query.Where("LOWER(name) LIKE ? OR LOWER(resource) LIKE ? OR LOWER(action) LIKE ? OR LOWER(description) LIKE ?",
 			searchPattern, searchPattern, searchPattern, searchPattern)
 	}
 
-	// Apply resource filter
 	if params.Resource != "" {
 		query = query.Where("resource = ?", params.Resource)
 	}
 
-	// Apply action filter
 	if params.Action != "" {
 		query = query.Where("action = ?", params.Action)
 	}
 
-	// Apply isActive filter
 	if params.IsActive != nil {
 		query = query.Where("is_active = ?", *params.IsActive)
 	}
 
-	// Count total records
 	if err := query.Count(&total).Error; err != nil {
 		return nil, nil, err
 	}
 
-	// Create pagination object
 	paginationObj := pagination.NewPagination(params.Page, params.Limit)
 	paginationObj.SetTotal(total)
 
-	// Apply sorting
 	sortBy := params.SortBy
 	if sortBy == "" {
 		sortBy = "created_at"
@@ -133,15 +117,12 @@ func (r *permissionRepository) List(ctx context.Context, params auth.ListPermiss
 	}
 	query = query.Order(sortBy + " " + sortDir)
 
-	// Apply pagination
 	query = query.Offset(paginationObj.Offset()).Limit(paginationObj.PageSize)
 
-	// Execute query
 	if err := query.Find(&permModels).Error; err != nil {
 		return nil, nil, err
 	}
 
-	// Convert models to domain entities
 	permissions := make([]*auth.Permission, 0, len(permModels))
 	for _, permModel := range permModels {
 		permEntity, err := r.modelToDomain(&permModel)
@@ -154,7 +135,6 @@ func (r *permissionRepository) List(ctx context.Context, params auth.ListPermiss
 	return permissions, paginationObj, nil
 }
 
-// GetActivePermissions retrieves all active permissions
 func (r *permissionRepository) GetActivePermissions(ctx context.Context) ([]*auth.Permission, error) {
 	var permModels []models.PermissionModel
 	if err := r.db.WithContext(ctx).Where("is_active = ?", true).Find(&permModels).Error; err != nil {
@@ -173,7 +153,6 @@ func (r *permissionRepository) GetActivePermissions(ctx context.Context) ([]*aut
 	return permissions, nil
 }
 
-// GetPermissionsByResource retrieves all permissions for a specific resource
 func (r *permissionRepository) GetPermissionsByResource(ctx context.Context, resource string) ([]*auth.Permission, error) {
 	var permModels []models.PermissionModel
 	if err := r.db.WithContext(ctx).Where("resource = ? AND is_active = ?", resource, true).Find(&permModels).Error; err != nil {
@@ -192,7 +171,6 @@ func (r *permissionRepository) GetPermissionsByResource(ctx context.Context, res
 	return permissions, nil
 }
 
-// GetPermissionsByAction retrieves all permissions for a specific action
 func (r *permissionRepository) GetPermissionsByAction(ctx context.Context, action string) ([]*auth.Permission, error) {
 	var permModels []models.PermissionModel
 	if err := r.db.WithContext(ctx).Where("action = ? AND is_active = ?", action, true).Find(&permModels).Error; err != nil {
@@ -211,7 +189,6 @@ func (r *permissionRepository) GetPermissionsByAction(ctx context.Context, actio
 	return permissions, nil
 }
 
-// Exists checks if a permission exists by ID
 func (r *permissionRepository) Exists(ctx context.Context, id string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.PermissionModel{}).Where("id = ?", id).Count(&count).Error; err != nil {
@@ -220,7 +197,6 @@ func (r *permissionRepository) Exists(ctx context.Context, id string) (bool, err
 	return count > 0, nil
 }
 
-// ExistsByName checks if a permission exists by name
 func (r *permissionRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.PermissionModel{}).Where("name = ?", name).Count(&count).Error; err != nil {
@@ -229,7 +205,6 @@ func (r *permissionRepository) ExistsByName(ctx context.Context, name string) (b
 	return count > 0, nil
 }
 
-// ExistsByResourceAndAction checks if a permission exists by resource and action
 func (r *permissionRepository) ExistsByResourceAndAction(ctx context.Context, resource, action string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.PermissionModel{}).Where("resource = ? AND action = ?", resource, action).Count(&count).Error; err != nil {
@@ -238,7 +213,6 @@ func (r *permissionRepository) ExistsByResourceAndAction(ctx context.Context, re
 	return count > 0, nil
 }
 
-// Count returns the total number of permissions
 func (r *permissionRepository) Count(ctx context.Context) (int64, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.PermissionModel{}).Count(&count).Error; err != nil {
@@ -247,7 +221,6 @@ func (r *permissionRepository) Count(ctx context.Context) (int64, error) {
 	return count, nil
 }
 
-// Activate activates a permission
 func (r *permissionRepository) Activate(ctx context.Context, id string) error {
 	if err := r.db.WithContext(ctx).Model(&models.PermissionModel{}).Where("id = ?", id).Update("is_active", true).Error; err != nil {
 		return err
@@ -255,7 +228,6 @@ func (r *permissionRepository) Activate(ctx context.Context, id string) error {
 	return nil
 }
 
-// Deactivate deactivates a permission
 func (r *permissionRepository) Deactivate(ctx context.Context, id string) error {
 	if err := r.db.WithContext(ctx).Model(&models.PermissionModel{}).Where("id = ?", id).Update("is_active", false).Error; err != nil {
 		return err
@@ -263,7 +235,6 @@ func (r *permissionRepository) Deactivate(ctx context.Context, id string) error 
 	return nil
 }
 
-// GetPermissionsByUserID retrieves all permissions for a user (through roles)
 func (r *permissionRepository) GetPermissionsByUserID(ctx context.Context, userID string) ([]*auth.Permission, error) {
 	var permModels []models.PermissionModel
 
@@ -289,7 +260,6 @@ func (r *permissionRepository) GetPermissionsByUserID(ctx context.Context, userI
 	return permissions, nil
 }
 
-// GetActivePermissionsByUserID retrieves all active permissions for a user (through roles)
 func (r *permissionRepository) GetActivePermissionsByUserID(ctx context.Context, userID string) ([]*auth.Permission, error) {
 	var permModels []models.PermissionModel
 
@@ -318,7 +288,6 @@ func (r *permissionRepository) GetActivePermissionsByUserID(ctx context.Context,
 	return permissions, nil
 }
 
-// GetPermissionsByRoleID retrieves all permissions assigned to a role
 func (r *permissionRepository) GetPermissionsByRoleID(ctx context.Context, roleID string) ([]*auth.Permission, error) {
 	var permModels []models.PermissionModel
 
@@ -343,7 +312,6 @@ func (r *permissionRepository) GetPermissionsByRoleID(ctx context.Context, roleI
 	return permissions, nil
 }
 
-// GetActivePermissionsByRoleID retrieves all active permissions assigned to a role
 func (r *permissionRepository) GetActivePermissionsByRoleID(ctx context.Context, roleID string) ([]*auth.Permission, error) {
 	var permModels []models.PermissionModel
 
@@ -368,7 +336,6 @@ func (r *permissionRepository) GetActivePermissionsByRoleID(ctx context.Context,
 	return permissions, nil
 }
 
-// UserHasPermission checks if a user has a specific permission
 func (r *permissionRepository) UserHasPermission(ctx context.Context, userID, resource, action string) (bool, error) {
 	var count int64
 
@@ -388,7 +355,6 @@ func (r *permissionRepository) UserHasPermission(ctx context.Context, userID, re
 	return count > 0, nil
 }
 
-// UserHasPermissionByName checks if a user has a specific permission by name
 func (r *permissionRepository) UserHasPermissionByName(ctx context.Context, userID, permissionName string) (bool, error) {
 	var count int64
 
@@ -408,7 +374,6 @@ func (r *permissionRepository) UserHasPermissionByName(ctx context.Context, user
 	return count > 0, nil
 }
 
-// domainToModel converts domain entity to GORM model
 func (r *permissionRepository) domainToModel(permEntity *auth.Permission) *models.PermissionModel {
 	return &models.PermissionModel{
 		ID:          permEntity.ID().String(),
@@ -423,7 +388,6 @@ func (r *permissionRepository) domainToModel(permEntity *auth.Permission) *model
 	}
 }
 
-// modelToDomain converts GORM model to domain entity
 func (r *permissionRepository) modelToDomain(permModel *models.PermissionModel) (*auth.Permission, error) {
 	return auth.ReconstructPermission(
 		permModel.ID,

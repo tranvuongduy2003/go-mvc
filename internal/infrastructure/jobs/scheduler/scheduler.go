@@ -18,7 +18,6 @@ const (
 	keyPrefixRecurring = "job:recurring:"
 )
 
-// SimpleScheduler implements the Scheduler interface using Redis
 type SimpleScheduler struct {
 	client   redis.UniversalClient
 	queue    job.JobQueue
@@ -27,18 +26,15 @@ type SimpleScheduler struct {
 	wg       sync.WaitGroup
 	mu       sync.RWMutex
 
-	// Scheduled and recurring jobs tracking
 	scheduledJobs map[uuid.UUID]*ScheduledJobInfo
 	recurringJobs map[uuid.UUID]*RecurringJobInfo
 }
 
-// ScheduledJobInfo holds information about a scheduled job
 type ScheduledJobInfo struct {
 	Job         job.Job   `json:"job"`
 	ScheduledAt time.Time `json:"scheduled_at"`
 }
 
-// RecurringJobInfo holds information about a recurring job
 type RecurringJobInfo struct {
 	Job       job.Job       `json:"job"`
 	Interval  time.Duration `json:"interval"`
@@ -47,7 +43,6 @@ type RecurringJobInfo struct {
 	CreatedAt time.Time     `json:"created_at"`
 }
 
-// NewSimpleScheduler creates a new simple scheduler
 func NewSimpleScheduler(client redis.UniversalClient, queue job.JobQueue) *SimpleScheduler {
 	return &SimpleScheduler{
 		client:        client,
@@ -58,14 +53,12 @@ func NewSimpleScheduler(client redis.UniversalClient, queue job.JobQueue) *Simpl
 	}
 }
 
-// Schedule adds a job to be executed at a specific time
 func (ss *SimpleScheduler) Schedule(ctx context.Context, job job.Job, at time.Time) error {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
 	jobID := job.GetID()
 
-	// Store scheduled job info
 	info := &ScheduledJobInfo{
 		Job:         job,
 		ScheduledAt: at,
@@ -73,7 +66,6 @@ func (ss *SimpleScheduler) Schedule(ctx context.Context, job job.Job, at time.Ti
 
 	ss.scheduledJobs[jobID] = info
 
-	// Store in Redis for persistence
 	if err := ss.storeScheduledJob(ctx, jobID, info); err != nil {
 		delete(ss.scheduledJobs, jobID)
 		return fmt.Errorf("failed to store scheduled job: %w", err)
@@ -82,9 +74,7 @@ func (ss *SimpleScheduler) Schedule(ctx context.Context, job job.Job, at time.Ti
 	return nil
 }
 
-// ScheduleRecurring adds a recurring job with interval
 func (ss *SimpleScheduler) ScheduleRecurring(ctx context.Context, job job.Job, cronExpr string) error {
-	// Parse simple interval from cronExpr (simplified implementation)
 	interval, err := ss.parseInterval(cronExpr)
 	if err != nil {
 		return fmt.Errorf("invalid cron expression: %w", err)
@@ -96,7 +86,6 @@ func (ss *SimpleScheduler) ScheduleRecurring(ctx context.Context, job job.Job, c
 	jobID := job.GetID()
 	now := time.Now()
 
-	// Store recurring job info
 	info := &RecurringJobInfo{
 		Job:       job,
 		Interval:  interval,
@@ -107,7 +96,6 @@ func (ss *SimpleScheduler) ScheduleRecurring(ctx context.Context, job job.Job, c
 
 	ss.recurringJobs[jobID] = info
 
-	// Store in Redis for persistence
 	if err := ss.storeRecurringJob(ctx, jobID, info); err != nil {
 		delete(ss.recurringJobs, jobID)
 		return fmt.Errorf("failed to store recurring job: %w", err)
@@ -116,18 +104,15 @@ func (ss *SimpleScheduler) ScheduleRecurring(ctx context.Context, job job.Job, c
 	return nil
 }
 
-// Cancel cancels a scheduled job
 func (ss *SimpleScheduler) Cancel(ctx context.Context, jobID uuid.UUID) error {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
-	// Check if it's a scheduled job
 	if _, exists := ss.scheduledJobs[jobID]; exists {
 		delete(ss.scheduledJobs, jobID)
 		return ss.removeScheduledJob(ctx, jobID)
 	}
 
-	// Check if it's a recurring job
 	if _, exists := ss.recurringJobs[jobID]; exists {
 		delete(ss.recurringJobs, jobID)
 		return ss.removeRecurringJob(ctx, jobID)
@@ -136,7 +121,6 @@ func (ss *SimpleScheduler) Cancel(ctx context.Context, jobID uuid.UUID) error {
 	return fmt.Errorf("scheduled job not found: %s", jobID)
 }
 
-// Start begins the scheduler
 func (ss *SimpleScheduler) Start(ctx context.Context) error {
 	ss.mu.Lock()
 	if ss.running {
@@ -146,7 +130,6 @@ func (ss *SimpleScheduler) Start(ctx context.Context) error {
 	ss.running = true
 	ss.mu.Unlock()
 
-	// Load scheduled jobs from Redis
 	if err := ss.loadJobs(ctx); err != nil {
 		ss.mu.Lock()
 		ss.running = false
@@ -154,14 +137,12 @@ func (ss *SimpleScheduler) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to load jobs: %w", err)
 	}
 
-	// Start the main scheduler loop
 	ss.wg.Add(1)
 	go ss.run(ctx)
 
 	return nil
 }
 
-// Stop stops the scheduler
 func (ss *SimpleScheduler) Stop(ctx context.Context) error {
 	ss.mu.Lock()
 	if !ss.running {
@@ -171,10 +152,8 @@ func (ss *SimpleScheduler) Stop(ctx context.Context) error {
 	ss.running = false
 	ss.mu.Unlock()
 
-	// Signal shutdown
 	close(ss.shutdown)
 
-	// Wait for main loop to finish
 	done := make(chan struct{})
 	go func() {
 		ss.wg.Wait()
@@ -189,7 +168,6 @@ func (ss *SimpleScheduler) Stop(ctx context.Context) error {
 	}
 }
 
-// GetScheduledJobs returns all scheduled jobs
 func (ss *SimpleScheduler) GetScheduledJobs(ctx context.Context) ([]job.Job, error) {
 	ss.mu.RLock()
 	defer ss.mu.RUnlock()
@@ -207,7 +185,6 @@ func (ss *SimpleScheduler) GetScheduledJobs(ctx context.Context) ([]job.Job, err
 	return allJobs, nil
 }
 
-// run is the main scheduler loop
 func (ss *SimpleScheduler) run(ctx context.Context) {
 	defer ss.wg.Done()
 
@@ -226,14 +203,12 @@ func (ss *SimpleScheduler) run(ctx context.Context) {
 	}
 }
 
-// processJobs processes both scheduled and recurring jobs that are due
 func (ss *SimpleScheduler) processJobs(ctx context.Context) {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
 
 	now := time.Now()
 
-	// Process one-time scheduled jobs
 	var scheduledJobsToProcess []uuid.UUID
 	for jobID, info := range ss.scheduledJobs {
 		if now.After(info.ScheduledAt) {
@@ -244,34 +219,27 @@ func (ss *SimpleScheduler) processJobs(ctx context.Context) {
 	for _, jobID := range scheduledJobsToProcess {
 		info := ss.scheduledJobs[jobID]
 
-		// Enqueue the job
 		if err := ss.queue.Enqueue(ctx, info.Job); err != nil {
 			continue
 		}
 
-		// Remove from scheduled jobs
 		delete(ss.scheduledJobs, jobID)
 
-		// Remove from Redis
 		go func(id uuid.UUID) {
 			ss.removeScheduledJob(context.Background(), id)
 		}(jobID)
 	}
 
-	// Process recurring jobs
 	for jobID, info := range ss.recurringJobs {
 		if now.After(info.NextRun) {
-			// Clone and enqueue the job
 			clonedJob := ss.cloneJob(info.Job)
 			if err := ss.queue.Enqueue(ctx, clonedJob); err != nil {
 				continue
 			}
 
-			// Update next run time
 			info.LastRun = now
 			info.NextRun = now.Add(info.Interval)
 
-			// Update in Redis
 			go func(id uuid.UUID, jobInfo *RecurringJobInfo) {
 				ss.storeRecurringJob(context.Background(), id, jobInfo)
 			}(jobID, info)
@@ -279,9 +247,7 @@ func (ss *SimpleScheduler) processJobs(ctx context.Context) {
 	}
 }
 
-// cloneJob creates a copy of a job for recurring execution
 func (ss *SimpleScheduler) cloneJob(clonedJob job.Job) job.Job {
-	// Create a new job with the same type and payload but new ID
 	newID := uuid.New()
 
 	payload := make(job.JobPayload)
@@ -300,11 +266,7 @@ func (ss *SimpleScheduler) cloneJob(clonedJob job.Job) job.Job {
 	}
 }
 
-// parseInterval parses a simple interval from a string
-// Supports formats like "5m", "1h", "30s", "1h30m"
 func (ss *SimpleScheduler) parseInterval(cronExpr string) (time.Duration, error) {
-	// For simplicity, treat cronExpr as Go duration
-	// In practice, you'd implement proper cron parsing
 	duration, err := time.ParseDuration(cronExpr)
 	if err != nil {
 		return 0, fmt.Errorf("invalid duration format: %w", err)
@@ -317,7 +279,6 @@ func (ss *SimpleScheduler) parseInterval(cronExpr string) (time.Duration, error)
 	return duration, nil
 }
 
-// BasicScheduledJob is a simple implementation for scheduled jobs
 type BasicScheduledJob struct {
 	id          uuid.UUID
 	jobType     string
@@ -349,8 +310,6 @@ func (b *BasicScheduledJob) GetProcessedAt() *time.Time     { return b.processed
 func (b *BasicScheduledJob) SetProcessedAt(at *time.Time)   { b.processedAt = at }
 func (b *BasicScheduledJob) GetError() error                { return b.error }
 func (b *BasicScheduledJob) SetError(err error)             { b.error = err }
-
-// Redis storage methods
 
 func (ss *SimpleScheduler) storeScheduledJob(ctx context.Context, jobID uuid.UUID, info *ScheduledJobInfo) error {
 	key := ss.getScheduledJobKey(jobID)
@@ -390,7 +349,6 @@ func (ss *SimpleScheduler) removeRecurringJob(ctx context.Context, jobID uuid.UU
 }
 
 func (ss *SimpleScheduler) loadJobs(ctx context.Context) error {
-	// Load scheduled jobs
 	scheduledPattern := ss.getScheduledJobKey(uuid.UUID{}) + "*"
 	scheduledKeys, err := ss.client.Keys(ctx, scheduledPattern).Result()
 	if err != nil {
@@ -411,7 +369,6 @@ func (ss *SimpleScheduler) loadJobs(ctx context.Context) error {
 		ss.scheduledJobs[info.Job.GetID()] = info
 	}
 
-	// Load recurring jobs
 	recurringPattern := ss.getRecurringJobKey(uuid.UUID{}) + "*"
 	recurringKeys, err := ss.client.Keys(ctx, recurringPattern).Result()
 	if err != nil {
@@ -513,7 +470,6 @@ func (ss *SimpleScheduler) parseRecurringJobData(data map[string]string) (*Recur
 		Interval: interval,
 	}
 
-	// Parse timestamps
 	if lastRunStr, exists := data["last_run"]; exists {
 		if timestamp, err := time.Parse("1136239445", lastRunStr); err == nil {
 			info.LastRun = timestamp
@@ -549,9 +505,6 @@ func (ss *SimpleScheduler) getRecurringJobKey(jobID uuid.UUID) string {
 	return fmt.Sprintf("%s%s", keyPrefixRecurring, jobID.String())
 }
 
-// Helper functions
-
-// ScheduleBatch schedules multiple jobs at once
 func (ss *SimpleScheduler) ScheduleBatch(ctx context.Context, jobs []job.Job, at time.Time) error {
 	ss.mu.Lock()
 	defer ss.mu.Unlock()
@@ -573,7 +526,6 @@ func (ss *SimpleScheduler) ScheduleBatch(ctx context.Context, jobs []job.Job, at
 	return nil
 }
 
-// GetJobsByScheduleTime returns jobs scheduled within a time range
 func (ss *SimpleScheduler) GetJobsByScheduleTime(start, end time.Time) []job.Job {
 	ss.mu.RLock()
 	defer ss.mu.RUnlock()
@@ -586,7 +538,6 @@ func (ss *SimpleScheduler) GetJobsByScheduleTime(start, end time.Time) []job.Job
 		}
 	}
 
-	// Sort by scheduled time
 	sort.Slice(filteredJobs, func(i, j int) bool {
 		return ss.scheduledJobs[filteredJobs[i].GetID()].ScheduledAt.Before(
 			ss.scheduledJobs[filteredJobs[j].GetID()].ScheduledAt)

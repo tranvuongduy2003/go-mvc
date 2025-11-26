@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// PermissionModel represents the GORM model for Permission entity
 type PermissionModel struct {
 	ID          string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
 	Name        string    `gorm:"uniqueIndex;not null;size:100" json:"name"`
@@ -17,7 +16,6 @@ type PermissionModel struct {
 	Version     int64     `gorm:"default:1" json:"version"`
 }
 
-// TableName returns the table name for the PermissionModel
 func (PermissionModel) TableName() string {
 	return "permissions"
 }

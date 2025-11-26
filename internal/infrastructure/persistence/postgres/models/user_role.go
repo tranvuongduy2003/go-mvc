@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// UserRoleModel represents the GORM model for UserRole junction entity
 type UserRoleModel struct {
 	ID         string     `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
 	UserID     string     `gorm:"type:uuid;not null;index" json:"user_id"`
@@ -17,13 +16,11 @@ type UserRoleModel struct {
 	UpdatedAt  time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 	Version    int64      `gorm:"default:1" json:"version"`
 
-	// Relations
 	User           UserModel  `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
 	Role           RoleModel  `gorm:"foreignKey:RoleID;constraint:OnDelete:CASCADE" json:"role,omitempty"`
 	AssignedByUser *UserModel `gorm:"foreignKey:AssignedBy;constraint:OnDelete:SET NULL" json:"assigned_by_user,omitempty"`
 }
 
-// TableName returns the table name for the UserRoleModel
 func (UserRoleModel) TableName() string {
 	return "user_roles"
 }

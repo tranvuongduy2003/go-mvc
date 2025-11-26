@@ -13,7 +13,6 @@ type gormMessageDeduplicationRepository struct {
 	db *gorm.DB
 }
 
-// NewMessageDeduplicationRepository creates a new message deduplication repository using GORM
 func NewMessageDeduplicationRepository(db *gorm.DB) messaging.MessageDeduplicationRepository {
 	return &gormMessageDeduplicationRepository{
 		db: db,
@@ -68,7 +67,6 @@ func (r *gormMessageDeduplicationRepository) DeleteExpired(ctx context.Context) 
 }
 
 func (r *gormMessageDeduplicationRepository) CreateIfNotExists(ctx context.Context, messageID uuid.UUID, consumerID, eventType string, ttl time.Duration) (bool, error) {
-	// First check if it exists
 	exists, err := r.Exists(ctx, messageID, consumerID)
 	if err != nil {
 		return false, err
@@ -78,13 +76,10 @@ func (r *gormMessageDeduplicationRepository) CreateIfNotExists(ctx context.Conte
 		return false, nil // Already exists
 	}
 
-	// Create new deduplication record without conflict resolution
 	dedup := messaging.NewMessageDeduplication(messageID, consumerID, eventType, ttl)
 	err = r.db.WithContext(ctx).Create(dedup).Error
 
 	if err != nil {
-		// If error is due to unique constraint violation, it means another process created it
-		// In production, you'd check the specific error type
 		return false, nil
 	}
 

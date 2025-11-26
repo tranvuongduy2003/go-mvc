@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// OutboxMessageStatus represents the status of an outbox message
 type OutboxMessageStatus string
 
 const (
@@ -16,8 +15,6 @@ const (
 	OutboxMessageStatusFailed    OutboxMessageStatus = "failed"
 )
 
-// OutboxMessage represents a message stored in the outbox pattern
-// This ensures that message publishing and data changes happen atomically
 type OutboxMessage struct {
 	ID           uuid.UUID           `json:"id" db:"id"`
 	MessageID    uuid.UUID           `json:"message_id" db:"message_id"`
@@ -34,7 +31,6 @@ type OutboxMessage struct {
 	ErrorMessage *string             `json:"error_message,omitempty" db:"error_message"`
 }
 
-// NewOutboxMessage creates a new outbox message
 func NewOutboxMessage(eventType, aggregateID string, payload interface{}) (*OutboxMessage, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -55,7 +51,6 @@ func NewOutboxMessage(eventType, aggregateID string, payload interface{}) (*Outb
 	}, nil
 }
 
-// MarkAsProcessed marks the outbox message as successfully processed
 func (m *OutboxMessage) MarkAsProcessed() {
 	now := time.Now()
 	m.Status = OutboxMessageStatusProcessed
@@ -63,7 +58,6 @@ func (m *OutboxMessage) MarkAsProcessed() {
 	m.UpdatedAt = now
 }
 
-// MarkAsFailed marks the outbox message as failed with an error message
 func (m *OutboxMessage) MarkAsFailed(errorMsg string) {
 	now := time.Now()
 	m.Status = OutboxMessageStatusFailed
@@ -72,18 +66,15 @@ func (m *OutboxMessage) MarkAsFailed(errorMsg string) {
 	m.UpdatedAt = now
 }
 
-// IncrementRetry increments the retry count
 func (m *OutboxMessage) IncrementRetry() {
 	m.Retries++
 	m.UpdatedAt = time.Now()
 }
 
-// CanRetry checks if the message can be retried
 func (m *OutboxMessage) CanRetry() bool {
 	return m.Retries < m.MaxRetries
 }
 
-// ShouldRetry checks if the message should be retried based on status and retry count
 func (m *OutboxMessage) ShouldRetry() bool {
 	return m.Status == OutboxMessageStatusFailed && m.CanRetry()
 }

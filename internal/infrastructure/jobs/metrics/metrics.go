@@ -9,25 +9,19 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/job"
 )
 
-// JobMetricsCollector implements the JobMetrics interface using Prometheus
 type JobMetricsCollector struct {
-	// Counters
 	jobsEnqueued  *prometheus.CounterVec
 	jobsProcessed *prometheus.CounterVec
 	jobsRetries   *prometheus.CounterVec
 
-	// Gauges
 	queueSize     *prometheus.GaugeVec
 	activeWorkers prometheus.Gauge
 
-	// Histograms
 	jobDuration *prometheus.HistogramVec
 
-	// Summary for processing times
 	processingSummary *prometheus.SummaryVec
 }
 
-// NewJobMetricsCollector creates a new job metrics collector
 func NewJobMetricsCollector() *JobMetricsCollector {
 	return &JobMetricsCollector{
 		jobsEnqueued: promauto.NewCounterVec(
@@ -108,18 +102,15 @@ func NewJobMetricsCollector() *JobMetricsCollector {
 	}
 }
 
-// IncrementJobsEnqueued increments the counter for enqueued jobs
 func (m *JobMetricsCollector) IncrementJobsEnqueued(jobType string) {
 	m.jobsEnqueued.WithLabelValues(jobType, "default", "normal").Inc()
 }
 
-// IncrementJobsEnqueuedWithLabels increments the counter with custom labels
 func (m *JobMetricsCollector) IncrementJobsEnqueuedWithLabels(jobType, queue string, priority job.JobPriority) {
 	priorityStr := m.priorityToString(priority)
 	m.jobsEnqueued.WithLabelValues(jobType, queue, priorityStr).Inc()
 }
 
-// IncrementJobsProcessed increments the counter for processed jobs
 func (m *JobMetricsCollector) IncrementJobsProcessed(jobType string, success bool) {
 	status := "success"
 	if !success {
@@ -128,7 +119,6 @@ func (m *JobMetricsCollector) IncrementJobsProcessed(jobType string, success boo
 	m.jobsProcessed.WithLabelValues(jobType, "default", status).Inc()
 }
 
-// IncrementJobsProcessedWithLabels increments the counter with custom labels
 func (m *JobMetricsCollector) IncrementJobsProcessedWithLabels(jobType, queue string, success bool) {
 	status := "success"
 	if !success {
@@ -137,47 +127,38 @@ func (m *JobMetricsCollector) IncrementJobsProcessedWithLabels(jobType, queue st
 	m.jobsProcessed.WithLabelValues(jobType, queue, status).Inc()
 }
 
-// ObserveJobDuration records the time taken to process a job
 func (m *JobMetricsCollector) ObserveJobDuration(jobType string, duration time.Duration) {
 	seconds := duration.Seconds()
 	m.jobDuration.WithLabelValues(jobType, "default").Observe(seconds)
 	m.processingSummary.WithLabelValues(jobType, "default").Observe(seconds)
 }
 
-// ObserveJobDurationWithLabels records job duration with custom labels
 func (m *JobMetricsCollector) ObserveJobDurationWithLabels(jobType, queue string, duration time.Duration) {
 	seconds := duration.Seconds()
 	m.jobDuration.WithLabelValues(jobType, queue).Observe(seconds)
 	m.processingSummary.WithLabelValues(jobType, queue).Observe(seconds)
 }
 
-// SetQueueSize sets the current size of a queue
 func (m *JobMetricsCollector) SetQueueSize(queue string, size int64) {
 	m.queueSize.WithLabelValues(queue, "all").Set(float64(size))
 }
 
-// SetQueueSizeWithPriority sets the queue size for a specific priority
 func (m *JobMetricsCollector) SetQueueSizeWithPriority(queue string, priority job.JobPriority, size int64) {
 	priorityStr := m.priorityToString(priority)
 	m.queueSize.WithLabelValues(queue, priorityStr).Set(float64(size))
 }
 
-// IncrementJobRetries increments retry counter
 func (m *JobMetricsCollector) IncrementJobRetries(jobType string) {
 	m.jobsRetries.WithLabelValues(jobType, "default").Inc()
 }
 
-// IncrementJobRetriesWithLabels increments retry counter with custom labels
 func (m *JobMetricsCollector) IncrementJobRetriesWithLabels(jobType, queue string) {
 	m.jobsRetries.WithLabelValues(jobType, queue).Inc()
 }
 
-// SetActiveWorkers sets the number of active workers
 func (m *JobMetricsCollector) SetActiveWorkers(count int) {
 	m.activeWorkers.Set(float64(count))
 }
-
-// Helper methods
 
 func (m *JobMetricsCollector) priorityToString(priority job.JobPriority) string {
 	switch priority {
@@ -194,13 +175,11 @@ func (m *JobMetricsCollector) priorityToString(priority job.JobPriority) string 
 	}
 }
 
-// JobMetricsMiddleware wraps job handlers to automatically collect metrics
 type JobMetricsMiddleware struct {
 	next    job.JobHandler
 	metrics *JobMetricsCollector
 }
 
-// NewJobMetricsMiddleware creates a new metrics middleware
 func NewJobMetricsMiddleware(handler job.JobHandler, metrics *JobMetricsCollector) *JobMetricsMiddleware {
 	return &JobMetricsMiddleware{
 		next:    handler,
@@ -208,14 +187,11 @@ func NewJobMetricsMiddleware(handler job.JobHandler, metrics *JobMetricsCollecto
 	}
 }
 
-// Execute executes the job and collects metrics
 func (m *JobMetricsMiddleware) Execute(ctx context.Context, job job.Job) error {
 	start := time.Now()
 
-	// Execute the job
 	err := m.next.Execute(ctx, job)
 
-	// Record metrics
 	duration := time.Since(start)
 	m.metrics.ObserveJobDuration(job.GetType(), duration)
 
@@ -229,19 +205,16 @@ func (m *JobMetricsMiddleware) Execute(ctx context.Context, job job.Job) error {
 	return err
 }
 
-// GetJobType returns the job type this handler can process
 func (m *JobMetricsMiddleware) GetJobType() string {
 	return m.next.GetJobType()
 }
 
-// JobQueueMetricsCollector periodically collects queue metrics
 type JobQueueMetricsCollector struct {
 	queue   job.JobQueue
 	metrics *JobMetricsCollector
 	queues  []string
 }
 
-// NewJobQueueMetricsCollector creates a new queue metrics collector
 func NewJobQueueMetricsCollector(queue job.JobQueue, metrics *JobMetricsCollector, queues []string) *JobQueueMetricsCollector {
 	if len(queues) == 0 {
 		queues = []string{"default"}
@@ -254,12 +227,10 @@ func NewJobQueueMetricsCollector(queue job.JobQueue, metrics *JobMetricsCollecto
 	}
 }
 
-// CollectQueueMetrics collects current queue size metrics
 func (c *JobQueueMetricsCollector) CollectQueueMetrics(ctx context.Context) error {
 	for _, queueName := range c.queues {
 		size, err := c.queue.GetQueueSize(ctx, queueName)
 		if err != nil {
-			// Log error but continue with other queues
 			continue
 		}
 
@@ -269,24 +240,20 @@ func (c *JobQueueMetricsCollector) CollectQueueMetrics(ctx context.Context) erro
 	return nil
 }
 
-// WorkerPoolMetricsCollector collects worker pool metrics
 type WorkerPoolMetricsCollector struct {
 	metrics *JobMetricsCollector
 }
 
-// NewWorkerPoolMetricsCollector creates a new worker pool metrics collector
 func NewWorkerPoolMetricsCollector(metrics *JobMetricsCollector) *WorkerPoolMetricsCollector {
 	return &WorkerPoolMetricsCollector{
 		metrics: metrics,
 	}
 }
 
-// UpdateWorkerCount updates the active worker count metric
 func (c *WorkerPoolMetricsCollector) UpdateWorkerCount(count int) {
 	c.metrics.SetActiveWorkers(count)
 }
 
-// JobTypeMetrics provides job-type specific metrics
 type JobTypeMetrics struct {
 	JobType        string  `json:"job_type"`
 	TotalEnqueued  int64   `json:"total_enqueued"`
@@ -296,41 +263,33 @@ type JobTypeMetrics struct {
 	AvgDuration    float64 `json:"avg_duration_seconds"`
 }
 
-// QueueMetrics provides queue-specific metrics
 type QueueMetrics struct {
 	Queue       string `json:"queue"`
 	CurrentSize int64  `json:"current_size"`
 	Priority    string `json:"priority"`
 }
 
-// WorkerMetrics provides worker-specific metrics
 type WorkerMetrics struct {
 	ActiveWorkers int `json:"active_workers"`
 }
 
-// OverallMetrics provides overall system metrics
 type OverallMetrics struct {
 	JobTypes []JobTypeMetrics `json:"job_types"`
 	Queues   []QueueMetrics   `json:"queues"`
 	Workers  WorkerMetrics    `json:"workers"`
 }
 
-// MetricsReporter provides methods to generate metric reports
 type MetricsReporter struct {
 	collector *JobMetricsCollector
 }
 
-// NewMetricsReporter creates a new metrics reporter
 func NewMetricsReporter(collector *JobMetricsCollector) *MetricsReporter {
 	return &MetricsReporter{
 		collector: collector,
 	}
 }
 
-// GetOverallMetrics returns overall system metrics
 func (r *MetricsReporter) GetOverallMetrics() (*OverallMetrics, error) {
-	// This is a simplified implementation
-	// In practice, you would query Prometheus or maintain internal counters
 	return &OverallMetrics{
 		JobTypes: []JobTypeMetrics{},
 		Queues:   []QueueMetrics{},
@@ -338,16 +297,12 @@ func (r *MetricsReporter) GetOverallMetrics() (*OverallMetrics, error) {
 	}, nil
 }
 
-// Custom metrics for specific business needs
-
-// BusinessMetricsCollector provides business-specific metrics
 type BusinessMetricsCollector struct {
 	emailJobsCounter    *prometheus.CounterVec
 	fileProcessingGauge *prometheus.GaugeVec
 	cleanupJobsDuration *prometheus.HistogramVec
 }
 
-// NewBusinessMetricsCollector creates a new business metrics collector
 func NewBusinessMetricsCollector() *BusinessMetricsCollector {
 	return &BusinessMetricsCollector{
 		emailJobsCounter: promauto.NewCounterVec(
@@ -383,7 +338,6 @@ func NewBusinessMetricsCollector() *BusinessMetricsCollector {
 	}
 }
 
-// RecordEmailJob records email job metrics
 func (b *BusinessMetricsCollector) RecordEmailJob(emailType string, success bool) {
 	status := "success"
 	if !success {
@@ -392,30 +346,25 @@ func (b *BusinessMetricsCollector) RecordEmailJob(emailType string, success bool
 	b.emailJobsCounter.WithLabelValues(emailType, status).Inc()
 }
 
-// SetActiveFileProcessingJobs sets the number of active file processing jobs
 func (b *BusinessMetricsCollector) SetActiveFileProcessingJobs(fileType string, count int) {
 	b.fileProcessingGauge.WithLabelValues(fileType).Set(float64(count))
 }
 
-// RecordCleanupDuration records cleanup job duration
 func (b *BusinessMetricsCollector) RecordCleanupDuration(cleanupType string, duration time.Duration) {
 	b.cleanupJobsDuration.WithLabelValues(cleanupType).Observe(duration.Seconds())
 }
 
-// MetricsConfiguration holds metrics system configuration
 type MetricsConfiguration struct {
 	Enabled            bool          `yaml:"enabled" env:"METRICS_ENABLED" env-default:"true"`
 	CollectionInterval time.Duration `yaml:"collection_interval" env:"METRICS_COLLECTION_INTERVAL" env-default:"30s"`
 	RetentionPeriod    time.Duration `yaml:"retention_period" env:"METRICS_RETENTION_PERIOD" env-default:"24h"`
 }
 
-// MetricsServer provides HTTP endpoints for metrics
 type MetricsServer struct {
 	collector *JobMetricsCollector
 	reporter  *MetricsReporter
 }
 
-// NewMetricsServer creates a new metrics server
 func NewMetricsServer(collector *JobMetricsCollector) *MetricsServer {
 	return &MetricsServer{
 		collector: collector,
@@ -423,7 +372,6 @@ func NewMetricsServer(collector *JobMetricsCollector) *MetricsServer {
 	}
 }
 
-// GetMetrics returns current metrics as JSON
 func (s *MetricsServer) GetMetrics() (*OverallMetrics, error) {
 	return s.reporter.GetOverallMetrics()
 }

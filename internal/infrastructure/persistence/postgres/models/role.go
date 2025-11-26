@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// RoleModel represents the GORM model for Role entity
 type RoleModel struct {
 	ID          string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
 	Name        string    `gorm:"uniqueIndex;not null;size:50" json:"name"`
@@ -15,7 +14,6 @@ type RoleModel struct {
 	Version     int64     `gorm:"default:1" json:"version"`
 }
 
-// TableName returns the table name for the RoleModel
 func (RoleModel) TableName() string {
 	return "roles"
 }

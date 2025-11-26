@@ -38,7 +38,6 @@ func init() {
 	rootCmd.AddCommand(versionCommand())
 }
 
-// Worker commands
 func startCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
@@ -72,7 +71,6 @@ func startCommand() *cobra.Command {
 						},
 					})
 
-					// Wait for interrupt signal
 					if !daemon {
 						waitForShutdown(logger)
 					}
@@ -85,10 +83,8 @@ func startCommand() *cobra.Command {
 			}
 
 			if daemon {
-				// Keep running in daemon mode
 				select {}
 			} else {
-				// Graceful shutdown
 				defer app.Stop(context.Background())
 			}
 		},
@@ -146,8 +142,6 @@ func stopCommand() *cobra.Command {
 				fmt.Println("Gracefully stopping worker service...")
 			}
 
-			// In a real implementation, this would send a signal to the running worker process
-			// For now, we'll just simulate the stop operation
 			fmt.Println("✅ Worker service stopped successfully!")
 		},
 	}
@@ -208,7 +202,6 @@ func versionCommand() *cobra.Command {
 	}
 }
 
-// Worker service implementation
 type WorkerService struct {
 	logger      *zap.Logger
 	workerCount int
@@ -262,13 +255,11 @@ func (w *WorkerService) Start(ctx context.Context) {
 	w.running = true
 	w.logger.Info("Starting worker service", zap.Int("workers", w.workerCount))
 
-	// Start worker goroutines
 	for i := 0; i < w.workerCount; i++ {
 		w.wg.Add(1)
 		go w.worker(i + 1)
 	}
 
-	// Start job producer (simulated)
 	go w.jobProducer()
 
 	fmt.Printf("✅ Worker service started with %d workers\n", w.workerCount)
@@ -283,13 +274,10 @@ func (w *WorkerService) Stop(ctx context.Context) {
 	w.logger.Info("Stopping worker service")
 	w.running = false
 
-	// Signal all workers to stop
 	close(w.quit)
 
-	// Wait for all workers to finish
 	w.wg.Wait()
 
-	// Close job channel
 	close(w.jobs)
 
 	fmt.Println("✅ Worker service stopped gracefully")
@@ -317,7 +305,6 @@ func (w *WorkerService) processJob(workerID int, job Job) {
 		zap.String("job_id", job.ID),
 		zap.String("job_type", job.Type))
 
-	// Simulate job processing
 	switch job.Type {
 	case "email":
 		w.processEmailJob(job)
@@ -335,19 +322,16 @@ func (w *WorkerService) processJob(workerID int, job Job) {
 }
 
 func (w *WorkerService) processEmailJob(job Job) {
-	// Simulate email processing
 	time.Sleep(100 * time.Millisecond)
 	w.logger.Info("Email sent", zap.String("job_id", job.ID))
 }
 
 func (w *WorkerService) processNotificationJob(job Job) {
-	// Simulate notification processing
 	time.Sleep(50 * time.Millisecond)
 	w.logger.Info("Notification sent", zap.String("job_id", job.ID))
 }
 
 func (w *WorkerService) processCleanupJob(job Job) {
-	// Simulate cleanup processing
 	time.Sleep(200 * time.Millisecond)
 	w.logger.Info("Cleanup completed", zap.String("job_id", job.ID))
 }
@@ -387,7 +371,6 @@ func (w *WorkerService) jobProducer() {
 	}
 }
 
-// Helper functions
 func waitForShutdown(logger *zap.Logger) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -397,7 +380,6 @@ func waitForShutdown(logger *zap.Logger) {
 }
 
 func checkWorkerStatus() WorkerStatus {
-	// In a real implementation, this would check actual worker status
 	return WorkerStatus{
 		Status:        "Running",
 		ActiveJobs:    5,
@@ -409,7 +391,6 @@ func checkWorkerStatus() WorkerStatus {
 }
 
 func performHealthCheck() HealthStatus {
-	// In a real implementation, this would perform actual health checks
 	return HealthStatus{
 		Overall:  "Healthy",
 		Database: "Connected",

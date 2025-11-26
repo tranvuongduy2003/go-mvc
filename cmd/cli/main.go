@@ -29,18 +29,15 @@ func main() {
 }
 
 func init() {
-	// Database commands
 	rootCmd.AddCommand(createDBCommand())
 	rootCmd.AddCommand(migrateCommand())
 	rootCmd.AddCommand(seedCommand())
 	rootCmd.AddCommand(resetDBCommand())
 
-	// System commands
 	rootCmd.AddCommand(healthCheckCommand())
 	rootCmd.AddCommand(versionCommand())
 }
 
-// Database Commands
 func createDBCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "create-db",
@@ -156,7 +153,6 @@ func resetDBCommand() *cobra.Command {
 	return cmd
 }
 
-// System Commands
 func healthCheckCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "health",
@@ -168,7 +164,6 @@ func healthCheckCommand() *cobra.Command {
 			app := fx.New(
 				infrastructure.InfrastructureModule,
 				fx.Invoke(func(db *gorm.DB, config *config.AppConfig, logger *zap.Logger) {
-					// Database health check
 					sqlDB, err := db.DB()
 					if err != nil {
 						fmt.Println("❌ Database connection failed")
@@ -212,21 +207,13 @@ func versionCommand() *cobra.Command {
 	}
 }
 
-// Helper functions
 func runMigrations(db *gorm.DB) error {
-	// TODO: Import your models here
 	fmt.Println("Running database migrations...")
-
-	// Example:
-	// if err := db.AutoMigrate(&models.User{}, &models.Role{}, &models.Permission{}, &models.UserRole{}, &models.RolePermission{}); err != nil {
-	//     return fmt.Errorf("failed to run migrations: %w", err)
-	// }
 
 	return nil
 }
 
 func resetDatabase(db *gorm.DB) error {
-	// Drop all tables
 	tables := []string{
 		"role_permissions",
 		"user_roles",
@@ -241,6 +228,5 @@ func resetDatabase(db *gorm.DB) error {
 		}
 	}
 
-	// Run migrations again
 	return runMigrations(db)
 }

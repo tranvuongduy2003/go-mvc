@@ -7,32 +7,26 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
-// VerifyEmailCommand represents the email verification command
 type VerifyEmailCommand struct {
 	Token string `validate:"required"`
 }
 
-// VerifyEmailCommandHandler handles the VerifyEmailCommand
 type VerifyEmailCommandHandler struct {
 	emailVerificationService contracts.EmailVerificationService
 }
 
-// NewVerifyEmailCommandHandler creates a new VerifyEmailCommandHandler
 func NewVerifyEmailCommandHandler(emailVerificationService contracts.EmailVerificationService) *VerifyEmailCommandHandler {
 	return &VerifyEmailCommandHandler{
 		emailVerificationService: emailVerificationService,
 	}
 }
 
-// Handle executes the VerifyEmailCommand
 func (h *VerifyEmailCommandHandler) Handle(ctx context.Context, cmd VerifyEmailCommand) (*dto.StatusResponse, error) {
-	// Verify email
 	err := h.emailVerificationService.VerifyEmail(ctx, cmd.Token)
 	if err != nil {
 		return nil, err
 	}
 
-	// Return success response
 	return &dto.StatusResponse{
 		Status:  "success",
 		Message: "Email verified successfully",

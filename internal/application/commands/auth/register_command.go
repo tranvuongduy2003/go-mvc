@@ -7,7 +7,6 @@ import (
 	"github.com/tranvuongduy2003/go-mvc/internal/domain/contracts"
 )
 
-// RegisterCommand represents the register command
 type RegisterCommand struct {
 	Email    string `validate:"required,email"`
 	Name     string `validate:"required,min=2,max=100"`
@@ -15,21 +14,17 @@ type RegisterCommand struct {
 	Password string `validate:"required,min=8"`
 }
 
-// RegisterCommandHandler handles the RegisterCommand
 type RegisterCommandHandler struct {
 	authService contracts.AuthService
 }
 
-// NewRegisterCommandHandler creates a new RegisterCommandHandler
 func NewRegisterCommandHandler(authService contracts.AuthService) *RegisterCommandHandler {
 	return &RegisterCommandHandler{
 		authService: authService,
 	}
 }
 
-// Handle executes the RegisterCommand
 func (h *RegisterCommandHandler) Handle(ctx context.Context, cmd RegisterCommand) (*dto.RegisterResponse, error) {
-	// Create register request
 	registerReq := &contracts.RegisterRequest{
 		Email:    cmd.Email,
 		Name:     cmd.Name,
@@ -37,13 +32,11 @@ func (h *RegisterCommandHandler) Handle(ctx context.Context, cmd RegisterCommand
 		Password: cmd.Password,
 	}
 
-	// Register user
 	authenticatedUser, err := h.authService.Register(ctx, registerReq)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert to response DTO
 	return &dto.RegisterResponse{
 		User: dto.ToAuthUserDTO(authenticatedUser.User),
 		Tokens: dto.TokensDTO{
