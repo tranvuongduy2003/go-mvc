@@ -3,23 +3,26 @@
 [![Go Version](https://img.shields.io/badge/go-1.24.5-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](docker-compose.yml)
+[![Clean Code](https://img.shields.io/badge/code-self--documenting-brightgreen.svg)](docs/book/appendix/AI_CODING_STANDARDS.md)
 
-A modern, scalable Go web application built with **Clean Architecture**, **Domain-Driven Design (DDD)**, and **Enterprise patterns**. Features comprehensive observability stack with Prometheus, Grafana, and Jaeger tracing.
+A modern, production-ready Go web application built with **Clean Architecture**, **Domain-Driven Design (DDD)**, and **Enterprise patterns**. Features comprehensive observability, AI-powered development, and self-documenting code standards.
 
 ## 🚀 Features
 
 ### 🤖 AI-Powered Development
-- **AI API Generation**: Automatically generate complete APIs from User Stories
-- **Clean Architecture Compliance**: AI generates code following project patterns
-- **Production-Ready Code**: Generated code includes validation, error handling, tests
-- **Documentation Integration**: Auto-generated Swagger docs and architecture compliance
+- **AI Code Generation**: Auto-generate complete APIs from User Stories
+- **Self-Documenting Code**: Minimal comments, maximum clarity through naming
+- **AI Coding Standards**: Comprehensive rules for consistent, clean code
+- **Production-Ready Output**: Generated code includes validation, error handling, tests
+- **Architecture Compliance**: AI follows Clean Architecture patterns automatically
 
 ### Core Features
-- **Clean Architecture**: Separated layers (Domain, Application, Infrastructure, Handlers)
+- **Clean Architecture**: Clear separation of Domain, Application, Infrastructure, Presentation layers
 - **Domain-Driven Design**: Rich domain models with business logic encapsulation
 - **Dependency Injection**: Uber FX for modular dependency management
 - **CQRS Pattern**: Command Query Responsibility Segregation
 - **Repository Pattern**: Abstract data access layer
+- **Self-Documenting Code**: Clear naming eliminates need for comments
 
 ### Infrastructure
 - **HTTP Framework**: Gin with custom middleware stack
@@ -47,37 +50,65 @@ A modern, scalable Go web application built with **Clean Architecture**, **Domai
 
 ```
 go-mvc/
-├── cmd/                    # Application entry points
-│   ├── main.go            # Main server application
-│   ├── cli/               # Command-line interface
-│   ├── worker/            # Background worker
-│   └── migrate/           # Database migration tool
-├── internal/              # Private application code
-│   ├── adapters/          # External adapters (Infrastructure layer)
-│   │   ├── cache/         # Cache implementations
-│   │   ├── external/      # External service clients
-│   │   ├── messaging/     # Message queue adapters
-│   │   ├── persistence/   # Database adapters
-│   │   └── repositories/  # Repository implementations
-│   ├── application/       # Application layer (Use cases)
-│   │   ├── commands/      # Command handlers
-│   │   ├── queries/       # Query handlers
-│   │   ├── dto/           # Data transfer objects
-│   │   ├── services/      # Application services
-│   │   └── validators/    # Input validation
-│   ├── core/              # Core domain layer
-│   │   ├── domain/        # Domain entities and business logic
-│   │   └── ports/         # Interface definitions
-│   ├── di/               # Dependency injection modules
-│   ├── handlers/          # HTTP handlers and middleware
-│   └── shared/            # Shared utilities and infrastructure
-├── pkg/                   # Public packages (can be imported)
-├── configs/               # Configuration files
-├── deployments/           # Deployment configurations
-├── docs/                  # Documentation
-├── scripts/              # Build and deployment scripts
-└── api/                  # API specifications
+├── cmd/                        # Application entry points
+│   ├── main.go                # Main server application
+│   ├── cli/                   # Command-line interface
+│   ├── worker/                # Background worker
+│   └── migrate/               # Database migration tool
+├── internal/                   # Private application code
+│   ├── domain/                # Domain Layer - Business logic & entities
+│   │   ├── auth/             # Authentication domain
+│   │   ├── user/             # User domain
+│   │   ├── job/              # Background job domain
+│   │   ├── messaging/        # Messaging domain
+│   │   └── shared/           # Shared domain objects
+│   ├── application/           # Application Layer - Use cases
+│   │   ├── commands/         # Write operations (CQRS)
+│   │   ├── queries/          # Read operations (CQRS)
+│   │   ├── dto/              # Data transfer objects
+│   │   ├── services/         # Application services
+│   │   ├── validators/       # Input validation
+│   │   └── event_handlers/   # Domain event handlers
+│   ├── infrastructure/        # Infrastructure Layer - Technical details
+│   │   ├── cache/            # Cache implementations (Redis)
+│   │   ├── database/         # Database setup
+│   │   ├── persistence/      # Repository implementations
+│   │   ├── messaging/        # Message queue (NATS)
+│   │   ├── jobs/             # Background job system
+│   │   ├── security/         # Security utilities
+│   │   ├── tracing/          # Distributed tracing
+│   │   └── metrics/          # Prometheus metrics
+│   ├── presentation/          # Presentation Layer - HTTP handlers
+│   │   └── http/             # HTTP transport
+│   │       ├── handlers/     # Request handlers
+│   │       └── middleware/   # HTTP middleware
+│   └── modules/               # Dependency injection modules
+├── pkg/                       # Public reusable packages
+│   ├── errors/               # Error utilities
+│   ├── jwt/                  # JWT utilities
+│   ├── pagination/           # Pagination helpers
+│   ├── response/             # Response formatting
+│   └── validator/            # Validation utilities
+├── configs/                   # Configuration files
+│   ├── development.yaml      # Development config
+│   ├── production.yaml       # Production config
+│   └── grafana/              # Grafana dashboards
+├── docs/                      # Complete documentation (ebook format)
+│   ├── BOOK.md               # Main table of contents
+│   ├── INDEX.md              # Quick access index
+│   ├── README.md             # Documentation overview
+│   └── book/                 # Organized chapters
+│       ├── 01-getting-started/
+│       ├── 02-architecture/
+│       ├── 03-development-guide/
+│       ├── 04-features/
+│       ├── 05-ai-development/
+│       ├── 06-operations/
+│       └── appendix/
+└── scripts/                   # Build and deployment scripts
 ```
+
+> 📖 **See [Project Structure Guide](docs/book/02-architecture/02-project-structure.md)** for detailed explanations
 
 ## 🛠️ Quick Start
 
@@ -126,74 +157,102 @@ make run
 
 This application follows **Clean Architecture** principles with clear separation of concerns:
 
-### 1. **Domain Layer** (`internal/core/domain/`)
-- **Entities**: Core business objects
+### 1. **Domain Layer** (`internal/domain/`)
+- **Entities**: Core business objects with rich behavior
 - **Value Objects**: Immutable data structures
 - **Domain Events**: Business event definitions
-- **Specifications**: Business rule definitions
+- **Repository Interfaces**: Data access contracts
+- **Domain Services**: Complex business logic
 
 ### 2. **Application Layer** (`internal/application/`)
 - **Commands**: Write operations (CQRS)
 - **Queries**: Read operations (CQRS)
-- **Services**: Application business logic
+- **Application Services**: Use case orchestration
 - **DTOs**: Data transfer objects
 - **Validators**: Input validation logic
+- **Event Handlers**: Domain event processing
 
-### 3. **Infrastructure Layer** (`internal/adapters/`)
-- **Persistence**: Database repositories
-- **Cache**: Caching implementations
-- **External**: Third-party service clients
-- **Messaging**: Event bus implementations
+### 3. **Infrastructure Layer** (`internal/infrastructure/`)
+- **Persistence**: Database repository implementations
+- **Cache**: Redis caching layer
+- **Messaging**: NATS message broker
+- **Jobs**: Background job processing
+- **Security**: Authentication & authorization
+- **Tracing**: OpenTelemetry integration
+- **Metrics**: Prometheus metrics
 
-### 4. **Presentation Layer** (`internal/handlers/`)
-- **HTTP**: REST API handlers
-- **Middleware**: Cross-cutting concerns
-- **Validators**: Request validation
-- **Responses**: Response formatting
+### 4. **Presentation Layer** (`internal/presentation/`)
+- **HTTP Handlers**: REST API endpoints
+- **Middleware**: Cross-cutting concerns (auth, logging, tracing)
+- **Response Formatting**: Consistent API responses
+
+### 5. **Modules** (`internal/modules/`)
+- **Dependency Injection**: Uber FX modules for each domain
+- **Lifecycle Management**: Startup/shutdown coordination
+
+> 📖 **See [Architecture Guide](docs/book/02-architecture/01-architecture-overview.md)** for deep dive
 
 ## 🤖 AI-Powered API Generation
 
-This project includes a comprehensive AI system that can automatically generate complete APIs from User Stories.
+This project includes a comprehensive AI system that can automatically generate complete, production-ready APIs from User Stories following our strict coding standards.
 
 ### Quick AI Generation
-```bash
-# 1. Create User Story from template
-cp docs/USER_STORY_TEMPLATE.md my_feature.md
 
-# 2. Fill in your requirements (business rules, validation, etc.)
+1. **Use the User Story Template**
+   ```bash
+   # See template at: docs/USER_STORY_TEMPLATE.md
+   ```
 
-# 3. Give AI this instruction with your User Story:
-```
-
-```markdown
-Hãy sinh ra một bộ API hoàn chỉnh theo Clean Architecture từ User Story bên dưới.
-Sử dụng các quy tắc trong docs/AI_API_GENERATION_RULES.md và docs/CODE_GENERATION_GUIDELINES.md.
-
-[Your User Story Here]
-```
+2. **Give AI This Instruction**
+   ```markdown
+   Generate a complete API following Clean Architecture from this User Story.
+   Follow the rules in:
+   - docs/book/appendix/AI_CODING_STANDARDS.md (self-documenting code)
+   - docs/book/05-ai-development/02-api-generation-rules.md
+   - docs/book/05-ai-development/03-code-generation-guidelines.md
+   
+   [Your User Story Here]
+   ```
 
 **AI will generate:**
 - ✅ **Domain Layer**: Entities, value objects, repository interfaces
 - ✅ **Application Layer**: Commands/queries, DTOs, validators, services  
-- ✅ **Infrastructure Layer**: Database models, repositories, migrations
-- ✅ **Presentation Layer**: HTTP handlers, routes, Swagger docs
-- ✅ **Integration**: Dependency injection và complete setup
+- ✅ **Infrastructure Layer**: Repository implementations, migrations
+- ✅ **Presentation Layer**: HTTP handlers, routes, middleware
+- ✅ **Integration**: Complete dependency injection setup
+- ✅ **Self-Documenting Code**: Clear names, no unnecessary comments
 
 ### AI Documentation
-- **[📖 AI Quick Start Guide](docs/AI_QUICK_START.md)** - 5-minute tutorial
-- **[� User Story Template](docs/USER_STORY_TEMPLATE.md)** - Complete template với examples
-- **[⚙️ AI Generation Rules](docs/AI_API_GENERATION_RULES.md)** - Comprehensive rules for AI
-- **[�🔧 Code Generation Guidelines](docs/CODE_GENERATION_GUIDELINES.md)** - Layer-by-layer guidelines
+- **[🤖 AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md)** ⭐ **MUST READ** - Self-documenting code principles
+- **[⚡ AI Quick Start](docs/book/05-ai-development/01-ai-quick-start.md)** - 5-minute tutorial
+- **[📋 User Story Template](docs/USER_STORY_TEMPLATE.md)** - Complete template with examples
+- **[⚙️ API Generation Rules](docs/book/05-ai-development/02-api-generation-rules.md)** - Comprehensive AI rules
+- **[🔧 Code Generation Guidelines](docs/book/05-ai-development/03-code-generation-guidelines.md)** - Layer-by-layer guides
 
-### Example Generated API
-From a simple User Story like "Admin can create products", AI generates:
-- Product domain entity với business validation
-- Create/Update/Delete/List commands và queries
-- Database table với proper constraints và indexes
-- HTTP handlers với authentication và authorization
-- Complete test suite và error handling
-- Swagger documentation
-- **Production-ready code in minutes!**
+### Code Quality Principles
+
+**Self-Documenting Code**
+```go
+// ❌ BAD - Unnecessary comments
+// CreateUser creates a new user
+func CreateUser(email, password string) (*User, error) {
+    // Validate email
+    if !isValid(email) {
+        return nil, errors.New("invalid")
+    }
+    ...
+}
+
+// ✅ GOOD - Clear naming, no comments
+func CreateUser(email, password string) (*User, error) {
+    if err := ValidateEmail(email); err != nil {
+        return nil, err
+    }
+    ...
+}
+```
+
+> 📖 **See [AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md)** for complete guide
 
 ## 🔧 Development Commands
 
@@ -231,15 +290,14 @@ make security      # Security scan
 
 ### Database
 ```bash
-# Migration management (golang-migrate/migrate)
+# Migration management (golang-migrate/migrate v4.19.0+)
 make migrate-up      # Apply all pending migrations
-make migrate-down    # Rollback migrations
-make migrate-create  # Create new migration
+make migrate-down    # Rollback last migration
+make migrate-create  # Create new timestamped migration
 make migrate-status  # Show migration status
 make migrate-version # Show current version
 
-# See docs/DEVELOPMENT.md#database-migrations for detailed guide
-# Or docs/MIGRATIONS.md for comprehensive migration documentation
+# See docs/book/03-development-guide/02-migrations.md for detailed guide
 ```
 
 ### Docker
@@ -303,39 +361,54 @@ docker-compose up -d
 
 ### Development Guidelines
 - Follow **Clean Architecture** principles
+- Use **self-documenting code** (see [AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md))
 - Write **comprehensive tests**
 - Add **proper documentation**
 - Use **conventional commits**
 - Ensure **code quality** with linters
+- **NO unnecessary comments** - code should be clear through naming
 
 ## 📚 Documentation
 
-### 🤖 For AI Assistants & Developers
-- [**🤖 AGENT.md**](AGENT.md) - **START HERE!** Comprehensive guide for AI IDEs, code assistants, and developers
+### 📖 Complete Developer Guide (Ebook Format)
+**[Start Here: Complete Book](docs/BOOK.md)** - Comprehensive documentation organized as professional ebook
 
-### Core Documentation
-- [**📁 Project Structure**](docs/PROJECT_STRUCTURE.md) - Complete directory structure with detailed explanations
-- [**🏛️ Architecture Guide**](docs/ARCHITECTURE.md) - Clean Architecture implementation and design patterns
-- [**🛠️ Development Guide**](docs/DEVELOPMENT.md) - Development setup, testing, and best practices
-- [**🚀 Deployment Guide**](docs/DEPLOYMENT.md) - Production deployment with Docker and Kubernetes
+**Quick Access:**
+- [Quick Start Guide](docs/book/01-getting-started/02-quick-start.md) - Running in 15 minutes
+- [Quick Reference](docs/book/01-getting-started/03-quick-reference.md) - Common commands & troubleshooting
+- [Architecture Overview](docs/book/02-architecture/01-architecture-overview.md) - Clean Architecture deep dive
+- [Development Workflow](docs/book/03-development-guide/01-development-workflow.md) - Dev environment setup
 
-### AI-Powered Development
-- [**🤖 AI API Generation Rules**](docs/AI_API_GENERATION_RULES.md) - Complete guide for AI to generate production-ready APIs
-- [**⚡ AI Quick Start**](docs/AI_QUICK_START.md) - Quick reference for AI-assisted development
-- [**📋 Code Generation Guidelines**](docs/CODE_GENERATION_GUIDELINES.md) - Layer-by-layer code generation patterns
+### 🤖 AI Development (Must Read for AI Assistants)
+- **[AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md)** ⭐ **REQUIRED** - Self-documenting code principles
+- [AI Quick Start](docs/book/05-ai-development/01-ai-quick-start.md) - AI-powered development intro
+- [API Generation Rules](docs/book/05-ai-development/02-api-generation-rules.md) - Complete AI generation guide
+- [Code Generation Guidelines](docs/book/05-ai-development/03-code-generation-guidelines.md) - Layer-by-layer templates
 
-### API & Technical Guides
-- [**📋 API Documentation**](docs/API.md) - REST API endpoints, examples, and usage
-- [**📧 Email Service Guide**](docs/EMAIL_SERVICE.md) - Email service implementation and MailCatcher testing
-- [**📦 File Upload Guide**](docs/FILE_UPLOAD.md) - File storage with MinIO
-- [**💬 NATS Messaging**](docs/NATS_MESSAGING.md) - Message broker patterns
-- [**🔄 Message Deduplication**](docs/MESSAGE_DEDUPLICATION.md) - Idempotent message processing
-- [**⚙️ Background Jobs**](docs/BACKGROUND_JOBS.md) - Async job processing
-- [**🗄️ Migrations Guide**](docs/MIGRATIONS.md) - Database migration management
-- [**🔌 Dependency Injection**](docs/DEPENDENCY_INJECTION.md) - Uber FX usage patterns and modules
-- [**🔍 Tracing Guide**](docs/TRACING.md) - OpenTelemetry and Jaeger setup
-- [**🛡️ RBAC Usage**](docs/RBAC_USAGE.md) - Role-based access control implementation
-- [**🚀 Quick Reference**](docs/QUICK_REFERENCE.md) - Cheat sheet for common tasks
+### 📋 Documentation Structure
+```
+docs/
+├── BOOK.md                 # Main table of contents
+├── INDEX.md                # Quick access index
+├── README.md               # Documentation overview
+├── MIGRATION_GUIDE.md      # Migration from old structure
+└── book/                   # Organized content
+    ├── 01-getting-started/     # Quick start, introduction
+    ├── 02-architecture/        # Architecture guides
+    ├── 03-development-guide/   # Development workflows
+    ├── 04-features/            # Feature documentation
+    ├── 05-ai-development/      # AI-powered development
+    ├── 06-operations/          # Deployment & monitoring
+    └── appendix/               # Standards, glossary, FAQ
+        └── AI_CODING_STANDARDS.md  # ⭐ Essential coding standards
+```
+
+### 🔍 Key Topics
+- **Getting Started**: [Introduction](docs/book/01-getting-started/01-introduction.md), [Quick Start](docs/book/01-getting-started/02-quick-start.md)
+- **Architecture**: [Overview](docs/book/02-architecture/01-architecture-overview.md), [Domain Layer](docs/book/02-architecture/03-domain-layer.md), [DI](docs/book/02-architecture/07-dependency-injection.md)
+- **Development**: [Workflow](docs/book/03-development-guide/01-development-workflow.md), [Migrations](docs/book/03-development-guide/02-migrations.md), [Testing](docs/book/03-development-guide/03-testing.md)
+- **Features**: [Auth](docs/book/04-features/01-authentication.md), [Background Jobs](docs/book/04-features/02-background-jobs.md), [Email](docs/book/04-features/03-email-service.md), [Tracing](docs/book/04-features/07-tracing.md)
+- **Operations**: [Deployment](docs/book/06-operations/01-deployment.md), [Monitoring](docs/book/06-operations/02-monitoring.md)
 
 ## 🛡️ Security
 
@@ -363,9 +436,17 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 For questions, issues, or contributions:
 
 - **GitHub Issues**: [Create an issue](https://github.com/tranvuongduy2003/go-mvc/issues)
+- **Documentation**: Start with [Complete Book](docs/BOOK.md) or [Quick Start](docs/book/01-getting-started/02-quick-start.md)
 - **Email**: tranvuongduy2003@gmail.com
-- **Documentation**: Check the [docs/](docs/) directory
+
+### 📖 Documentation Quick Links
+- 🚀 [Quick Start (15 min)](docs/book/01-getting-started/02-quick-start.md)
+- 🤖 [AI Coding Standards](docs/book/appendix/AI_CODING_STANDARDS.md) - **Essential for contributors**
+- 📖 [Complete Developer Guide](docs/BOOK.md)
+- 🔍 [Quick Reference](docs/book/01-getting-started/03-quick-reference.md)
 
 ---
 
 ⭐ **Star this repository** if you find it helpful!
+
+**Built with ❤️ using Clean Architecture, DDD, and Self-Documenting Code principles**
